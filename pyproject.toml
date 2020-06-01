@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pybricks-tools"
+version = "0.1.0"
+description = "Pybricks developer tools"
+authors = ["The Pybricks Authors <dev@pybricks.com>"]
+maintainers = ["Laurens Valk <laurens@pybricks.com>", "David Lechner <david@pybricks.com>" ]
+license = "MIT"
+readme = "README.rst"
+homepage = "https://pybricks.com"
+repository = "https://github.com/pybricks/pybricks-tools"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+[tool.poetry.dev-dependencies]
+flake8 = "*"
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
