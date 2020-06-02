@@ -5,9 +5,9 @@ from bleak import BleakClient, BleakScanner
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
-
-# Scan for a device with the given name. To do: search by service instead.
-async def scan(device_name, timeout=5):
+# Scan for a device with the given name and return address of first match.
+# To do: search by service instead.
+async def scan_and_get_address(device_name, timeout=5):
 
     # Flag raised by detection of a device
     device_discovered = False
@@ -36,44 +36,77 @@ async def scan(device_name, timeout=5):
             # Check if any of the devices found so far has the expected name.
             devices = await scanner.get_discovered_devices()
             for dev in devices:
-                # If the name matches, stop scanning and return device.
+                # If the name matches, stop scanning and return address.
                 if device_name in dev.name:
                     await scanner.stop()
-                    return dev
+                    return dev.address
         # Await until we check again.
         await asyncio.sleep(INTERVAL)
 
     # If we are here, scanning has timed out.
     await scanner.stop()
+    raise TimeoutError(
+        "Could not find {0} in {1} seconds".format(device_name, timeout)
+    )
 
 
 def test_callback(client, *args):
     print("Disconnected", client.address)
 
 
-def notification_handler(sender, data):
-    print(data)
+class HubBuffer():
+
+    IDLE = b'>>>> IDLE'
+    RUNNING = b'>>>> RUNNING'
+    ERROR = b'>>>> ERROR'
+
+    def __init__(self):
+        self.buf = b''
+        self.state = self.IDLE
+
+    def update_data_buffer(self, sender, data):
+        # Append incoming data to buffer
+        self.buf += data
+
+        # Break up data into lines as soon as a line is complete
+        while True:
+            try:
+                # Try to find line break and split there
+                index = self.buf.index(b'\r\n')
+                line = self.buf[0:index]
+                self.buf = self.buf[index+2:]
+
+                # Check line contents to see if state needs updating
+                self.update_state(line)
+
+                # Print the line that has been received
+                print(line.decode())
+
+            except ValueError:
+                break
+
+    def update_state(self, line):
+        if line in (self.IDLE, self.RUNNING, self.ERROR):
+            self.state = line
 
 
 # Main function, to be replaced with an argparser
 async def main():
     # Scan for a Pybricks Hub
-    device = await scan('Pybricks Hub', timeout=5)
-    if device is not None:
-        print("Found", device.name, "at", device.address)
-    else:
-        raise OSError("Device not found!")
+    address = await scan_and_get_address('Pybricks Hub', timeout=5)
+    print("Found", address)
 
     print("Connecting...")
 
     # Connect to detected device and start listening for its output
-    async with BleakClient(device.address) as client:
+    async with BleakClient(address) as client:
         client.set_disconnected_callback(test_callback)
-        await client.is_connected()
+        # await client.is_connected()
         print("Connected!")
-        await client.start_notify(bleNusCharTXUUID, notification_handler)
+        buffer = HubBuffer()
+        await client.start_notify(bleNusCharTXUUID, buffer.update_data_buffer)
         # await asyncio.sleep(2.0)
-        await client.write_gatt_char(bleNusCharRXUUID, b'1234')
+        await client.write_gatt_char(bleNusCharRXUUID, b'    ')
         await asyncio.sleep(2.0)
         await client.stop_notify(bleNusCharTXUUID)
         # await client.disconnect()
