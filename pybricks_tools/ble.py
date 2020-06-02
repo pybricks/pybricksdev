@@ -143,6 +143,12 @@ class PybricksHubConnection(HubDataReceiver):
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
 
+async def main():
+    async with PybricksHubConnection(debug=True) as hub:
+        await asyncio.sleep(2.0)
+        await hub.write(b'    ')
+        await asyncio.sleep(2.0)
+
 if __name__ == "__main__":
 
     # Parse all arguments
@@ -156,3 +162,5 @@ if __name__ == "__main__":
 
     # TODO: send script
     print(data)
+
+    asyncio.run(main())
