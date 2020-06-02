@@ -159,7 +159,7 @@ class PybricksHubConnection(HubDataReceiver):
         buf_length_start = len(self.buf)
 
         n = 20
-        chunks = [data[i : i + n] for i in range(0, len(data), n)]
+        chunks = [data[i: i + n] for i in range(0, len(data), n)]
         for chunk in chunks:
             await self.write(chunk)
             await asyncio.sleep(0.1)
