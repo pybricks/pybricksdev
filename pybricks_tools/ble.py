@@ -205,26 +205,25 @@ class PybricksHubConnection(HubDataReceiver):
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 
-
-async def main(mpy):
-    async with PybricksHubConnection(debug=False) as hub:
-        await asyncio.sleep(2.0)
-
+    async def download_and_run(self, mpy):
+        # Get length of file and send it as bytes to hub
         length = len(mpy).to_bytes(4, byteorder='little')
-        await hub.send_message(length)
+        await self.send_message(length)
 
+        # Divide script in chunks of bytes
         n = 100
         chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
 
-        # Send the data
+        # Send the data chunk by chunk
         for i, chunk in enumerate(chunks):
             print(round(i/len(chunks)*100))
-            await hub.send_message(chunk)
+            await self.send_message(chunk)
 
-        await hub.wait_until_not_running()
+        # Wait for the program to finish
+        await self.wait_until_not_running()
+
 
 if __name__ == "__main__":
-
     # Parse all arguments
     parser = get_mpy_arg_parser(
         description="Run Pybricks MicroPython scripts via BLE."
@@ -234,4 +233,9 @@ if __name__ == "__main__":
     # Use arguments to produce mpy bytes
     data = get_mpy_bytes(args)
 
+    async def main(mpy):
+        async with PybricksHubConnection(debug=False) as hub:
+            await hub.download_and_run(mpy)
+
+    # Asynchronously send and run the script
     asyncio.run(main(data))
