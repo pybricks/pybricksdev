@@ -216,7 +216,9 @@ class PybricksHubConnection(HubDataReceiver):
 
         # Send the data chunk by chunk
         for i, chunk in enumerate(chunks):
-            print(round(i/len(chunks)*100))
+            self.logger.info("Sending: {0}%".format(
+                round((i+1)/len(chunks)*100))
+            )
             await self.send_message(chunk)
 
         # Wait for the program to finish
