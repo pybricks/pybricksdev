@@ -8,8 +8,11 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/develop/main.py",
-            "console": "integratedTerminal"
+            "program": "${workspaceFolder}/pybricks_tools/ble.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--file", "demo/hello.py"
+            ]
         }
     ]
 }
