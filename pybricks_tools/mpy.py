@@ -23,7 +23,7 @@ def make_build_dir():
         raise OSError("A file named build already exists.")
 
 
-def mpy_bytes_from_file(mpy_cross, path):
+def get_mpy_bytes_from_file(mpy_cross, path):
     """Compile a Python file with mpy-cross and return as bytes."""
 
     # Show mpy_cross version
@@ -44,7 +44,7 @@ def mpy_bytes_from_file(mpy_cross, path):
         return mpy.read()
 
 
-def mpy_bytes_from_str(mpy_cross, string):
+def get_mpy_bytes_from_str(mpy_cross, string):
     """Compile a Python command with mpy-cross and return as bytes."""
 
     # Make the build directory
@@ -58,13 +58,11 @@ def mpy_bytes_from_str(mpy_cross, string):
         f.write(string + "\n")
 
     # Convert to mpy and get the bytes
-    return mpy_bytes_from_file(mpy_cross, py_path)
+    return get_mpy_bytes_from_file(mpy_cross, py_path)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Convert Python scripts or commands to .mpy bytes."
-    )
+def get_mpy_arg_parser(description):
+    parser = argparse.ArgumentParser(description)
 
     # Arguments for the user script
     group = parser.add_mutually_exclusive_group(required=True)
@@ -75,9 +73,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=False
     )
+    return parser
 
-    # Parse all arguments
-    args = parser.parse_args()
+
+def get_mpy_bytes(args):
 
     # Use given mpy cross if given or else default to version from PyPI
     if args.mpy_cross:
@@ -87,10 +86,22 @@ if __name__ == "__main__":
 
     # Convert either the file or the string to mpy format
     if args.file:
-        data = mpy_bytes_from_file(mpy_cross_path, args.file)
+        return get_mpy_bytes_from_file(mpy_cross_path, args.file)
 
     if args.string:
-        data = mpy_bytes_from_str(mpy_cross_path, args.string)
+        return get_mpy_bytes_from_str(mpy_cross_path, args.string)
+
+
+if __name__ == "__main__":
+
+    # Parse all arguments
+    parser = get_mpy_arg_parser(
+        description="Convert MicroPython scripts or commands to .mpy bytes."
+    )
+    args = parser.parse_args()
+
+    # Use arguments to produce mpy bytes
+    data = get_mpy_bytes(args)
 
     # Print as string as a sanity check.
     print("\nBytes:")
