@@ -71,7 +71,7 @@ class HubDataReceiver():
         self.logger = logging.getLogger('Hub Data')
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
-            '\t\t\t\t\t\t %(asctime)s: %(levelname)7s: %(message)s'
+            '\t\t\t\t %(asctime)s: %(levelname)7s: %(message)s'
         )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
@@ -90,7 +90,7 @@ class HubDataReceiver():
                 self.buf = self.buf[index+2:]
 
                 # Check line contents to see if state needs updating
-                self.logger.debug("New Data: {0}".format(line))
+                self.logger.debug("\t\t\t\tRX: {0}".format(line))
                 self.update_state(line)
 
                 # Print the line that has been received
@@ -139,7 +139,7 @@ class PybricksHubConnection(HubDataReceiver):
         await self.disconnect()
 
     async def write(self, data):
-        self.logger.debug("Sending {0}".format(data))
+        self.logger.debug("\t\t\t\tTX: {0}".format(data))
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
     async def wait_for_response(self, previous_length):
@@ -181,7 +181,7 @@ class PybricksHubConnection(HubDataReceiver):
             raise ValueError("Did not receive expected checksum.")
 
     async def wait_for_completion(self):
-        asyncio.sleep(0.5)
+        await asyncio.sleep(0.5)
         while True:
             await asyncio.sleep(0.1)
             if self.state != self.RUNNING:
