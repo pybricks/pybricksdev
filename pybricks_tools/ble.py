@@ -142,10 +142,11 @@ class PybricksHubConnection(HubDataReceiver):
         self.logger.debug("\t\t\t\tTX: {0}".format(data))
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
-    async def wait_for_response(self, previous_length):
+    async def wait_for_checksum(self):
+        buf_length_start = len(self.buf)
         for i in range(20):
             await asyncio.sleep(0.05)
-            if len(self.buf) > previous_length:
+            if len(self.buf) > buf_length_start:
                 return self.buf[-1]
         raise TimeoutError("Hub did not return checksum")
 
@@ -156,15 +157,12 @@ class PybricksHubConnection(HubDataReceiver):
         checksum = 0
 
         # Send data
-        buf_length_start = len(self.buf)
-
         n = 20
         chunks = [data[i: i + n] for i in range(0, len(data), n)]
         for chunk in chunks:
-            await self.write(chunk)
             await asyncio.sleep(0.1)
-
-        reply = await self.wait_for_response(buf_length_start)
+            await self.write(chunk)
+        reply = await self.wait_for_checksum()
 
         # Compute expected reply
         for b in data:
