@@ -58,14 +58,16 @@ async def scan_and_get_address(device_name, timeout=5):
 
 class HubDataReceiver():
 
-    IDLE = b'>>>> IDLE'
-    RUNNING = b'>>>> RUNNING'
-    ERROR = b'>>>> ERROR'
-    UNKNOWN = None
+    UNKNOWN = 0
+    IDLE = 1
+    RUNNING = 2
+    ERROR = 3
+    CHECKING = 4
 
     def __init__(self, debug=False):
         self.buf = b''
         self.state = self.UNKNOWN
+        self.reply = None
 
         # Get a logger
         self.logger = logging.getLogger('Hub Data')
@@ -78,7 +80,13 @@ class HubDataReceiver():
         self.logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     def update_data_buffer(self, sender, data):
-        # Append incoming data to buffer
+        # If we are transmitting, the replies are checksums
+        if self.state == self.CHECKING:
+            self.reply = data[-1]
+            self.logger.debug("\t\t\t\tCS: {0}".format(self.reply))
+            return
+
+        # Otherwise, append incoming data to buffer
         self.buf += data
 
         # Break up data into lines as soon as a line is complete
@@ -91,23 +99,35 @@ class HubDataReceiver():
 
                 # Check line contents to see if state needs updating
                 self.logger.debug("\t\t\t\tRX: {0}".format(line))
-                self.update_state(line)
 
-                # Print the line that has been received
+                # If the retrieved line is a state, update it
+                if self.map_state(line) is not None:
+                    self.update_state(self.map_state(line))
+
+                # Print the line that has been received as human readable
                 print(line.decode())
             # Exit the loop once no more line breaks are found
             except ValueError:
                 break
 
-    def update_state(self, line):
-        """Update state if data contains state information."""
-        if line in (self.IDLE, self.RUNNING, self.ERROR):
-            if line != self.state:
-                self.logger.debug("New State: {0}".format(line))
-                self.state = line
+    def map_state(self, line):
+        """"Maps state strings to states."""
+        if line == b'>>>> IDLE':
+            return self.IDLE
+        if line == b'>>>> RUNNING':
+            return self.RUNNING
+        if line == b'>>>> ERROR':
+            return self.ERROR
+        return None
+
+    def update_state(self, new_state):
+        """Updates state if data contains state information."""
+        if new_state != self.state:
+            self.logger.debug("New State: {0}".format(new_state))
+            self.state = new_state
 
     def update_state_disconnected(self, client, *args):
-        self.state = self.UNKNOWN
+        self.update_state(self.UNKNOWN)
         self.logger.info("Disconnected!")
 
 
@@ -143,11 +163,14 @@ class PybricksHubConnection(HubDataReceiver):
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
     async def wait_for_checksum(self):
-        buf_length_start = len(self.buf)
+        self.update_state(self.CHECKING)
         for i in range(20):
             await asyncio.sleep(0.05)
-            if len(self.buf) > buf_length_start:
-                return self.buf[-1]
+            if self.reply:
+                reply = self.reply
+                self.reply = None
+                self.update_state(self.IDLE)
+                return reply
         raise TimeoutError("Hub did not return checksum")
 
     async def send_message(self, data):
@@ -168,8 +191,7 @@ class PybricksHubConnection(HubDataReceiver):
         for b in data:
             checksum ^= b
 
-        reply = self.buf[-1]
-        self.logger.debug("expected: {0}, reply: {1}".format(reply, checksum))
+        self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
         # Raise errors if we did not get the checksum we wanted
         if not reply:
