@@ -142,12 +142,67 @@ class PybricksHubConnection(HubDataReceiver):
         self.logger.debug("Sending {0}".format(data))
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
+    async def wait_for_response(self, previous_length):
+        for i in range(20):
+            await asyncio.sleep(0.05)
+            if len(self.buf) > previous_length:
+                return self.buf[-1]
+        raise TimeoutError("Hub did not return checksum")
 
-async def main():
+    async def send_message(self, data):
+        """Send bytes to the hub, and check if reply matches checksum."""
+
+        # Initial checksum
+        checksum = 0
+
+        # Send data
+        buf_length_start = len(self.buf)
+
+        n = 20
+        chunks = [data[i : i + n] for i in range(0, len(data), n)]
+        for chunk in chunks:
+            await self.write(chunk)
+            await asyncio.sleep(0.1)
+
+        reply = await self.wait_for_response(buf_length_start)
+
+        # Compute expected reply
+        for b in data:
+            checksum ^= b
+
+        reply = self.buf[-1]
+        self.logger.debug("expected: {0}, reply: {1}".format(reply, checksum))
+
+        # Raise errors if we did not get the checksum we wanted
+        if not reply:
+            raise OSError("Did not receive reply.")
+
+        if checksum != reply:
+            raise ValueError("Did not receive expected checksum.")
+
+    async def wait_for_completion(self):
+        asyncio.sleep(0.5)
+        while True:
+            await asyncio.sleep(0.1)
+            if self.state != self.RUNNING:
+                break
+
+
+async def main(mpy):
     async with PybricksHubConnection(debug=True) as hub:
         await asyncio.sleep(2.0)
-        await hub.write(b'    ')
-        await asyncio.sleep(2.0)
+
+        length = len(mpy).to_bytes(4, byteorder='little')
+        await hub.send_message(length)
+
+        n = 100
+        chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
+
+        # Send the data
+        for chunk in chunks:
+            await hub.send_message(chunk)
+
+        await hub.wait_for_completion()
 
 if __name__ == "__main__":
 
@@ -160,7 +215,4 @@ if __name__ == "__main__":
     # Use arguments to produce mpy bytes
     data = get_mpy_bytes(args)
 
-    # TODO: send script
-    print(data)
-
-    asyncio.run(main())
+    asyncio.run(main(data))
