@@ -57,11 +57,11 @@ class HubDataReceiver():
     IDLE = b'>>>> IDLE'
     RUNNING = b'>>>> RUNNING'
     ERROR = b'>>>> ERROR'
-    DISCONNECTED = None
+    UNKNOWN = None
 
     def __init__(self, debug=False):
         self.buf = b''
-        self.state = self.IDLE
+        self.state = self.UNKNOWN
 
         # Get a logger
         self.logger = logging.getLogger('Hub Data')
@@ -103,7 +103,7 @@ class HubDataReceiver():
                 self.state = line
 
     def update_state_disconnected(self, client, *args):
-        self.state = self.DISCONNECTED
+        self.state = self.UNKNOWN
         self.logger.info("Disconnected!")
 
 
@@ -124,6 +124,7 @@ class PybricksHubConnection(HubDataReceiver):
         )
 
     async def disconnect(self):
+        await self.client.stop_notify(bleNusCharTXUUID)
         await self.client.disconnect()
 
     async def __aenter__(self):
@@ -133,15 +134,18 @@ class PybricksHubConnection(HubDataReceiver):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.disconnect()
 
+    async def write(self, data):
+        self.logger.debug("Sending {0}".format(data))
+        await self.client.write_gatt_char(bleNusCharRXUUID, data)
+
 
 # Main function, to be replaced with an argparser
 async def main():
 
-    async with PybricksHubConnection(debug=False) as hub:
+    async with PybricksHubConnection(debug=True) as hub:
         await asyncio.sleep(2.0)
-        await hub.client.write_gatt_char(bleNusCharRXUUID, b'    ')
+        await hub.write(b'    ')
         await asyncio.sleep(2.0)
-        await hub.client.stop_notify(bleNusCharTXUUID)
 
 
 asyncio.run(main())
