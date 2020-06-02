@@ -1,10 +1,104 @@
-print("Hello!")
+a = 1
 
-try:
-    hub = MoveHub()
-except:
-    hub = CPlusHub()
-
-hub.light.on(Color.RED)
-wait(2000)
-print("World!")
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+a = a + 1
+print(a)
