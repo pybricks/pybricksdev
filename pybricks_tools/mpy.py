@@ -35,7 +35,9 @@ def mpy_bytes_from_file(mpy_cross, path):
 
     # Cross-compile Python file to .mpy and raise errors if any
     mpy_path = os.path.join(BUILD_DIR, Path(path).stem + ".mpy")
-    proc = subprocess.run([mpy_cross, path, "-mno-unicode", "-o", mpy_path], check=True)
+    proc = subprocess.run(
+        [mpy_cross, path, "-mno-unicode", "-o", mpy_path], check=True
+    )
 
     # Read the .mpy file and return as bytes
     with open(mpy_path, "rb") as mpy:
@@ -102,7 +104,7 @@ if __name__ == "__main__":
         + "\nconst uint8_t script[] = "
     )
     for i in range(0, len(data), WIDTH):
-        chunk = data[i : i + WIDTH]
+        chunk = data[i:i + WIDTH]
         hex_repr = ["0x{0}".format(hex(i)[2:].zfill(2).upper()) for i in chunk]
         print("    " + ", ".join(hex_repr) + ",")
     print("};")
