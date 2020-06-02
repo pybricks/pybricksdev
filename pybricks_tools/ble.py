@@ -134,7 +134,7 @@ class HubDataReceiver():
         self.update_state(self.CHECKING)
         for i in range(20):
             await asyncio.sleep(0.05)
-            if self.reply:
+            if self.reply is not None:
                 reply = self.reply
                 self.reply = None
                 self.update_state(self.IDLE)
@@ -201,17 +201,15 @@ class PybricksHubConnection(HubDataReceiver):
         self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
         # Raise errors if we did not get the checksum we wanted
-        if not reply:
+        if reply is None:
             raise OSError("Did not receive reply.")
 
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 
 
-
-
 async def main(mpy):
-    async with PybricksHubConnection(debug=True) as hub:
+    async with PybricksHubConnection(debug=False) as hub:
         await asyncio.sleep(2.0)
 
         length = len(mpy).to_bytes(4, byteorder='little')
