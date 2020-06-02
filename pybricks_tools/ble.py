@@ -130,6 +130,24 @@ class HubDataReceiver():
         self.update_state(self.UNKNOWN)
         self.logger.info("Disconnected!")
 
+    async def wait_for_checksum(self):
+        self.update_state(self.CHECKING)
+        for i in range(20):
+            await asyncio.sleep(0.05)
+            if self.reply:
+                reply = self.reply
+                self.reply = None
+                self.update_state(self.IDLE)
+                return reply
+        raise TimeoutError("Hub did not return checksum")
+
+    async def wait_until_not_running(self):
+        await asyncio.sleep(0.5)
+        while True:
+            await asyncio.sleep(0.1)
+            if self.state != self.RUNNING:
+                break
+
 
 class PybricksHubConnection(HubDataReceiver):
 
@@ -162,17 +180,6 @@ class PybricksHubConnection(HubDataReceiver):
         self.logger.debug("\t\t\t\tTX: {0}".format(data))
         await self.client.write_gatt_char(bleNusCharRXUUID, data)
 
-    async def wait_for_checksum(self):
-        self.update_state(self.CHECKING)
-        for i in range(20):
-            await asyncio.sleep(0.05)
-            if self.reply:
-                reply = self.reply
-                self.reply = None
-                self.update_state(self.IDLE)
-                return reply
-        raise TimeoutError("Hub did not return checksum")
-
     async def send_message(self, data):
         """Send bytes to the hub, and check if reply matches checksum."""
 
@@ -200,12 +207,7 @@ class PybricksHubConnection(HubDataReceiver):
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 
-    async def wait_for_completion(self):
-        await asyncio.sleep(0.5)
-        while True:
-            await asyncio.sleep(0.1)
-            if self.state != self.RUNNING:
-                break
+
 
 
 async def main(mpy):
@@ -222,7 +224,7 @@ async def main(mpy):
         for chunk in chunks:
             await hub.send_message(chunk)
 
-        await hub.wait_for_completion()
+        await hub.wait_until_not_running()
 
 if __name__ == "__main__":
 
