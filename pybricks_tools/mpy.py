@@ -5,6 +5,7 @@ import os
 import argparse
 import subprocess
 from pathlib import Path
+import mpy_cross
 
 
 BUILD_DIR = "build"
@@ -62,17 +63,32 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Convert Python scripts or commands to .mpy bytes."
     )
-    parser.add_argument("--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=True)
+
+    # Arguments for the user script
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--file", dest="file", nargs="?", const=1, type=str)
     group.add_argument("--string", dest="string", nargs="?", const=1, type=str)
+
+    # Optional mpy cross argument
+    parser.add_argument(
+        "--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=False
+    )
+
+    # Parse all arguments
     args = parser.parse_args()
 
+    # Use given mpy cross if given or else default to version from PyPI
+    if args.mpy_cross:
+        mpy_cross_path = args.mpy_cross
+    else:
+        mpy_cross_path = mpy_cross.mpy_cross
+
+    # Convert either the file or the string to mpy format
     if args.file:
-        data = mpy_bytes_from_file(args.mpy_cross, args.file)
+        data = mpy_bytes_from_file(mpy_cross_path, args.file)
 
     if args.string:
-        data = mpy_bytes_from_str(args.mpy_cross, args.string)
+        data = mpy_bytes_from_str(mpy_cross_path, args.string)
 
     # Print as string as a sanity check.
     print("\nBytes:")
