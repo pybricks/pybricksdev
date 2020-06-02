@@ -52,7 +52,7 @@ async def scan_and_get_address(device_name, timeout=5):
     )
 
 
-class HubData():
+class HubDataReceiver():
 
     IDLE = b'>>>> IDLE'
     RUNNING = b'>>>> RUNNING'
@@ -71,7 +71,7 @@ class HubData():
         )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
+        self.logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
     def update_data_buffer(self, sender, data):
         # Append incoming data to buffer
@@ -107,26 +107,41 @@ class HubData():
         self.logger.info("Disconnected!")
 
 
+class PybricksHubConnection(HubDataReceiver):
+
+    async def connect(self):
+        self.logger.info("Scanning for Pybricks Hub")
+        address = await scan_and_get_address('Pybricks Hub', timeout=5)
+
+        self.logger.info("Found {0}!".format(address))
+        self.logger.info("Connecting...")
+        self.client = BleakClient(address)
+        await self.client.connect()
+        self.client.set_disconnected_callback(self.update_state_disconnected)
+        self.logger.info("Connected successfully!")
+        await self.client.start_notify(
+            bleNusCharTXUUID, self.update_data_buffer
+        )
+
+    async def disconnect(self):
+        await self.client.disconnect()
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.disconnect()
+
+
 # Main function, to be replaced with an argparser
 async def main():
-    # Scan for a Pybricks Hub
-    address = await scan_and_get_address('Pybricks Hub', timeout=5)
-    print("Found", address)
 
-    print("Connecting...")
-
-    # Connect to detected device and start listening for its output
-    async with BleakClient(address) as client:
-        buffer = HubData(debug=True)
-        client.set_disconnected_callback(buffer.update_state_disconnected)
-        # await client.is_connected()
-        print("Connected!")
-        await client.start_notify(bleNusCharTXUUID, buffer.update_data_buffer)
-        # await asyncio.sleep(2.0)
-        await client.write_gatt_char(bleNusCharRXUUID, b'    ')
+    async with PybricksHubConnection(debug=False) as hub:
         await asyncio.sleep(2.0)
-        await client.stop_notify(bleNusCharTXUUID)
-        # await client.disconnect()
+        await hub.client.write_gatt_char(bleNusCharRXUUID, b'    ')
+        await asyncio.sleep(2.0)
+        await hub.client.stop_notify(bleNusCharTXUUID)
 
 
 asyncio.run(main())
