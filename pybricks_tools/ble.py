@@ -177,8 +177,12 @@ class PybricksHubConnection(HubDataReceiver):
         await self.disconnect()
 
     async def write(self, data):
-        self.logger.debug("\t\t\t\tTX: {0}".format(data))
-        await self.client.write_gatt_char(bleNusCharRXUUID, data)
+        n = 20
+        chunks = [data[i: i + n] for i in range(0, len(data), n)]
+        for i, chunk in enumerate(chunks):
+            self.logger.debug("\t\t\t\tTX: {0}".format(chunk))
+            await asyncio.sleep(0.05)
+            await self.client.write_gatt_char(bleNusCharRXUUID, chunk)
 
     async def send_message(self, data):
         """Send bytes to the hub, and check if reply matches checksum."""
