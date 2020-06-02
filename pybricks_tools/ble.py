@@ -132,8 +132,8 @@ class HubDataReceiver():
 
     async def wait_for_checksum(self):
         self.update_state(self.CHECKING)
-        for i in range(20):
-            await asyncio.sleep(0.05)
+        for i in range(50):
+            await asyncio.sleep(0.01)
             if self.reply is not None:
                 reply = self.reply
                 self.reply = None
@@ -183,21 +183,19 @@ class PybricksHubConnection(HubDataReceiver):
     async def send_message(self, data):
         """Send bytes to the hub, and check if reply matches checksum."""
 
-        # Initial checksum
-        checksum = 0
-
-        # Send data
-        n = 20
-        chunks = [data[i: i + n] for i in range(0, len(data), n)]
-        for chunk in chunks:
-            await asyncio.sleep(0.1)
-            await self.write(chunk)
-        reply = await self.wait_for_checksum()
+        if len(data) > 100:
+            raise ValueError("Cannot send this much data at once")
 
         # Compute expected reply
+        checksum = 0
         for b in data:
             checksum ^= b
 
+        # Send the data
+        await self.write(data)
+
+        # Await the reply
+        reply = await self.wait_for_checksum()
         self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
         # Raise errors if we did not get the checksum we wanted
@@ -219,7 +217,8 @@ async def main(mpy):
         chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
 
         # Send the data
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
+            print(round(i/len(chunks)*100))
             await hub.send_message(chunk)
 
         await hub.wait_until_not_running()
