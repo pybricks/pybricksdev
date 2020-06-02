@@ -1,13 +1,15 @@
 
 import asyncio
 from bleak import BleakClient, BleakScanner
+import logging
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
-# Scan for a device with the given name and return address of first match.
-# To do: search by service instead.
+
 async def scan_and_get_address(device_name, timeout=5):
+    """Scan for device by name and return address of first match."""
+    # To do: search by service instead."""
 
     # Flag raised by detection of a device
     device_discovered = False
@@ -50,19 +52,26 @@ async def scan_and_get_address(device_name, timeout=5):
     )
 
 
-def test_callback(client, *args):
-    print("Disconnected", client.address)
-
-
-class HubBuffer():
+class HubData():
 
     IDLE = b'>>>> IDLE'
     RUNNING = b'>>>> RUNNING'
     ERROR = b'>>>> ERROR'
+    DISCONNECTED = None
 
-    def __init__(self):
+    def __init__(self, debug=False):
         self.buf = b''
         self.state = self.IDLE
+
+        # Get a logger
+        self.logger = logging.getLogger('Hub Data')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '\t\t\t\t\t\t %(asctime)s: %(levelname)7s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.DEBUG if debug else logging.WARNING)
 
     def update_data_buffer(self, sender, data):
         # Append incoming data to buffer
@@ -77,17 +86,25 @@ class HubBuffer():
                 self.buf = self.buf[index+2:]
 
                 # Check line contents to see if state needs updating
+                self.logger.debug("New Data: {0}".format(line))
                 self.update_state(line)
 
                 # Print the line that has been received
                 print(line.decode())
-
+            # Exit the loop once no more line breaks are found
             except ValueError:
                 break
 
     def update_state(self, line):
+        """Update state if data contains state information."""
         if line in (self.IDLE, self.RUNNING, self.ERROR):
-            self.state = line
+            if line != self.state:
+                self.logger.debug("New State: {0}".format(line))
+                self.state = line
+
+    def update_state_disconnected(self, client, *args):
+        self.state = self.DISCONNECTED
+        self.logger.info("Disconnected!")
 
 
 # Main function, to be replaced with an argparser
@@ -100,10 +117,10 @@ async def main():
 
     # Connect to detected device and start listening for its output
     async with BleakClient(address) as client:
-        client.set_disconnected_callback(test_callback)
+        buffer = HubData(debug=True)
+        client.set_disconnected_callback(buffer.update_state_disconnected)
         # await client.is_connected()
         print("Connected!")
-        buffer = HubBuffer()
         await client.start_notify(bleNusCharTXUUID, buffer.update_data_buffer)
         # await asyncio.sleep(2.0)
         await client.write_gatt_char(bleNusCharRXUUID, b'    ')
