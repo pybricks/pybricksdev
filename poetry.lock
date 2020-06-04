@@ -137,7 +137,7 @@ description = "micropython mpy-cross distribution"
 name = "mpy-cross"
 optional = false
 python-versions = "*"
-version = "1.11"
+version = "1.12"
 
 [[package]]
 category = "dev"
@@ -2015,7 +2015,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "127b2210db924af8994540deb4f35e194324aad465b6a738382a16656bf4cb99"
+content-hash = "7c9b9acf80d687900f5f946622d194aa0842fa0360567110315c4981ca8e339f"
 python-versions = "^3.8.3"
 
 [metadata.files]
@@ -2068,11 +2068,11 @@ more-itertools = [
     {file = "more_itertools-8.3.0-py3-none-any.whl", hash = "sha256:7818f596b1e87be009031c7653d01acc46ed422e6656b394b0f765ce66ed4982"},
 ]
 mpy-cross = [
-    {file = "mpy_cross-1.11-py2.py3-none-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:d4a900b785b66fdeacbd79020dfe41a7cf8fd7e0ca039d912b3f6c04a7cb9042"},
-    {file = "mpy_cross-1.11-py2.py3-none-manylinux1_i686.whl", hash = "sha256:7a25a9905e8bec37dfb26c7307fb93aa247ffd4ba4ba1169d057d1e31cc48d5b"},
-    {file = "mpy_cross-1.11-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:a991edb4eec01aa83f65ee30c9eb8658d9edf571ce1f9c6a29479177b0bd41d8"},
-    {file = "mpy_cross-1.11-py2.py3-none-win32.whl", hash = "sha256:048a8e5fc2e7eba38afebcdcbcf8378774d01a9ad8dbc29237a89fe6e2e61647"},
-    {file = "mpy_cross-1.11-py2.py3-none-win_amd64.whl", hash = "sha256:c854684c9c3cd4d0667bccafb19321221b2e3784b90c5090bb158eb6c1aee010"},
+    {file = "mpy_cross-1.12-py2.py3-none-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:14be23507f39516b2ec869faae00726c92f5dc8df753390407653e37ba6b0783"},
+    {file = "mpy_cross-1.12-py2.py3-none-manylinux1_i686.whl", hash = "sha256:b870014c6ba8974aab880747ff762eb8bef3550f18f66f5cfdae4a6443332cd3"},
+    {file = "mpy_cross-1.12-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:14d14fdb1afbd700a91da50a6c35b43467d97c30ee8003c3212938a494968927"},
+    {file = "mpy_cross-1.12-py2.py3-none-win32.whl", hash = "sha256:2ff19640c1320ea2c387b02e790043bbcb1f4b07e489d08aa73736e7f553a0cd"},
+    {file = "mpy_cross-1.12-py2.py3-none-win_amd64.whl", hash = "sha256:2199dfc4858ef60860c2a7d538eb50ea21c161620b5309e80af6e536bf474086"},
 ]
 packaging = [
     {file = "packaging-20.4-py2.py3-none-any.whl", hash = "sha256:998416ba6962ae7fbd6596850b80e17859a5753ba17c32284f67bfff33784181"},
