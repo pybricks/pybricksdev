@@ -5,7 +5,7 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import logging
 
-from pybricks_tools.mpy import get_mpy_arg_parser, get_mpy_bytes
+from pybricks_tools.compile import get_mpy_arg_parser, get_mpy_bytes
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'

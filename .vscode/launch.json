@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/pybricks_tools/ble.py",
+            "program": "${workspaceFolder}/pybricks_tools/run.py",
             "console": "integratedTerminal",
             "args": [
                 "--file", "demo/hello.py"

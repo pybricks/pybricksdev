@@ -19,6 +19,10 @@ Running Pybricks MicroPython programs
 
     poetry shell
 
-    python -m pybricks_tools.ble --file demo/hello.py
+    python -m pybricks_tools.run --help
 
-    python -m pybricks_tools.ble --string 'print("Hello!"); wait(1000); print("world!");'
+    # Run hello.py on a Pybricks hub
+    python -m pybricks_tools.run --file demo/hello.py
+
+    # Run a oneliner on a Pybricks hub
+    python -m pybricks_tools.run --string 'print("Hello!"); print("world!");'
