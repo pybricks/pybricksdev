@@ -80,16 +80,6 @@ def get_compile_arg_parser(description):
     return parser
 
 
-def compile_args(args):
-
-    # Convert either the file or the string to mpy format
-    if args.file:
-        return compile_file(args.file, args.mpy_cross)
-
-    if args.string:
-        return compile_str(args.string, args.mpy_cross)
-
-
 if __name__ == "__main__":
 
     # Parse all arguments
@@ -97,6 +87,12 @@ if __name__ == "__main__":
         description="Convert MicroPython scripts or commands to .mpy bytes."
     )
     args = parser.parse_args()
+
+    # Convert either the file or the string to mpy format
+    if args.file is not None:
+        data = compile_file(args.file, args.mpy_cross)
+    else:
+        data = compile_str(args.string, args.mpy_cross)
 
     # Use arguments to produce mpy bytes
     data = compile_args(args)

@@ -5,7 +5,11 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import logging
 
-from pybricks_tools.compile import get_compile_arg_parser, compile_args
+from pybricks_tools.compile import (
+    get_compile_arg_parser,
+    compile_file,
+    compile_str
+)
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
@@ -269,8 +273,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Use arguments to produce mpy bytes
-    data = compile_args(args)
+    # Convert either the file or the string to mpy format
+    if args.file is not None:
+        data = compile_file(args.file, args.mpy_cross)
+    else:
+        data = compile_str(args.string, args.mpy_cross)
 
     async def main(mpy):
         async with PybricksHubConnection(debug=False) as hub:
