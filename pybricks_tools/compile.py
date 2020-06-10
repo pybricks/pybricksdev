@@ -23,20 +23,24 @@ def make_build_dir():
         raise OSError("A file named build already exists.")
 
 
-def compile_file(mpy_cross, path):
+def compile_file(py_path, mpy_cross_path=None):
     """Compile a Python file with mpy-cross and return as bytes."""
 
+    # If no path to mpy-cross is given, use packaged version
+    if mpy_cross_path is None:
+        mpy_cross_path = mpy_cross.mpy_cross
+
     # Show mpy_cross version
-    proc = subprocess.Popen([mpy_cross, "--version"])
+    proc = subprocess.Popen([mpy_cross_path, "--version"])
     proc.wait()
 
     # Make the build directory
     make_build_dir()
 
     # Cross-compile Python file to .mpy and raise errors if any
-    mpy_path = os.path.join(BUILD_DIR, Path(path).stem + ".mpy")
+    mpy_path = os.path.join(BUILD_DIR, Path(py_path).stem + ".mpy")
     proc = subprocess.run(
-        [mpy_cross, path, "-mno-unicode", "-o", mpy_path], check=True
+        [mpy_cross_path, py_path, "-mno-unicode", "-o", mpy_path], check=True
     )
 
     # Read the .mpy file and return as bytes
@@ -44,7 +48,7 @@ def compile_file(mpy_cross, path):
         return mpy.read()
 
 
-def compile_str(mpy_cross, string):
+def compile_str(py_string, mpy_cross_path=None):
     """Compile a Python command with mpy-cross and return as bytes."""
 
     # Make the build directory
@@ -55,10 +59,10 @@ def compile_str(mpy_cross, string):
 
     # Write Python command to a file and convert as if it is a regular script.
     with open(py_path, "w") as f:
-        f.write(string + "\n")
+        f.write(py_string + "\n")
 
     # Convert to mpy and get the bytes
-    return compile_file(mpy_cross, py_path)
+    return compile_file(py_path, mpy_cross_path)
 
 
 def get_compile_arg_parser(description):
@@ -78,18 +82,12 @@ def get_compile_arg_parser(description):
 
 def compile_args(args):
 
-    # Use given mpy cross if given or else default to version from PyPI
-    if args.mpy_cross:
-        mpy_cross_path = args.mpy_cross
-    else:
-        mpy_cross_path = mpy_cross.mpy_cross
-
     # Convert either the file or the string to mpy format
     if args.file:
-        return compile_file(mpy_cross_path, args.file)
+        return compile_file(args.file, args.mpy_cross)
 
     if args.string:
-        return compile_str(mpy_cross_path, args.string)
+        return compile_str(args.string, args.mpy_cross)
 
 
 if __name__ == "__main__":
