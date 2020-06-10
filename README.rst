@@ -8,8 +8,8 @@ Installation
 
 Requirements:
 
-- poetry
-- pyenv
+- pyenv: Used to locally install another version of Python without touching your system Python.
+- poetry: Used to download and install all Python dependencies with the right versions.
 
 Installation steps:
 
@@ -17,7 +17,7 @@ Installation steps:
 
     git clone https://github.com/pybricks/pybricks-tools.git
     cd pybricks-tools
-    pyenv install 3.8.3
+    pyenv install 3.8.2 # You can skip this if you already have Python >=3.8.2
     poetry install
 
 

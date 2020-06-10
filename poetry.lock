@@ -2061,8 +2061,8 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "9b9f4a99fec728050f36d13a705dc30b5f467f3002f644c65f0499679d9d6747"
-python-versions = "^3.8.3"
+content-hash = "4bb7da0e885a8b58cc89c1e3ba6f370dd0b270582a2616763c725595c596e9c9"
+python-versions = "^3.8.2"
 
 [metadata.files]
 atomicwrites = [
