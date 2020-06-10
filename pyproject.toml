@@ -11,15 +11,15 @@ repository = "https://github.com/pybricks/pybricks-tools"
 
 [tool.poetry.dependencies]
 python = "^3.8.2"
-
-[tool.poetry.dev-dependencies]
-flake8 = "*"
-pytest = "^5.2"
 bleak = "*"
 tqdm = "*"
 curio = "*"
 bricknil = { git = "https://github.com/pybricks/bricknil.git", branch = "firmware" }
 mpy-cross = "==1.12"
+
+[tool.poetry.dev-dependencies]
+flake8 = "*"
+pytest = "^5.2"
 pybricks = { git = "https://github.com/pybricks/pybricks-api.git", branch = "master" }
 
 [build-system]
