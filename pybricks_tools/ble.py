@@ -79,8 +79,35 @@ class HubDataReceiver():
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
+        # Data log state
+        self.log_file = None
+
     def process_line(self, line):
+        # Decode the output
         text = line.decode()
+
+        # Output tells us to open a log file
+        if 'PB_OF' in text:
+            if self.log_file is not None:
+                raise OSError("Log file is already open!")
+            name = text[6:]
+            self.logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, 'w')
+            return
+
+        # Enf of data log file, so close it
+        if 'PB_EOF' in text:
+            if self.log_file is None:
+                raise OSError("No log file is currently open!")
+            self.logger.info("Done saving log.")
+            self.log_file.close()
+            return
+
+        # We are processing datalog, so save this line
+        if self.log_file is not None:
+            print(text, file=self.log_file)
+            self.logger.debug(text)
+            return
 
         # If it is not special, just print it
         print(text)
