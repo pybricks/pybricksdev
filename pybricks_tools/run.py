@@ -6,7 +6,7 @@ from bleak import BleakClient, BleakScanner
 import logging
 
 from pybricks_tools.compile import (
-    get_compile_arg_parser,
+    compile_argparser,
     compile_file,
     compile_str
 )
@@ -267,9 +267,10 @@ class PybricksHubConnection(HubDataReceiver):
 
 
 if __name__ == "__main__":
-    # Parse all arguments
-    parser = get_compile_arg_parser(
-        description="Run Pybricks MicroPython scripts via BLE."
+    # Add arguments to the base parser, then parse
+    parser = compile_argparser
+    parser.description = (
+        "Run Pybricks MicroPython scripts via BLE."
     )
     args = parser.parse_args()
 

@@ -65,26 +65,23 @@ def compile_str(py_string, mpy_cross_path=None):
     return compile_file(py_path, mpy_cross_path)
 
 
-def get_compile_arg_parser(description):
-    parser = argparse.ArgumentParser(description)
-
-    # Arguments for the user script
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--file", dest="file", nargs="?", const=1, type=str)
-    group.add_argument("--string", dest="string", nargs="?", const=1, type=str)
-
-    # Optional mpy cross argument
-    parser.add_argument(
-        "--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=False
-    )
-    return parser
+# Base arg parser shared by all tools that have to compile Pybricks scripts
+# to bytes one way or another
+compile_argparser = argparse.ArgumentParser()
+group = compile_argparser.add_mutually_exclusive_group(required=True)
+group.add_argument("--file", dest="file", nargs="?", const=1, type=str)
+group.add_argument("--string", dest="string", nargs="?", const=1, type=str)
+compile_argparser.add_argument(
+    "--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=False
+)
 
 
 if __name__ == "__main__":
 
-    # Parse all arguments
-    parser = get_compile_arg_parser(
-        description="Convert MicroPython scripts or commands to .mpy bytes."
+    # Get base parser, then parse
+    parser = compile_argparser
+    parser.description = (
+        "Convert MicroPython scripts or commands to .mpy bytes."
     )
     args = parser.parse_args()
 
@@ -93,9 +90,6 @@ if __name__ == "__main__":
         data = compile_file(args.file, args.mpy_cross)
     else:
         data = compile_str(args.string, args.mpy_cross)
-
-    # Use arguments to produce mpy bytes
-    data = compile_args(args)
 
     # Print as string as a sanity check.
     print("\nBytes:")
