@@ -38,7 +38,7 @@ Running Pybricks MicroPython programs
 
 This compiles a MicroPython script and sends it to a hub with Pybricks firmware
 over Bluetooth Low Energy. It will attempt to send the program to the first
-device named `Pybricks Hub` that it finds.
+device named ``Pybricks Hub`` that it finds.
 
 ::
 
