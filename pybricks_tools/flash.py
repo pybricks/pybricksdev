@@ -23,8 +23,6 @@ from bricknil.message_dispatch import MessageDispatch
 from curio import UniversalQueue, sleep
 from tqdm import tqdm
 
-PROG = 'lpf2-flasher'
-
 ErrorReply = namedtuple('ErrorReply', ['msg_type', 'error'])
 EraseReply = namedtuple('EraseReply', ['result'])
 FlashReply = namedtuple('FlashReply', ['checksum', 'count'])
@@ -332,7 +330,7 @@ def compile(main_py, metadata):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog=PROG, description='Flashes firmware on LEGO Powered Up devices.')
+        description='Flashes firmware on LEGO Powered Up devices.')
     parser.add_argument('firmware',
                         metavar='<firmware-file>',
                         type=argparse.FileType('rb'),

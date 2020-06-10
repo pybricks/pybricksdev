@@ -32,6 +32,16 @@ Installation steps:
 Flashing Pybricks MicroPython firmware
 ---------------------------------------
 
+*TODO: Make file and mpy-cross arguments consistent with the other two tools*
+
+::
+
+    poetry shell
+
+    python -m pybricks_tools.flash --help
+
+    python -m pybricks_tools.flash -d 10 ../pybricks-micropython/bricks/movehub/build/firmware.zip
+
 
 Running Pybricks MicroPython programs
 ---------------------------------------
