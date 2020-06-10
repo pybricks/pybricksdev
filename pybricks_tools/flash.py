@@ -23,8 +23,6 @@ from bricknil.message_dispatch import MessageDispatch
 from curio import UniversalQueue, sleep
 from tqdm import tqdm
 
-from . import __version__
-
 PROG = 'lpf2-flasher'
 
 ErrorReply = namedtuple('ErrorReply', ['msg_type', 'error'])
@@ -351,10 +349,6 @@ def main():
         metavar='<main.py>',
         type=argparse.FileType(),
         help='main.py file to use instead of one from firmware file')
-    parser.add_argument('-v',
-                        '--version',
-                        action='version',
-                        version=__version__)
     args = parser.parse_args()
 
     firmware_zip = zipfile.ZipFile(args.firmware)

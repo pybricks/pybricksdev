@@ -16,6 +16,9 @@ python = "^3.8.3"
 flake8 = "*"
 pytest = "^5.2"
 bleak = "*"
+tqdm = "*"
+curio = "*"
+bricknil = { git = "https://github.com/pybricks/bricknil.git", branch = "firmware" }
 mpy-cross = "==1.12"
 pybricks = { git = "https://github.com/pybricks/pybricks-api.git", branch = "master" }
 
