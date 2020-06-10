@@ -79,6 +79,12 @@ class HubDataReceiver():
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
+    def process_line(self, line):
+        text = line.decode()
+
+        # If it is not special, just print it
+        print(text)
+
     def update_data_buffer(self, sender, data):
         # If we are transmitting, the replies are checksums
         if self.state == self.CHECKING:
@@ -104,8 +110,8 @@ class HubDataReceiver():
                 if self.map_state(line) is not None:
                     self.update_state(self.map_state(line))
 
-                # Print the line that has been received as human readable
-                print(line.decode())
+                # Process special lines else print as human readable
+                self.process_line(line)
             # Exit the loop once no more line breaks are found
             except ValueError:
                 break
