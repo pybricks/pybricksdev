@@ -6,8 +6,17 @@ Intro
 Installation
 -----------------
 
+Requirements:
+
+- poetry
+- pyenv
+
+Installation steps:
+
 ::
 
+    git clone https://github.com/pybricks/pybricks-tools.git
+    cd pybricks-tools
     pyenv install 3.8.3
     poetry install
 
@@ -38,10 +47,10 @@ This can be used to compile programs. Instead of also running them as above,
 it prints the output on the screen instead.
 
 This is mainly intended for developers who want to quickly inspect the
-contents of the `.mpy` file. To get the actual file, just use `mpy-cross`
+contents of the ``.mpy`` file. To get the actual file, just use ``mpy-cross``
 directly. We have used this tool in the past to test bare minimum MicroPython
 ports that have neither a builtin compiler or any form of I/O yet. You can
-paste the generated `const uint8_t script[]` directly ito your C code.
+paste the generated ``const uint8_t script[]`` directly ito your C code.
 
 ::
 
@@ -49,4 +58,5 @@ paste the generated `const uint8_t script[]` directly ito your C code.
 
     python -m pybricks_tools.compile --help
 
-You can use the same example arguments for `--file` and `--string` as above.
+You can use the same example arguments for ``--file`` and ``--string``
+as above.
