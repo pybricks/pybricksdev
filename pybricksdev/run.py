@@ -5,7 +5,7 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import logging
 
-from pybricks_tools.compile import (
+from pybricksdev.compile import (
     compile_argparser,
     compile_file,
     compile_str

@@ -23,8 +23,8 @@ Installation steps:
 
 ::
 
-    git clone https://github.com/pybricks/pybricks-tools.git
-    cd pybricks-tools
+    git clone https://github.com/pybricks/pybricksdev.git
+    cd pybricksdev
     pyenv install 3.8.2 # You can skip this if you already have Python >=3.8.2
     poetry install
 
@@ -38,9 +38,9 @@ Flashing Pybricks MicroPython firmware
 
     poetry shell
 
-    python -m pybricks_tools.flash --help
+    python -m pybricksdev.flash --help
 
-    python -m pybricks_tools.flash -d 10 ../pybricks-micropython/bricks/movehub/build/firmware.zip
+    python -m pybricksdev.flash -d 10 ../pybricks-micropython/bricks/movehub/build/firmware.zip
 
 
 Running Pybricks MicroPython programs
@@ -54,16 +54,16 @@ device named ``Pybricks Hub`` that it finds.
 
     poetry shell
 
-    python -m pybricks_tools.run --help
+    python -m pybricksdev.run --help
 
     # Run a oneliner on a Pybricks hub
-    python -m pybricks_tools.run --string 'print("Hello!"); print("world!");'
+    python -m pybricksdev.run --string 'print("Hello!"); print("world!");'
 
     # Run hello.py on a Pybricks hub
-    python -m pybricks_tools.run --file demo/hello.py
+    python -m pybricksdev.run --file demo/hello.py
 
     # Run hello.py on a Pybricks hub with a custom-built local mpy_cross binary
-    python -m pybricks_tools.run --file demo/hello.py --mpy_cross /path/to/mpy-cross
+    python -m pybricksdev.run --file demo/hello.py --mpy_cross /path/to/mpy-cross
 
 Compiling Pybricks MicroPython programs without running
 --------------------------------------------------------
@@ -81,7 +81,7 @@ paste the generated ``const uint8_t script[]`` directly ito your C code.
 
     poetry shell
 
-    python -m pybricks_tools.compile --help
+    python -m pybricksdev.compile --help
 
 You can use the same example arguments for ``--file``, ``--string``, and
 ``--mpy_cross`` as above.

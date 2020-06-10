@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pybricks-tools"
+name = "pybricksdev"
 version = "0.1.0"
 description = "Pybricks developer tools"
 authors = ["The Pybricks Authors <dev@pybricks.com>"]
@@ -7,7 +7,7 @@ maintainers = ["Laurens Valk <laurens@pybricks.com>", "David Lechner <david@pybr
 license = "MIT"
 readme = "README.rst"
 homepage = "https://pybricks.com"
-repository = "https://github.com/pybricks/pybricks-tools"
+repository = "https://github.com/pybricks/pybricksdev"
 
 [tool.poetry.dependencies]
 python = "^3.8.2"

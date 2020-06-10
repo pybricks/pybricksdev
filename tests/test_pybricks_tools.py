@@ -1,4 +1,4 @@
-from pybricks_tools import __version__
+from pybricksdev import __version__
 
 
 def test_version():
