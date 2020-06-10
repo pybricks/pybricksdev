@@ -29,6 +29,10 @@ Installation steps:
     poetry install
 
 
+Flashing Pybricks MicroPython firmware
+---------------------------------------
+
+
 Running Pybricks MicroPython programs
 ---------------------------------------
 
@@ -48,8 +52,8 @@ device named `Pybricks Hub` that it finds.
     # Run a oneliner on a Pybricks hub
     python -m pybricks_tools.run --string 'print("Hello!"); print("world!");'
 
-Compiling Pybricks MicroPython programs
----------------------------------------
+Compiling Pybricks MicroPython programs without running
+--------------------------------------------------------
 
 This can be used to compile programs. Instead of also running them as above,
 it prints the output on the screen instead.
