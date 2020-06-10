@@ -46,11 +46,14 @@ device named `Pybricks Hub` that it finds.
 
     python -m pybricks_tools.run --help
 
+    # Run a oneliner on a Pybricks hub
+    python -m pybricks_tools.run --string 'print("Hello!"); print("world!");'
+
     # Run hello.py on a Pybricks hub
     python -m pybricks_tools.run --file demo/hello.py
 
-    # Run a oneliner on a Pybricks hub
-    python -m pybricks_tools.run --string 'print("Hello!"); print("world!");'
+    # Run hello.py on a Pybricks hub with a custom-built local mpy_cross binary
+    python -m pybricks_tools.run --file demo/hello.py --mpy_cross /path/to/mpy-cross
 
 Compiling Pybricks MicroPython programs without running
 --------------------------------------------------------
@@ -70,7 +73,7 @@ paste the generated ``const uint8_t script[]`` directly ito your C code.
 
     python -m pybricks_tools.compile --help
 
-You can use the same example arguments for ``--file`` and ``--string``
-as above.
+You can use the same example arguments for ``--file``, ``--string``, and
+``--mpy_cross`` as above.
 
 .. _Pybricks Code: https://www.code.pybricks.com/
