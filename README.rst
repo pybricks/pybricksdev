@@ -1,15 +1,23 @@
 Pybricks tools
 -----------------
 
-Intro
+This is a package with tools for Pybricks developers. For regular users we
+recommend the `Pybricks Code`_ web IDE.
+
+These developer tools can be used to install Pybricks firmware on a hub,
+and run Pybricks MicroPython programs on them.
 
 Installation
 -----------------
 
 Requirements:
 
-- pyenv: Used to locally install another version of Python without touching your system Python.
-- poetry: Used to download and install all Python dependencies with the right versions.
+- pyenv: Used to locally install another version of Python without touching
+  your system Python.
+- poetry: Used to download and install all Python dependencies with the right
+  versions.
+- For now, this package has only been tested on Ubuntu 18.04 and Ubuntu 20.04.
+  However, we have mostly selected cross-platform dependencies.
 
 Installation steps:
 
@@ -60,3 +68,5 @@ paste the generated ``const uint8_t script[]`` directly ito your C code.
 
 You can use the same example arguments for ``--file`` and ``--string``
 as above.
+
+.. _Pybricks Code: https://www.code.pybricks.com/
