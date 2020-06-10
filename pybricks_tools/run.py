@@ -5,7 +5,7 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 import logging
 
-from pybricks_tools.compile import get_mpy_arg_parser, get_mpy_bytes
+from pybricks_tools.compile import get_compile_arg_parser, compile_args
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
@@ -264,13 +264,13 @@ class PybricksHubConnection(HubDataReceiver):
 
 if __name__ == "__main__":
     # Parse all arguments
-    parser = get_mpy_arg_parser(
+    parser = get_compile_arg_parser(
         description="Run Pybricks MicroPython scripts via BLE."
     )
     args = parser.parse_args()
 
     # Use arguments to produce mpy bytes
-    data = get_mpy_bytes(args)
+    data = compile_args(args)
 
     async def main(mpy):
         async with PybricksHubConnection(debug=False) as hub:

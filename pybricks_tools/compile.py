@@ -23,7 +23,7 @@ def make_build_dir():
         raise OSError("A file named build already exists.")
 
 
-def get_mpy_bytes_from_file(mpy_cross, path):
+def compile_file(mpy_cross, path):
     """Compile a Python file with mpy-cross and return as bytes."""
 
     # Show mpy_cross version
@@ -44,7 +44,7 @@ def get_mpy_bytes_from_file(mpy_cross, path):
         return mpy.read()
 
 
-def get_mpy_bytes_from_str(mpy_cross, string):
+def compile_str(mpy_cross, string):
     """Compile a Python command with mpy-cross and return as bytes."""
 
     # Make the build directory
@@ -58,10 +58,10 @@ def get_mpy_bytes_from_str(mpy_cross, string):
         f.write(string + "\n")
 
     # Convert to mpy and get the bytes
-    return get_mpy_bytes_from_file(mpy_cross, py_path)
+    return compile_file(mpy_cross, py_path)
 
 
-def get_mpy_arg_parser(description):
+def get_compile_arg_parser(description):
     parser = argparse.ArgumentParser(description)
 
     # Arguments for the user script
@@ -76,7 +76,7 @@ def get_mpy_arg_parser(description):
     return parser
 
 
-def get_mpy_bytes(args):
+def compile_args(args):
 
     # Use given mpy cross if given or else default to version from PyPI
     if args.mpy_cross:
@@ -86,22 +86,22 @@ def get_mpy_bytes(args):
 
     # Convert either the file or the string to mpy format
     if args.file:
-        return get_mpy_bytes_from_file(mpy_cross_path, args.file)
+        return compile_file(mpy_cross_path, args.file)
 
     if args.string:
-        return get_mpy_bytes_from_str(mpy_cross_path, args.string)
+        return compile_str(mpy_cross_path, args.string)
 
 
 if __name__ == "__main__":
 
     # Parse all arguments
-    parser = get_mpy_arg_parser(
+    parser = get_compile_arg_parser(
         description="Convert MicroPython scripts or commands to .mpy bytes."
     )
     args = parser.parse_args()
 
     # Use arguments to produce mpy bytes
-    data = get_mpy_bytes(args)
+    data = compile_args(args)
 
     # Print as string as a sanity check.
     print("\nBytes:")
