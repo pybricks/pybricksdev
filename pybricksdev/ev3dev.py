@@ -23,7 +23,7 @@ async def _get_connection(address):
         print("Connecting to", address, "...", end=" ")
         _connections.pop(address, None)
         client = await asyncssh.connect(
-            '192.168.133.101', username=_USER, password=_PASSWORD
+            address, username=_USER, password=_PASSWORD
         )
         print("Connected.", end=" ")
 
