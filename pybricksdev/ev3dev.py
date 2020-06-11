@@ -1,6 +1,6 @@
 import asyncio
 import asyncssh
-from os import path
+from os import path, sep
 
 _connections = {}
 
@@ -62,13 +62,23 @@ class EV3SSH():
         """Download and run a Pybricks MicroPython script."""
 
         # Compute paths
-        _, file_name = path.split(file_path)
-        remote_path = path.join(_HOME, file_name)
+        dirs, file_name = path.split(file_path)
+
+        # Make sure same directory structure exists on EV3
+        if not await self.client.sftp.exists(path.join(_HOME, dirs)):
+            # If not, make the folders one by one
+            total = ''
+            for name in dirs.split(sep):
+                total = path.join(total, name)
+                if not await self.client.sftp.exists(path.join(_HOME, total)):
+                    await self.client.sftp.mkdir(path.join(_HOME, total))
 
         # Send script to EV3
+        remote_path = path.join(_HOME, file_path)
         await self.client.sftp.put(file_path, remote_path)
 
         # Run it and return stderr to get Pybricks MicroPython output
+        print("Now starting:", remote_path)
         prog = 'brickrun -r -- pybricks-micropython {0}'.format(remote_path)
         result = await self.client.run(prog)
         return result.stderr
