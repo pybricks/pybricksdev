@@ -1,4 +1,5 @@
-from paramiko import SSHClient, AutoAddPolicy
+import asyncio
+import asyncssh
 from os import path
 
 _connections = {}
@@ -8,35 +9,30 @@ _USER = 'robot'
 _PASSWORD = 'maker'
 
 
-def _get_connection(address):
+async def _get_connection(address):
     """Get SSH connection. Creates it if not yet connected."""
 
     global _connections
 
     try:
         # Try if connection exists and works
-        cwd = _connections[address].exec_command('pwd')[1].read()
-        if cwd.decode().strip() != _HOME:
-            raise OSError
+        await _connections[address].run('pwd')
         print("Re-using existing connection to", address)
-    except (KeyError, AttributeError):
-        print("Connecting to", address, "...", end=" ")
-
+    except (KeyError, AttributeError, asyncssh.ChannelOpenError):
         # No working connection, so connect
+        print("Connecting to", address, "...", end=" ")
         _connections.pop(address, None)
-
-        client = SSHClient()
-        client.set_missing_host_key_policy(AutoAddPolicy())
-        client.connect(address, username=_USER, password=_PASSWORD)
+        client = await asyncssh.connect(
+            '192.168.133.101', username=_USER, password=_PASSWORD
+        )
         print("Connected.", end=" ")
 
         # Open sftp unless it is already open
         try:
-            if client.sftp.getcwd() != _HOME:
-                raise OSError
+            await client.sftp.getcwd()
         except AttributeError:
-            client.sftp = client.open_sftp()
-            client.sftp.chdir(_HOME)
+            client.sftp = await client.start_sftp_client()
+            await client.sftp.chdir(_HOME)
             print("Opened SFTP.")
 
         # All done, so save result for next time
@@ -47,25 +43,44 @@ def _get_connection(address):
 
 
 class EV3SSH():
-    """EV3 Pybricks MicroPython SSH wrapper around Paramiko SSH Client."""
+    """EV3 Pybricks MicroPython SSH wrapper around asyncssh client."""
 
-    def __init__(self, address):
-        """Initializes client using new or existing connection."""
-        self.client = _get_connection(address)
+    async def connect(self, address):
+        """Connect to EV3 or get existing connection."""
+        self.client = await _get_connection(address)
 
-    def command(self, command):
+    async def beep(self):
         """Runs a command on the shell and returns stdout and stderr."""
-        ssh_stdin, ssh_stdout, ssh_stderr = self.client.exec_command(command)
-        return ssh_stdout.read(), ssh_stderr.read()
+        await self.client.run('beep')
 
-    def close(self):
+    async def disconnect(self):
         """Close the connection."""
-        self.client.sftp.close()
+        self.client.sftp.exit()
         self.client.close()
 
-    def run(self, file_path):
+    async def pybricks(self, file_path):
         """Download and run a Pybricks MicroPython script."""
-        remote_path = path.join(_HOME, file_path)
-        self.client.sftp.put(file_path, remote_path)
-        return self.command(
-            'brickrun -r -- pybricks-micropython {0}'.format(remote_path))[1]
+
+        # Compute paths
+        _, file_name = path.split(file_path)
+        remote_path = path.join(_HOME, file_name)
+
+        # Send script to EV3
+        await self.client.sftp.put(file_path, remote_path)
+
+        # Run it and return stderr to get Pybricks MicroPython output
+        prog = 'brickrun -r -- pybricks-micropython {0}'.format(remote_path)
+        result = await self.client.run(prog)
+        return result.stderr
+
+
+if __name__ == "__main__":
+    async def _test():
+        ev3 = EV3SSH()
+
+        # Makes new connection and beeps
+        await ev3.connect('192.168.133.101')
+        await ev3.beep()
+        print(await ev3.pybricks('demo/hello.py'))
+
+    asyncio.run(_test())
