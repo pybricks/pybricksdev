@@ -80,8 +80,18 @@ class EV3SSH():
         # Run it and return stderr to get Pybricks MicroPython output
         print("Now starting:", remote_path)
         prog = 'brickrun -r -- pybricks-micropython {0}'.format(remote_path)
-        result = await self.client.run(prog)
-        return result.stderr
+
+        # Run process asynchronously and print output as it comes in
+        async with self.client.create_process(prog) as process:
+            # Keep going until the process is done
+            while process.exit_status is None:
+                try:
+                    line = await asyncio.wait_for(
+                        process.stderr.readline(), timeout=0.1
+                    )
+                    print(line.strip())
+                except asyncio.exceptions.TimeoutError:
+                    pass
 
 
 if __name__ == "__main__":
@@ -91,6 +101,6 @@ if __name__ == "__main__":
         # Makes new connection and beeps
         await ev3.connect('192.168.133.101')
         await ev3.beep()
-        print(await ev3.pybricks('demo/hello.py'))
+        await ev3.pybricks('demo/hello.py')
 
     asyncio.run(_test())
