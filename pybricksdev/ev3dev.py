@@ -93,6 +93,11 @@ class EV3SSH():
                 except asyncio.exceptions.TimeoutError:
                     pass
 
+    async def get(self, file_path, local_path=None):
+        if local_path is None:
+            local_path = file_path
+        await self.client.sftp.get(path.join(_HOME, file_path), localpath=local_path)
+
 
 if __name__ == "__main__":
     async def _test():
