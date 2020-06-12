@@ -105,6 +105,7 @@ class HubDataReceiver():
                 raise OSError("No log file is currently open!")
             self.logger.info("Done saving log.")
             self.log_file.close()
+            self.log_file = None
             return
 
         # We are processing datalog, so save this line
