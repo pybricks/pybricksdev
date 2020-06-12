@@ -10,13 +10,14 @@ homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
 
 [tool.poetry.dependencies]
-python = "^3.8.2"
-bleak = "*"
-tqdm = "*"
-curio = "*"
 asyncssh = "*"
+bleak = "*"
 bricknil = { git = "https://github.com/pybricks/bricknil.git", branch = "firmware" }
+curio = "*"
+jupyter = "*"
 mpy-cross = "==1.12"
+python = "^3.8.2"
+tqdm = "*"
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
