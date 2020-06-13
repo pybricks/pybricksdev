@@ -16,6 +16,7 @@ bricknil = { git = "https://github.com/pybricks/bricknil.git", branch = "firmwar
 curio = "*"
 jupyter = "*"
 mpy-cross = "==1.12"
+nbstripout = "*"
 python = "^3.8.2"
 tqdm = "*"
 
