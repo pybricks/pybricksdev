@@ -33,9 +33,7 @@ class EV3SSH():
         self.client.sftp.exit()
         self.client.close()
 
-    async def pybricks(self, file_path):
-        """Download and run a Pybricks MicroPython script."""
-
+    async def download(self, file_path):
         # Compute paths
         dirs, file_name = path.split(file_path)
 
@@ -51,6 +49,13 @@ class EV3SSH():
         # Send script to EV3
         remote_path = path.join(_HOME, file_path)
         await self.client.sftp.put(file_path, remote_path)
+        return remote_path
+
+    async def pybricks(self, file_path):
+        """Download and run a Pybricks MicroPython script."""
+
+        # Send script to the hub
+        remote_path = await self.download(file_path)
 
         # Run it and return stderr to get Pybricks MicroPython output
         print("Now starting:", remote_path)
