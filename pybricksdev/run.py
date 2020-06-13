@@ -2,7 +2,7 @@
 # Copyright (c) 2019-2020 The Pybricks Authors
 
 import asyncio
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 import logging
 
 from pybricksdev.compile import (
@@ -10,54 +10,10 @@ from pybricksdev.compile import (
     compile_file,
     compile_str
 )
+from pybricksdev.connections import find_ble_device
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
-
-
-async def scan_and_get_address(device_name, timeout=5):
-    """Scan for device by name and return address of first match."""
-    # To do: search by service instead."""
-
-    # Flag raised by detection of a device
-    device_discovered = False
-
-    def set_device_discovered(*args):
-        nonlocal device_discovered
-        device_discovered = True
-
-    # Create scanner object and register callback to raise discovery flag
-    scanner = BleakScanner()
-    scanner.register_detection_callback(set_device_discovered)
-
-    # Start the scanner
-    await scanner.start()
-
-    INTERVAL = 0.1
-
-    # Sleep until a device of interest is discovered
-    # It would be nice to use a filter, but this hack
-    # is a simple way to keep it cross platform.
-    for i in range(round(timeout/INTERVAL)):
-        # If device_discovered flag is raised, check if it's the right one.
-        if device_discovered:
-            # Unset the flag so we only check if raised again.
-            device_discovered = False
-            # Check if any of the devices found so far has the expected name.
-            devices = await scanner.get_discovered_devices()
-            for dev in devices:
-                # If the name matches, stop scanning and return address.
-                if device_name in dev.name:
-                    await scanner.stop()
-                    return dev.address
-        # Await until we check again.
-        await asyncio.sleep(INTERVAL)
-
-    # If we are here, scanning has timed out.
-    await scanner.stop()
-    raise TimeoutError(
-        "Could not find {0} in {1} seconds".format(device_name, timeout)
-    )
 
 
 class HubDataReceiver():
@@ -191,7 +147,7 @@ class PybricksHubConnection(HubDataReceiver):
 
     async def connect(self):
         self.logger.info("Scanning for Pybricks Hub")
-        address = await scan_and_get_address('Pybricks Hub', timeout=5)
+        address = await find_ble_device('Pybricks Hub', timeout=5)
 
         self.logger.info("Found {0}!".format(address))
         self.logger.info("Connecting...")
