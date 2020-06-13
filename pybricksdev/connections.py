@@ -77,6 +77,9 @@ class EV3Connection():
     _USER = 'robot'
     _PASSWORD = 'maker'
 
+    def abs_path(self, path):
+        return os.path.join(self._HOME, path)
+
     async def connect(self, address):
         """Connects to ev3dev using SSH with a known IP address.
 
@@ -120,16 +123,16 @@ class EV3Connection():
         dirs, file_name = os.path.split(local_path)
 
         # Make sure same directory structure exists on EV3
-        if not await self.client.sftp.exists(os.path.join(self._HOME, dirs)):
+        if not await self.client.sftp.exists(self.abs_path(dirs)):
             # If not, make the folders one by one
             total = ''
             for name in dirs.split(os.sep):
                 total = os.path.join(total, name)
-                if not await self.client.sftp.exists(os.path.join(self._HOME, total)):
-                    await self.client.sftp.mkdir(os.path.join(self._HOME, total))
+                if not await self.client.sftp.exists(self.abs_path(total)):
+                    await self.client.sftp.mkdir(self.abs_path(total))
 
         # Send script to EV3
-        remote_path = os.path.join(self._HOME, local_path)
+        remote_path = self.abs_path(local_path)
         await self.client.sftp.put(local_path, remote_path)
         return remote_path
 
@@ -173,4 +176,6 @@ class EV3Connection():
         """
         if local_path is None:
             local_path = remote_path
-        await self.client.sftp.get(os.path.join(self._HOME, remote_path), localpath=local_path)
+        await self.client.sftp.get(
+            self.abs_path(remote_path), localpath=local_path
+        )
