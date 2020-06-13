@@ -2,44 +2,10 @@ import asyncio
 import asyncssh
 from os import path, sep
 
-_connections = {}
 
 _HOME = '/home/robot'
 _USER = 'robot'
 _PASSWORD = 'maker'
-
-
-async def _get_connection(address):
-    """Get SSH connection. Creates it if not yet connected."""
-
-    global _connections
-
-    try:
-        # Try if connection exists and works
-        await _connections[address].run('pwd')
-        print("Re-using existing connection to", address)
-    except (KeyError, AttributeError, asyncssh.ChannelOpenError):
-        # No working connection, so connect
-        print("Connecting to", address, "...", end=" ")
-        _connections.pop(address, None)
-        client = await asyncssh.connect(
-            address, username=_USER, password=_PASSWORD
-        )
-        print("Connected.", end=" ")
-
-        # Open sftp unless it is already open
-        try:
-            await client.sftp.getcwd()
-        except AttributeError:
-            client.sftp = await client.start_sftp_client()
-            await client.sftp.chdir(_HOME)
-            print("Opened SFTP.")
-
-        # All done, so save result for next time
-        _connections[address] = client
-
-    # Return existing or new client
-    return _connections[address]
 
 
 class EV3SSH():
@@ -47,7 +13,16 @@ class EV3SSH():
 
     async def connect(self, address):
         """Connect to EV3 or get existing connection."""
-        self.client = await _get_connection(address)
+
+        print("Connecting to", address, "...", end=" ")
+        self.client = await asyncssh.connect(
+            address, username=_USER, password=_PASSWORD
+        )
+        print("Connected.", end=" ")
+
+        self.client.sftp = await self.client.start_sftp_client()
+        await self.client.sftp.chdir(_HOME)
+        print("Opened SFTP.")
 
     async def beep(self):
         """Runs a command on the shell and returns stdout and stderr."""
