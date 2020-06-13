@@ -145,12 +145,8 @@ class HubDataReceiver():
 
 class PybricksHubConnection(HubDataReceiver):
 
-    async def connect(self):
-        self.logger.info("Scanning for Pybricks Hub")
-        address = await find_ble_device('Pybricks Hub', timeout=5)
-
-        self.logger.info("Found {0}!".format(address))
-        self.logger.info("Connecting...")
+    async def connect(self, address):
+        self.logger.info("Connecting to {0}".format(address))
         self.client = BleakClient(address)
         await self.client.connect()
         self.client.set_disconnected_callback(self.update_state_disconnected)
@@ -162,13 +158,6 @@ class PybricksHubConnection(HubDataReceiver):
     async def disconnect(self):
         await self.client.stop_notify(bleNusCharTXUUID)
         await self.client.disconnect()
-
-    async def __aenter__(self):
-        await self.connect()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.disconnect()
 
     async def write(self, data):
         n = 20
@@ -238,8 +227,14 @@ if __name__ == "__main__":
         data = compile_str(args.string, args.mpy_cross)
 
     async def main(mpy):
-        async with PybricksHubConnection(debug=False) as hub:
-            await hub.download_and_run(mpy)
+
+        print("Scanning for Pybricks Hub")
+        address = await find_ble_device('Pybricks Hub', timeout=5)
+        print("Found {0}!".format(address))
+
+        hub = PybricksHubConnection(debug=False)
+        await hub.connect(address)
+        await hub.download_and_run(mpy)
 
     # Asynchronously send and run the script
     asyncio.run(main(data))
