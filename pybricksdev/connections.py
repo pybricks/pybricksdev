@@ -3,13 +3,14 @@ import asyncio
 import asyncssh
 import os
 import logging
+from pybricksdev.ble import BLEStreamConnection
 
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
 
-class HubDataReceiver():
+class PUPConnection(BLEStreamConnection):
 
     UNKNOWN = 0
     IDLE = 1
@@ -18,7 +19,6 @@ class HubDataReceiver():
     CHECKING = 4
 
     def __init__(self, debug=False):
-        self.buf = b''
         self.state = self.UNKNOWN
         self.reply = None
 
@@ -35,7 +35,14 @@ class HubDataReceiver():
         # Data log state
         self.log_file = None
 
-    def process_line(self, line):
+        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20)
+
+    def line_handler(self, line):
+
+        # If the retrieved line is a state, update it
+        if self.map_state(line) is not None:
+            self.update_state(self.map_state(line))
+
         # Decode the output
         text = line.decode()
 
@@ -66,36 +73,10 @@ class HubDataReceiver():
         # If it is not special, just print it
         print(text)
 
-    def update_data_buffer(self, sender, data):
-        # If we are transmitting, the replies are checksums
+    def char_handler(self, char):
         if self.state == self.CHECKING:
-            self.reply = data[-1]
+            self.reply = char
             self.logger.debug("\t\t\t\tCS: {0}".format(self.reply))
-            return
-
-        # Otherwise, append incoming data to buffer
-        self.buf += data
-
-        # Break up data into lines as soon as a line is complete
-        while True:
-            try:
-                # Try to find line break and split there
-                index = self.buf.index(b'\r\n')
-                line = self.buf[0:index]
-                self.buf = self.buf[index+2:]
-
-                # Check line contents to see if state needs updating
-                self.logger.debug("\t\t\t\tRX: {0}".format(line))
-
-                # If the retrieved line is a state, update it
-                if self.map_state(line) is not None:
-                    self.update_state(self.map_state(line))
-
-                # Process special lines else print as human readable
-                self.process_line(line)
-            # Exit the loop once no more line breaks are found
-            except ValueError:
-                break
 
     def map_state(self, line):
         """"Maps state strings to states."""
@@ -113,7 +94,7 @@ class HubDataReceiver():
             self.logger.debug("New State: {0}".format(new_state))
             self.state = new_state
 
-    def update_state_disconnected(self, client, *args):
+    def disconnected_handler(self, client, *args):
         self.update_state(self.UNKNOWN)
         self.logger.info("Disconnected!")
 
@@ -134,31 +115,6 @@ class HubDataReceiver():
             await asyncio.sleep(0.1)
             if self.state != self.RUNNING:
                 break
-
-
-class PUPConnection(HubDataReceiver):
-
-    async def connect(self, address):
-        self.logger.info("Connecting to {0}".format(address))
-        self.client = BleakClient(address)
-        await self.client.connect()
-        self.client.set_disconnected_callback(self.update_state_disconnected)
-        self.logger.info("Connected successfully!")
-        await self.client.start_notify(
-            bleNusCharTXUUID, self.update_data_buffer
-        )
-
-    async def disconnect(self):
-        await self.client.stop_notify(bleNusCharTXUUID)
-        await self.client.disconnect()
-
-    async def write(self, data):
-        n = 20
-        chunks = [data[i: i + n] for i in range(0, len(data), n)]
-        for i, chunk in enumerate(chunks):
-            self.logger.debug("\t\t\t\tTX: {0}".format(chunk))
-            await asyncio.sleep(0.05)
-            await self.client.write_gatt_char(bleNusCharRXUUID, bytearray(chunk))
 
     async def send_message(self, data):
         """Send bytes to the hub, and check if reply matches checksum."""
