@@ -1,5 +1,6 @@
 from bleak import BleakScanner, BleakClient
 from asyncio import sleep
+import logging
 
 
 async def find_device(name, timeout=5):
@@ -67,7 +68,7 @@ async def find_device(name, timeout=5):
 
 class BLEStreamConnection():
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL=b'\r\n'):
+    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL, loglevel):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -81,11 +82,24 @@ class BLEStreamConnection():
                 Character sequence that signifies end of line.
 
         """
+        # Save given settings
         self.char_rx_UUID = char_rx_UUID
         self.char_tx_UUID = char_tx_UUID
         self.EOL = EOL
         self.mtu = mtu
+
+        # Create empty rx buffer
         self.char_buf = bytearray(b'')
+
+        # Get a logger and set at given level
+        self.logger = logging.getLogger('BLEStreamConnection')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s: %(levelname)7s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(loglevel)
 
     def char_handler(self, char):
         """Handles new incoming characters. Intended to be overridden.
@@ -94,7 +108,7 @@ class BLEStreamConnection():
             char (int):
                 Character/byte to process
         """
-        pass
+        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
 
     def line_handler(self, line):
         """Handles new incoming lines. Intended to be overridden.
@@ -108,11 +122,11 @@ class BLEStreamConnection():
         print(line)
 
     def disconnected_handler(self, client, *args):
-        """Handles disconnected event.  Intended to be overridden."""
-        print("Disconnected")
+        """Handles disconnected event. Intended to be overridden."""
+        self.logger.info("Disconnected by server.")
 
     def _data_handler(self, sender, data):
-        """Handles new incoming data. Calls char and line parsers when needed.
+        """Handles new incoming data. Calls char and line parsers when ready.
 
         Arguments:
             sender (str):
@@ -162,17 +176,26 @@ class BLEStreamConnection():
     async def disconnect(self):
         """Disconnects the client from the server."""
         await self.client.stop_notify(self.char_tx_UUID)
-        await self.client.disconnect()
+        self.logger.debug("Disconnecting...")
+        await self.client.disconnect()  # FIXME: handle already disconnected
+        self.logger.info("Disconnected by client.")
 
-    async def write(self, data):
+    async def write(self, data, pause=0.05):
         """Write bytes to the server, split to chunks of maximum mtu size.
 
         Arguments:
             data (bytearray):
                 Data to be sent to the server.
+            pause (float):
+                Time between chunks of data.
         """
+        # Chop data into chunks of maximum tranmission size
         chunks = [data[i: i + self.mtu] for i in range(0, len(data), self.mtu)]
-        for i, chunk in enumerate(chunks):
-            print("TX: {0}".format(chunk))
-            await sleep(0.05)
+
+        # Send the chunks one by one
+        for chunk in chunks:
+            self.logger.debug("TX CHUNK: {0}".format(chunk))
+            # Send one chunk
             await self.client.write_gatt_char(self.char_rx_UUID, chunk)
+            # Give server some time to process chunk
+            await sleep(pause)

@@ -10,6 +10,7 @@ from pybricksdev.compile import (
 )
 from pybricksdev.connections import PUPConnection
 from pybricksdev.ble import find_device
+import logging
 
 if __name__ == "__main__":
     # Add arguments to the base parser, then parse
@@ -31,7 +32,7 @@ if __name__ == "__main__":
         address = await find_device('Pybricks Hub', timeout=5)
         print("Found {0}!".format(address))
 
-        hub = PUPConnection(debug=False)
+        hub = PUPConnection(loglevel=logging.DEBUG)
         await hub.connect(address)
         await hub.download_and_run(mpy)
         await hub.disconnect()

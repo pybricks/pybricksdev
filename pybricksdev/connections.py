@@ -18,24 +18,14 @@ class PUPConnection(BLEStreamConnection):
     ERROR = 3
     CHECKING = 4
 
-    def __init__(self, debug=False):
+    def __init__(self, loglevel=logging.WARN):
         self.state = self.UNKNOWN
         self.reply = None
-
-        # Get a logger
-        self.logger = logging.getLogger('Hub Data')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '\t\t\t\t %(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.DEBUG if debug else logging.INFO)
 
         # Data log state
         self.log_file = None
 
-        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20)
+        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n', loglevel)
 
     def line_handler(self, line):
 
@@ -75,6 +65,7 @@ class PUPConnection(BLEStreamConnection):
 
     def char_handler(self, char):
         if self.state == self.CHECKING:
+            del self.char_buf[0] #FIXME
             self.reply = char
             self.logger.debug("\t\t\t\tCS: {0}".format(self.reply))
 
@@ -96,7 +87,7 @@ class PUPConnection(BLEStreamConnection):
 
     def disconnected_handler(self, client, *args):
         self.update_state(self.UNKNOWN)
-        self.logger.info("Disconnected!")
+        self.logger.info("Disconnected by server.")
 
     async def wait_for_checksum(self):
         self.update_state(self.CHECKING)
