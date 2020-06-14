@@ -8,10 +8,8 @@ from pybricksdev.compile import (
     compile_file,
     compile_str
 )
-from pybricksdev.connections import find_ble_device, PUPConnection
-
-
-
+from pybricksdev.connections import PUPConnection
+from pybricksdev.ble import find_device
 
 if __name__ == "__main__":
     # Add arguments to the base parser, then parse
@@ -30,7 +28,7 @@ if __name__ == "__main__":
     async def main(mpy):
 
         print("Scanning for Pybricks Hub")
-        address = await find_ble_device('Pybricks Hub', timeout=5)
+        address = await find_device('Pybricks Hub', timeout=5)
         print("Found {0}!".format(address))
 
         hub = PUPConnection(debug=False)
