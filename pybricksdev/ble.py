@@ -109,6 +109,7 @@ class BLEStreamConnection():
                 Character/byte to process
         """
         self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
+        return char
 
     def line_handler(self, line):
         """Handles new incoming lines. Intended to be overridden.
@@ -134,13 +135,13 @@ class BLEStreamConnection():
             data (bytearray):
                 Incoming data.
         """
+        self.logger.debug("RX DATA: {0}".format(data))
 
-        # Append all new characters to buffer
-        self.char_buf += data
-
-        # For each new character, call its handler
-        for b in data:
-            self.char_handler(b)
+        # For each new character, call its handler and add to buffer if any
+        for byte in data:
+            append = self.char_handler(byte)
+            if append is not None:
+                self.char_buf.append(append)
 
         # Break up data into lines and take those out of the buffer
         lines = []

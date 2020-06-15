@@ -65,9 +65,13 @@ class PUPConnection(BLEStreamConnection):
 
     def char_handler(self, char):
         if self.state == self.CHECKING:
-            del self.char_buf[0] #FIXME
+            # If we are checking the checksum, steal this byte
             self.reply = char
             self.logger.debug("\t\t\t\tCS: {0}".format(self.reply))
+            return None
+        else:
+            # Otherwise, return it so it gets added to standard output buffer
+            return char
 
     def map_state(self, line):
         """"Maps state strings to states."""
