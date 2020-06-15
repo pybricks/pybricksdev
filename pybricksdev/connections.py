@@ -20,7 +20,8 @@ class BasicPUPConnection(BLEStreamConnection):
 
     def __init__(self):
         self.state = self.UNKNOWN
-        self.reply = None
+        self.checksum = None
+        self.checksum_ready = asyncio.Event()
         super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
 
     def update_state(self, new_state):
@@ -50,8 +51,10 @@ class BasicPUPConnection(BLEStreamConnection):
             # If we are awaiting on a checksum, this is that byte. So,
             # don't add it to the buffer but tell checksum awaiter that we
             # are ready to process it.
-            self.reply = char
-            self.logger.debug("RX CHECKSUM: {0}".format(self.reply))
+            self.checksum = char
+            self.checksum_ready.set()
+            self.checksum_ready.clear()
+            self.logger.debug("RX CHECKSUM: {0}".format(char))
             return None
         else:
             # Otherwise, return it so it gets added to standard output buffer
@@ -63,14 +66,11 @@ class BasicPUPConnection(BLEStreamConnection):
 
     async def wait_for_checksum(self):
         self.update_state(self.AWAITING_CHECKSUM)
-        for i in range(50):
-            await asyncio.sleep(0.01)
-            if self.reply is not None:
-                reply = self.reply
-                self.reply = None
-                self.update_state(self.IDLE)
-                return reply
-        raise TimeoutError("Hub did not return checksum")
+        await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
+        result = self.checksum
+        self.checksum = None
+        self.update_state(self.IDLE)
+        return result
 
     async def wait_until_not_running(self):
         await asyncio.sleep(0.5)
@@ -96,10 +96,6 @@ class BasicPUPConnection(BLEStreamConnection):
         # Await the reply
         reply = await self.wait_for_checksum()
         self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
-
-        # Raise errors if we did not get the checksum we wanted
-        if reply is None:
-            raise OSError("Did not receive reply.")
 
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
