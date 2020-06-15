@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/pybricksdev/run.py",
             "console": "integratedTerminal",
             "args": [
-                "--file", "demo/hello.py"
+                "--file", "demo/shortdemo.py"
             ]
         }
     ]
