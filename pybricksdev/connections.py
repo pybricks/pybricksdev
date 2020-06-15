@@ -1,16 +1,12 @@
-from bleak import BleakClient
 import asyncio
 import asyncssh
 import os
-import logging
 from pybricksdev.ble import BLEStreamConnection
 from pybricksdev.compile import compile_file
 
-bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
-bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
-
-class BasicPUPConnection(BLEStreamConnection):
+class PUPConnection(BLEStreamConnection):
+    """Connect to Pybricks Hubs and run MicroPython scripts."""
 
     UNKNOWN = 0
     IDLE = 1
@@ -18,12 +14,15 @@ class BasicPUPConnection(BLEStreamConnection):
     ERROR = 3
     AWAITING_CHECKSUM = 4
 
+    CharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+    CharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+
     def __init__(self):
         """Initialize the BLE Connection with settings for Pybricks service."""
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
-        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
+        super().__init__(self.CharRXUUID, self.CharTXUUID, 20, b'\r\n')
 
     def char_handler(self, char):
         """Handles new incoming characters.
@@ -154,7 +153,14 @@ class BasicPUPConnection(BLEStreamConnection):
             raise ValueError("Did not receive expected checksum.")
 
     async def run(self, py_path, mpy_cross_path=None):
+        """Run a Pybricks MicroPython script on the hub and print output.
 
+        Arguments:
+            py_path (str):
+                Path to MicroPython script.
+            mpy_cross_path (str):
+                Path to mpy-cross. Choose None to use default from package.
+        """
         # Compile the script to mpy format
         mpy = await compile_file(py_path, mpy_cross_path)
 
@@ -177,14 +183,28 @@ class BasicPUPConnection(BLEStreamConnection):
         await self.wait_until_not_running()
 
 
-class PUPConnection(BasicPUPConnection):
+class ExtendedPUPConnection(PUPConnection):
+    """Connect to Pybricks Hubs and run MicroPython scripts.
+
+    This extends the BasePUPConnection with experimental line parses that
+    allow users to let the hub interact with the PC.
+    """
 
     def __init__(self):
         self.log_file = None
         super().__init__()
 
     def line_handler(self, line):
+        """Handles new incoming lines.
 
+        This overrides the same method from BasicPUPConnection to add
+        file saving functionality. If no special datalog line is detected,
+        it calls the default line handler.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
         # The line tells us to open a log file, so do it.
         if b'PB_OF' in line:
             if self.log_file is not None:
