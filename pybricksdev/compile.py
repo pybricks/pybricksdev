@@ -6,7 +6,7 @@ import argparse
 import subprocess
 from pathlib import Path
 import mpy_cross
-
+import asyncio
 
 BUILD_DIR = "build"
 TMP_PY_SCRIPT = "_tmp.py"
@@ -23,24 +23,68 @@ def make_build_dir():
         raise OSError("A file named build already exists.")
 
 
-def compile_file(py_path, mpy_cross_path=None):
-    """Compile a Python file with mpy-cross and return as bytes."""
+async def run_mpy_cross(args, mpy_cross_path=None):
+    """Runs mpy-cross asynchronously with given arguments.
+
+    Arguments:
+        args:
+            Arguments to pass to mpy-cross.
+        mpy_cross_path (str or None):
+            Path to mpy-cross. Choose None to use default from package.
+
+    Returns:
+        str: stdout.
+
+    Raises:
+        OSError with stderr if mpy-cross fails.
+
+    """
 
     # If no path to mpy-cross is given, use packaged version
     if mpy_cross_path is None:
         mpy_cross_path = mpy_cross.mpy_cross
 
-    # Show mpy_cross version
-    proc = subprocess.Popen([mpy_cross_path, "--version"])
-    proc.wait()
+    # Run the process asynchronously
+    proc = await asyncio.create_subprocess_exec(
+        mpy_cross_path, *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE)
+
+    # Check the output for compile errors such as syntax errors
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        raise ValueError(stderr.decode())
+
+    # On success, return stdout
+    return stdout.decode()
+
+
+async def compile_file(py_path, mpy_cross_path=None):
+    """Compiles a Python file with mpy-cross and return as bytes.
+
+    Arguments:
+        py_path (str):
+            Path to script that is to be compiled.
+        mpy_cross_path (str):
+            Path to mpy-cross. Choose None to use default from package.
+
+    Returns:
+        str: stdout.
+
+    Raises:
+        OSError with stderr if mpy-cross fails.
+    """
+
+    # Get version info
+    print(await run_mpy_cross(["--version"], mpy_cross_path))
 
     # Make the build directory
     make_build_dir()
 
     # Cross-compile Python file to .mpy and raise errors if any
     mpy_path = os.path.join(BUILD_DIR, Path(py_path).stem + ".mpy")
-    proc = subprocess.run(
-        [mpy_cross_path, py_path, "-mno-unicode", "-o", mpy_path], check=True
+    await run_mpy_cross(
+        [py_path, "-mno-unicode", "-o", mpy_path], mpy_cross_path
     )
 
     # Read the .mpy file and return as bytes

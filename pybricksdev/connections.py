@@ -155,8 +155,8 @@ class BasicPUPConnection(BLEStreamConnection):
 
     async def run(self, py_path, mpy_cross_path=None):
 
-        # FIXME: make async
-        mpy = compile_file(py_path, mpy_cross_path)
+        # Compile the script to mpy format
+        mpy = await compile_file(py_path, mpy_cross_path)
 
         # Get length of file and send it as bytes to hub
         length = len(mpy).to_bytes(4, byteorder='little')
