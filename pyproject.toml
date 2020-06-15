@@ -9,6 +9,9 @@ readme = "README.rst"
 homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
 
+[tool.poetry.scripts]
+pybricksdev = 'pybricksdev.scripts:entry'
+
 [tool.poetry.dependencies]
 asyncssh = "*"
 bleak = "*"
