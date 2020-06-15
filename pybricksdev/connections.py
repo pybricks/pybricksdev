@@ -19,34 +19,29 @@ class BasicPUPConnection(BLEStreamConnection):
     AWAITING_CHECKSUM = 4
 
     def __init__(self):
+        """Initialize the BLE Connection with settings for Pybricks service."""
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
         super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
 
-    def update_state(self, new_state):
-        """Updates state if data contains state information."""
-        if new_state != self.state:
-            self.logger.debug("New State: {0}".format(new_state))
-            self.state = new_state
-
-    def line_handler(self, line):
-
-        # If the line tells us about the state, set the state and be done.
-        if line == b'>>>> IDLE':
-            self.update_state(self.IDLE)
-            return
-        if line == b'>>>> RUNNING':
-            self.update_state(self.RUNNING)
-            return
-        if line == b'>>>> ERROR':
-            self.update_state(self.ERROR)
-            return
-
-        # If there is nothing special about this line, print it.
-        print(line.decode())
-
     def char_handler(self, char):
+        """Handles new incoming characters.
+
+        This overrides the same method from BLEStreamConnection to change what
+        we do with individual incoming characters/bytes.
+
+        If we are awaiting the checksum, it raises the event to say the
+        checksum has arrived. Otherwise, it just returns the character as-is
+        so it can be added to standard output.
+
+        Arguments:
+            char (int):
+                Character/byte to process
+
+        Returns:
+            int or None: The same character or None if the checksum stole it.
+        """
         if self.state == self.AWAITING_CHECKSUM:
             # If we are awaiting on a checksum, this is that byte. So,
             # don't add it to the buffer but tell checksum awaiter that we
@@ -57,22 +52,70 @@ class BasicPUPConnection(BLEStreamConnection):
             self.logger.debug("RX CHECKSUM: {0}".format(char))
             return None
         else:
-            # Otherwise, return it so it gets added to standard output buffer
+            # Otherwise, return it so it gets added to standard output buffer.
             return char
 
+    def line_handler(self, line):
+        """Handles new incoming lines.
+
+        This overrides the same method from BLEStreamConnection to change what
+        we do with lines. In this application, we check if the line equals a
+        state change message. Otherwise, we just print it.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
+
+        # If the line tells us about the state, set the state and be done.
+        if line == b'>>>> IDLE':
+            self.set_state(self.IDLE)
+            return
+        if line == b'>>>> RUNNING':
+            self.set_state(self.RUNNING)
+            return
+        if line == b'>>>> ERROR':
+            self.set_state(self.ERROR)
+            return
+
+        # If there is nothing special about this line, print it.
+        print(line.decode())
+
     def disconnected_handler(self, client, *args):
-        self.update_state(self.UNKNOWN)
+        """Processes external disconnection event.
+
+        This overrides the same method from BLEStreamConnection to change what
+        we do when the connection is broken. Here, we just set the state.
+        """
+        self.set_state(self.UNKNOWN)
         self.logger.info("Disconnected by server.")
 
+    def set_state(self, new_state):
+        """Updates state if it is new.
+
+        Arguments:
+            new_state (int):
+                New state
+        """
+        if new_state != self.state:
+            self.logger.debug("New State: {0}".format(new_state))
+            self.state = new_state
+
     async def wait_for_checksum(self):
-        self.update_state(self.AWAITING_CHECKSUM)
+        """Awaits and returns a checksum character.
+
+        Returns:
+            int: checksum character
+        """
+        self.set_state(self.AWAITING_CHECKSUM)
         await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
         result = self.checksum
         self.checksum = None
-        self.update_state(self.IDLE)
+        self.set_state(self.IDLE)
         return result
 
     async def wait_until_not_running(self):
+        """Awaits until the script is no longer running."""
         await asyncio.sleep(0.5)
         while True:
             await asyncio.sleep(0.1)
@@ -80,7 +123,16 @@ class BasicPUPConnection(BLEStreamConnection):
                 break
 
     async def send_message(self, data):
-        """Send bytes to the hub, and check if reply matches checksum."""
+        """Send bytes to the hub, and check if reply matches checksum.
+
+        Arguments:
+            data (bytearray):
+                Data to write. At most 100 bytes.
+
+        Raises:
+            ValueError:
+                Did not receive expected checksum for this message.
+        """
 
         if len(data) > 100:
             raise ValueError("Cannot send this much data at once")
@@ -97,6 +149,7 @@ class BasicPUPConnection(BLEStreamConnection):
         reply = await self.wait_for_checksum()
         self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
+        # Check the response
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 

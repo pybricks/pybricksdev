@@ -106,7 +106,11 @@ class BLEStreamConnection():
 
         Arguments:
             char (int):
-                Character/byte to process
+                Character/byte to process.
+
+        Returns:
+            int or None: Processed character.
+
         """
         self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
         return char
