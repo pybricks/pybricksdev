@@ -6,7 +6,7 @@ import asyncio
 from pybricksdev.compile import (
     compile_argparser,
     compile_file,
-    compile_str
+    save_script
 )
 from pybricksdev.connections import PUPConnection
 from pybricksdev.ble import find_device
@@ -20,11 +20,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Convert either the file or the string to mpy format
-    if args.file is not None:
-        data = compile_file(args.file, args.mpy_cross)
-    else:
-        data = compile_str(args.string, args.mpy_cross)
+    # Get file path
+    path = save_script(args.string) if args.file is None else args.file
+
+    # Convert to bytes
+    data = compile_file(path, args.mpy_cross)
 
     async def main(mpy):
 

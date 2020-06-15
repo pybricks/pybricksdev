@@ -291,7 +291,7 @@ def create_firmware(base, mpy, metadata):
     return firmware
 
 
-def compile(main_py, metadata):
+def compile_file(main_py, metadata):
     """Compiles a main.py file into a main.mpy file.
 
     Parameters
@@ -355,7 +355,7 @@ def main():
     metadata = json.load(firmware_zip.open('firmware.metadata.json'))
 
     print('compiling main.py...')
-    mpy = compile(main_py.read(), metadata)
+    mpy = compile_file(main_py.read(), metadata)
     firmware = create_firmware(firmware_base.read(), mpy, metadata)
 
     start(lambda: setup(io.BytesIO(firmware), len(firmware), metadata, args.

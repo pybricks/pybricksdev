@@ -48,21 +48,20 @@ def compile_file(py_path, mpy_cross_path=None):
         return mpy.read()
 
 
-def compile_str(py_string, mpy_cross_path=None):
-    """Compile a Python command with mpy-cross and return as bytes."""
-
-    # Make the build directory
+def save_script(py_string):
+    """Save a MicroPython one-liner to a file."""
+    # Make the build directory.
     make_build_dir()
 
-    # Path to temporary file
+    # Path to temporary file.
     py_path = os.path.join(BUILD_DIR, TMP_PY_SCRIPT)
 
-    # Write Python command to a file and convert as if it is a regular script.
+    # Write Python command to a file.
     with open(py_path, "w") as f:
         f.write(py_string + "\n")
 
-    # Convert to mpy and get the bytes
-    return compile_file(py_path, mpy_cross_path)
+    # Return path to file
+    return py_path
 
 
 # Base arg parser shared by all tools that have to compile Pybricks scripts
@@ -85,11 +84,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Convert either the file or the string to mpy format
-    if args.file is not None:
-        data = compile_file(args.file, args.mpy_cross)
-    else:
-        data = compile_str(args.string, args.mpy_cross)
+    # Get file path
+    path = save_script(args.string) if args.file is None else args.file
+
+    # Convert to bytes
+    data = compile_file(path, args.mpy_cross)
 
     # Print as string as a sanity check.
     print("\nBytes:")
