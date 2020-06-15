@@ -5,12 +5,12 @@ import asyncio
 
 from pybricksdev.compile import (
     compile_argparser,
-    compile_file,
     save_script
 )
 from pybricksdev.connections import PUPConnection
 from pybricksdev.ble import find_device
 import logging
+
 
 if __name__ == "__main__":
     # Add arguments to the base parser, then parse
@@ -23,10 +23,7 @@ if __name__ == "__main__":
     # Get file path
     path = save_script(args.string) if args.file is None else args.file
 
-    # Convert to bytes
-    data = compile_file(path, args.mpy_cross)
-
-    async def main(mpy):
+    async def main():
 
         print("Scanning for Pybricks Hub")
         address = await find_device('Pybricks Hub', timeout=5)
@@ -35,8 +32,8 @@ if __name__ == "__main__":
         hub = PUPConnection()
         hub.logger.setLevel(logging.DEBUG)
         await hub.connect(address)
-        await hub.download_and_run(mpy)
+        await hub.run(path, args.mpy_cross)
         await hub.disconnect()
 
     # Asynchronously send and run the script
-    asyncio.run(main(data))
+    asyncio.run(main())

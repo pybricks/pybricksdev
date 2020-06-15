@@ -4,7 +4,7 @@ import asyncssh
 import os
 import logging
 from pybricksdev.ble import BLEStreamConnection
-
+from pybricksdev.compile import compile_file
 
 bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
@@ -153,7 +153,11 @@ class BasicPUPConnection(BLEStreamConnection):
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 
-    async def download_and_run(self, mpy):
+    async def run(self, py_path, mpy_cross_path=None):
+
+        # FIXME: make async
+        mpy = compile_file(py_path, mpy_cross_path)
+
         # Get length of file and send it as bytes to hub
         length = len(mpy).to_bytes(4, byteorder='little')
         await self.send_message(length)
