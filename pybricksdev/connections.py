@@ -16,7 +16,7 @@ class BasicPUPConnection(BLEStreamConnection):
     IDLE = 1
     RUNNING = 2
     ERROR = 3
-    CHECKING = 4
+    AWAITING_CHECKSUM = 4
 
     def __init__(self):
         self.state = self.UNKNOWN
@@ -46,10 +46,12 @@ class BasicPUPConnection(BLEStreamConnection):
         print(line.decode())
 
     def char_handler(self, char):
-        if self.state == self.CHECKING:
-            # If we are checking the checksum, steal this byte
+        if self.state == self.AWAITING_CHECKSUM:
+            # If we are awaiting on a checksum, this is that byte. So,
+            # don't add it to the buffer but tell checksum awaiter that we
+            # are ready to process it.
             self.reply = char
-            self.logger.debug("\t\t\t\tCS: {0}".format(self.reply))
+            self.logger.debug("RX CHECKSUM: {0}".format(self.reply))
             return None
         else:
             # Otherwise, return it so it gets added to standard output buffer
@@ -60,7 +62,7 @@ class BasicPUPConnection(BLEStreamConnection):
         self.logger.info("Disconnected by server.")
 
     async def wait_for_checksum(self):
-        self.update_state(self.CHECKING)
+        self.update_state(self.AWAITING_CHECKSUM)
         for i in range(50):
             await asyncio.sleep(0.01)
             if self.reply is not None:
