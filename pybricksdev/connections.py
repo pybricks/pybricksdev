@@ -10,7 +10,7 @@ bleNusCharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 bleNusCharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
 
-class PUPConnection(BLEStreamConnection):
+class BasicPUPConnection(BLEStreamConnection):
 
     UNKNOWN = 0
     IDLE = 1
@@ -21,47 +21,15 @@ class PUPConnection(BLEStreamConnection):
     def __init__(self):
         self.state = self.UNKNOWN
         self.reply = None
-
-        # Data log state
-        self.log_file = None
-
         super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
 
     def line_handler(self, line):
-
-        # If the retrieved line is a state, update it
         if self.map_state(line) is not None:
+            # If the retrieved line is a state, update it
             self.update_state(self.map_state(line))
-
-        # Decode the output
-        text = line.decode()
-
-        # Output tells us to open a log file
-        if 'PB_OF' in text:
-            if self.log_file is not None:
-                raise OSError("Log file is already open!")
-            name = text[6:]
-            self.logger.info("Saving log to {0}.".format(name))
-            self.log_file = open(name, 'w')
-            return
-
-        # Enf of data log file, so close it
-        if 'PB_EOF' in text:
-            if self.log_file is None:
-                raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
-            self.log_file.close()
-            self.log_file = None
-            return
-
-        # We are processing datalog, so save this line
-        if self.log_file is not None:
-            print(text, file=self.log_file)
-            self.logger.debug(text)
-            return
-
-        # If it is not special, just print it
-        print(text)
+        else:
+            # Print the output
+            print(line.decode())
 
     def char_handler(self, char):
         if self.state == self.CHECKING:
@@ -154,6 +122,42 @@ class PUPConnection(BLEStreamConnection):
 
         # Wait for the program to finish
         await self.wait_until_not_running()
+
+
+class PUPConnection(BasicPUPConnection):
+
+    def __init__(self):
+        self.log_file = None
+        super().__init__()
+
+    def line_handler(self, line):
+
+        # The line tells us to open a log file, so do it.
+        if b'PB_OF' in line:
+            if self.log_file is not None:
+                raise OSError("Log file is already open!")
+            name = line[6:].decode()
+            self.logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, 'w')
+            return
+
+        # The line tells us to close a log file, so do it.
+        if b'PB_EOF' in line:
+            if self.log_file is None:
+                raise OSError("No log file is currently open!")
+            self.logger.info("Done saving log.")
+            self.log_file.close()
+            self.log_file = None
+            return
+
+        # If we are processing datalog, save current line to the open file.
+        if self.log_file is not None:
+            print(line.decode(), file=self.log_file)
+            return
+
+        # We don't want to do anything special with this line, so call
+        # the handler from the parent class to deal with it.
+        super().line_handler(line)
 
 
 class EV3Connection():
