@@ -23,13 +23,27 @@ class BasicPUPConnection(BLEStreamConnection):
         self.reply = None
         super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
 
+    def update_state(self, new_state):
+        """Updates state if data contains state information."""
+        if new_state != self.state:
+            self.logger.debug("New State: {0}".format(new_state))
+            self.state = new_state
+
     def line_handler(self, line):
-        if self.map_state(line) is not None:
-            # If the retrieved line is a state, update it
-            self.update_state(self.map_state(line))
-        else:
-            # Print the output
-            print(line.decode())
+
+        # If the line tells us about the state, set the state and be done.
+        if line == b'>>>> IDLE':
+            self.update_state(self.IDLE)
+            return
+        if line == b'>>>> RUNNING':
+            self.update_state(self.RUNNING)
+            return
+        if line == b'>>>> ERROR':
+            self.update_state(self.ERROR)
+            return
+
+        # If there is nothing special about this line, print it.
+        print(line.decode())
 
     def char_handler(self, char):
         if self.state == self.CHECKING:
@@ -40,22 +54,6 @@ class BasicPUPConnection(BLEStreamConnection):
         else:
             # Otherwise, return it so it gets added to standard output buffer
             return char
-
-    def map_state(self, line):
-        """"Maps state strings to states."""
-        if line == b'>>>> IDLE':
-            return self.IDLE
-        if line == b'>>>> RUNNING':
-            return self.RUNNING
-        if line == b'>>>> ERROR':
-            return self.ERROR
-        return None
-
-    def update_state(self, new_state):
-        """Updates state if data contains state information."""
-        if new_state != self.state:
-            self.logger.debug("New State: {0}".format(new_state))
-            self.state = new_state
 
     def disconnected_handler(self, client, *args):
         self.update_state(self.UNKNOWN)
