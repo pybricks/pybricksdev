@@ -18,14 +18,14 @@ class PUPConnection(BLEStreamConnection):
     ERROR = 3
     CHECKING = 4
 
-    def __init__(self, loglevel=logging.WARN):
+    def __init__(self):
         self.state = self.UNKNOWN
         self.reply = None
 
         # Data log state
         self.log_file = None
 
-        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n', loglevel)
+        super().__init__(bleNusCharRXUUID, bleNusCharTXUUID, 20, b'\r\n')
 
     def line_handler(self, line):
 

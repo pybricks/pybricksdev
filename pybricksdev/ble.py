@@ -68,7 +68,7 @@ async def find_device(name, timeout=5):
 
 class BLEStreamConnection():
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL, loglevel):
+    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -99,7 +99,7 @@ class BLEStreamConnection():
         )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
-        self.logger.setLevel(loglevel)
+        self.logger.setLevel(logging.WARNING)
 
     def char_handler(self, char):
         """Handles new incoming characters. Intended to be overridden.

@@ -32,7 +32,8 @@ if __name__ == "__main__":
         address = await find_device('Pybricks Hub', timeout=5)
         print("Found {0}!".format(address))
 
-        hub = PUPConnection(loglevel=logging.DEBUG)
+        hub = PUPConnection()
+        hub.logger.setLevel(logging.DEBUG)
         await hub.connect(address)
         await hub.download_and_run(mpy)
         await hub.disconnect()
