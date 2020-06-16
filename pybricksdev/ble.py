@@ -23,6 +23,7 @@ async def find_device(name, timeout=5):
         TimeoutError:
             Device was not found within the timeout.
     """
+    print("Searching for {0}".format(name))
 
     # Flag raised by detection of a device
     device_discovered = False
