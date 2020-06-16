@@ -98,7 +98,7 @@ class BootloaderConnection(BLEStreamConnection):
 
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
-        super().__init__(self.UUID, self.UUID, 20, None)
+        super().__init__(self.UUID, self.UUID, 40, None)
         self.reply_ready = asyncio.Event()
         self.reply_len = 0
         self.reply = bytearray()
@@ -146,7 +146,7 @@ class BootloaderConnection(BLEStreamConnection):
 
         return char
 
-    async def flash(self, blob, metadata):
+    async def flash(self, blob, metadata, delay):
 
         # Firmware information
         fw_io = io.BytesIO(blob)
@@ -175,20 +175,31 @@ class BootloaderConnection(BLEStreamConnection):
         response = await self.bootloader_message(BootloaderRequest.INIT_LOADER, size_payload)
         self.logger.debug(response)
 
+        count = 0
+
         print('flashing firmware...')
         with tqdm(total=fw_len, unit='B', unit_scale=True) as pbar:
             addr = info.start_addr
             while True:
 
+                count += 1
+                if count % 1000 == 0:
+                    try:
+                        response = await asyncio.wait_for(self.bootloader_message(BootloaderRequest.GET_CHECKSUM), 2)
+                        print(response)
+                    except (asyncio.exceptions.TimeoutError, ValueError):
+                        print("Got stuck, try disconnect")
+                        break
+
                 # BLE packet can only handle up to 14 bytes at a time
-                payload = fw_io.read(14)
+                payload = fw_io.read(32)
                 if not payload:
                     break
 
                 size = len(payload)
                 data = struct.pack('<BI' + 'B' * size, size + 4, addr, *payload)
                 addr += size
-                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, payload=data, delay=0.001)
+                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, data, delay)
                 self.logger.debug(response)
                 pbar.update(size)
             await asyncio.sleep(5)
@@ -282,5 +293,5 @@ async def flash_firmware(address, blob, metadata):
     updater = BootloaderConnection()
     updater.logger.setLevel(logging.WARNING)
     await updater.connect(address)
-    await updater.flash(blob, metadata)
+    await updater.flash(blob, metadata, 0.003)
     await updater.disconnect()
