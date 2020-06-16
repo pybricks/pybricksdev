@@ -10,6 +10,7 @@ import uuid
 from collections import namedtuple
 from enum import IntEnum
 from tqdm import tqdm
+import logging
 
 from pybricksdev.ble import BLEStreamConnection, find_device
 
@@ -23,18 +24,18 @@ ChecksumReply = namedtuple('ChecksumReply', ['checksum'])
 FlashStateReply = namedtuple('FlashStateReply', ['level'])
 
 
-class FlashLoaderFunction(IntEnum):
-    ERASE_FLASH = 0x11
-    PROGRAM_FLASH = 0x22
-    START_APP = 0x33
-    INIT_LOADER = 0x44
-    GET_INFO = 0x55
-    GET_CHECKSUM = 0x66
-    GET_FLASH_STATE = 0x77
-    DISCONNECT = 0x88
+class FlashLoaderFunction():
+    ERASE_FLASH = (0x11, 1)
+    PROGRAM_FLASH = (0x22, 1+4)
+    START_APP = (0x33, 0)
+    INIT_LOADER = (0x44, 1)
+    GET_INFO = (0x55, 4+4+4+1)
+    GET_CHECKSUM = (0x66, 1)
+    GET_FLASH_STATE = (0x77, 1)
+    DISCONNECT = (0x88, 0)
 
 
-def parse(self, msg: bytearray):
+def parse(msg):
     # ignore fake message from BLEventQ.get_messages()
     if msg[0] == 15:
         return
@@ -43,22 +44,20 @@ def parse(self, msg: bytearray):
     elif msg[0] == 0x05 and msg[2] == 0x05:
         reply = ErrorReply(*struct.unpack('<BB', msg[3:]))
 
-    elif msg[0] == FlashLoaderFunction.ERASE_FLASH:
+    elif msg[0] == FlashLoaderFunction.ERASE_FLASH[0]:
         reply = EraseReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.PROGRAM_FLASH:
+    elif msg[0] == FlashLoaderFunction.PROGRAM_FLASH[0]:
         reply = FlashReply(*struct.unpack('<BI', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.INIT_LOADER:
+    elif msg[0] == FlashLoaderFunction.INIT_LOADER[0]:
         reply = InitReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_INFO:
+    elif msg[0] == FlashLoaderFunction.GET_INFO[0]:
         reply = InfoReply(*struct.unpack('<iIIB', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_CHECKSUM:
+    elif msg[0] == FlashLoaderFunction.GET_CHECKSUM[0]:
         reply = ChecksumReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_FLASH_STATE:
+    elif msg[0] == FlashLoaderFunction.GET_FLASH_STATE[0]:
         reply = FlashStateReply(*struct.unpack('<B', msg[1:]))
     else:
         raise RuntimeError('Unknown message type {}'.format(hex(msg[0])))
-
-    self.hub.peripheral_queue.put(('reply', reply))
     return reply
 
 
@@ -84,98 +83,63 @@ class HubType(IntEnum):
             return s
 
 
-class FirmwareUpdateHub(BLEStreamConnection):
-    uart_uuid = uuid.UUID('00001625-1212-efde-1623-785feabcd123')
-    char_uuid = uuid.UUID('00001626-1212-efde-1623-785feabcd123')
-    query_port_info = None
+class BootloaderConnection(BLEStreamConnection):
+    """Connect to Powered Up Hub Bootloader and update firmware."""
 
-    def __init__(self, firmware: typing.io.BinaryIO, firmware_size: int,
-                 metadata: dict, delay: int):
+    UART_UUID = '00001625-1212-efde-1623-785feabcd123'
+    CHAR_UUID = '00001626-1212-efde-1623-785feabcd123'
 
-        self.firmware = firmware
-        self.firmware_size = firmware_size
-        self.metadata = metadata
-        self.delay = delay
+    def __init__(self):
+        """Initialize the BLE Connection for Bootloader service."""
+        super().__init__(self.CHAR_UUID, self.CHAR_UUID, 20, None)
+        self.reply_ready = asyncio.Event()
+        self.reply_len = 0
+        self.reply = bytearray()
 
-    async def run(self):
-        print('getting device info...')
-        await self.send_message('info', [FlashLoaderFunction.GET_INFO])
-        _, info = await self.peripheral_queue.get()
-        if not isinstance(info, InfoReply):
-            raise RuntimeError('Failed to get device info')
+    async def send_bootloader_message(self, msg):
+        """Sends a message to the bootloader and awaits corresponding reply."""
 
-        hub_type = HubType(info.type_id)
-        print('Connected to', hub_type)
+        # Get message command and expected reply length
+        cmd, self.reply_len = msg
+        self.reply = bytearray()
 
-        fw_hub_type = HubType(self.metadata['device-id'])
-        if hub_type != fw_hub_type:
-            raise RuntimeError(f'Firmware is for {str(fw_hub_type)}' +
-                               f' but we are connected to {str(hub_type)}')
+        # Write message
+        await self.write(bytes((cmd,)))
 
-        # HACK for cityhub bootloader bug. BlueZ will disconnect on certain
-        # commands if we don't request a response.
-        response = hub_type == HubType.CITYHUB
+        # If we expect a reply, await for it
+        if self.reply_len > 0:
+            await self.reply_ready.wait()
+            self.reply_len = 0
+            return parse(self.reply)
 
-        print('erasing flash...')
-        await self.send_message('erase', [FlashLoaderFunction.ERASE_FLASH],
-                                response)
-        _, result = await self.peripheral_queue.get()
-        if not isinstance(result, EraseReply) or result.result:
-            raise RuntimeError('Failed to erase flash')
+    def char_handler(self, char):
+        """Handles new incoming characters. Overrides BLEStreamConnection to
+        raise flags when new messages are ready.
 
-        print('validating size...')
-        size = list(struct.pack('<I', self.firmware_size))
-        await self.send_message('init',
-                                [FlashLoaderFunction.INIT_LOADER] + size,
-                                response)
-        _, result = await self.peripheral_queue.get()
-        if not isinstance(result, InitReply) or result.result:
-            raise RuntimeError('Failed to init')
+        Arguments:
+            char (int):
+                Character/byte to process.
 
-        print('flashing firmware...')
-        with tqdm(total=self.firmware_size, unit='B', unit_scale=True) as pbar:
-            addr = info.start_addr
-            while True:
-                if not self.peripheral_queue.empty():
-                    # we were not expecting a reply yet, this is probably an
-                    # error, e.g. we overflowed the buffer
-                    _, result = await self.peripheral_queue.get()
-                    if isinstance(result, ErrorReply):
-                        print('Received error reply', result)
-                    else:
-                        print('Unexpected message from hub. Please try again.')
-                    return
+        Returns:
+            int or None: Processed character.
 
-                # BLE packet can only handle up to 14 bytes at a time
-                payload = self.firmware.read(14)
-                if not payload:
-                    break
+        """
 
-                size = len(payload)
-                data = list(
-                    struct.pack('<BI' + 'B' * size, size + 4, addr, *payload))
-                addr += size
-                await self.send_message(
-                    'flash', [FlashLoaderFunction.PROGRAM_FLASH] + data)
-                # If we send data too fast, we can overrun the Bluetooth
-                # buffer on the hub
-                await sleep(self.delay / 1000)
-                pbar.update(size)
+        if self.reply_len > 0:
+            self.reply.append(char)
 
-        _, result = await self.peripheral_queue.get()
-        if not isinstance(result,
-                          FlashReply) or result.count != self.firmware_size:
-            raise RuntimeError('Failed to flash firmware')
+            self.logger.debug(
+                "Received reply byte {0}/{1}".format(
+                    len(self.reply), self.reply_len
+                )
+            )
 
-        print('rebooting hub...')
-        await self.send_message('reboot', [FlashLoaderFunction.START_APP])
-        # This command does not get a reply
+            if len(self.reply) == self.reply_len:
+                self.logger.debug("Reply complete.")
+                self.reply_ready.set()
+                self.reply_ready.clear()
 
-    async def send_message(self, msg_name, msg_bytes, response=False):
-        while not self.tx:
-            await sleep(0.1)
-        await self.message_queue.put(
-            (msg_name, self, bytearray(msg_bytes), response))
+        return char
 
 
 def sum_complement(fw, max_size):
@@ -264,4 +228,12 @@ def create_firmware(base, mpy, metadata):
 
 async def flash_firmware(blob):
     address = await find_device("LEGO Bootloader", 15)
-    print(address)
+    print("Found: ", address)
+    updater = BootloaderConnection()
+    updater.logger.setLevel(logging.DEBUG)
+    await updater.connect(address)
+    r = await updater.send_bootloader_message(FlashLoaderFunction.GET_FLASH_STATE)
+    q = await updater.send_bootloader_message(FlashLoaderFunction.GET_INFO)
+    print(r, q)
+    await asyncio.sleep(3)
+    await updater.disconnect()
