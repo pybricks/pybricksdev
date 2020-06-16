@@ -18,11 +18,13 @@ from pybricksdev.ble import BLEStreamConnection, find_device
 class BootloaderRequest():
     """Bootloader request structure."""
 
-    def __init__(self, command, name, request_format, data_format):
+    def __init__(self, command, name, request_format, data_format, request_confirm):
         self.command = command
         self.ReplyClass = namedtuple(name, request_format)
         self.data_format = data_format
-        self.reply_len = 1 + struct.calcsize(data_format)
+        self.reply_len = struct.calcsize(data_format)
+        if request_confirm:
+            self.reply_len += 1
 
     def make_request(self):
         return bytearray((self.command,))
@@ -36,28 +38,31 @@ class BootloaderRequest():
 
 # Create the static instances
 BootloaderRequest.ERASE_FLASH = BootloaderRequest(
-    0x11, 'Erase', ['result'], '<B'
+    0x11, 'Erase', ['result'], '<B', True
+)
+BootloaderRequest.PROGRAM_FLASH_BARE = BootloaderRequest(
+    0x22, 'Flash', [], '', False
 )
 BootloaderRequest.PROGRAM_FLASH = BootloaderRequest(
-    0x22, 'Flash', ['checksum', 'count'], '<BI'
+    0x22, 'Flash', ['checksum', 'count'], '<BI', True
 )
 BootloaderRequest.START_APP = BootloaderRequest(
-    0x33, 'Start', [], ''
+    0x33, 'Start', [], '', True
 )
 BootloaderRequest.INIT_LOADER = BootloaderRequest(
-    0x44, 'Init', ['result'], '<B'
+    0x44, 'Init', ['result'], '<B', True
 )
 BootloaderRequest.GET_INFO = BootloaderRequest(
-    0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB'
+    0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB', True
 )
 BootloaderRequest.GET_CHECKSUM = BootloaderRequest(
-    0x66, 'Checksum', ['checksum'], '<B'
+    0x66, 'Checksum', ['checksum'], '<B', True
 )
 BootloaderRequest.GET_FLASH_STATE = BootloaderRequest(
-    0x77, 'State', ['level'], '<B'
+    0x77, 'State', ['level'], '<B', True
 )
 BootloaderRequest.DISCONNECT = BootloaderRequest(
-    0x88, 'Disconnect', [], ''
+    0x88, 'Disconnect', [], '', True
 )
 
 
@@ -86,12 +91,11 @@ class HubType(IntEnum):
 class BootloaderConnection(BLEStreamConnection):
     """Connect to Powered Up Hub Bootloader and update firmware."""
 
-    UART_UUID = '00001625-1212-efde-1623-785feabcd123'
-    CHAR_UUID = '00001626-1212-efde-1623-785feabcd123'
+    UUID = '00001626-1212-efde-1623-785feabcd123'
 
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
-        super().__init__(self.CHAR_UUID, self.CHAR_UUID, 20, None)
+        super().__init__(self.UUID, self.UUID, 20, None)
         self.reply_ready = asyncio.Event()
         self.reply_len = 0
         self.reply = bytearray()
@@ -127,6 +131,7 @@ class BootloaderConnection(BLEStreamConnection):
             int or None: Processed character.
 
         """
+        self.logger.debug("CHAR {0}".format(char))
         # If we are expecting a nonzero reply, save the incoming character
         if self.reply_len > 0:
             self.reply.append(char)
@@ -140,15 +145,55 @@ class BootloaderConnection(BLEStreamConnection):
 
         return char
 
-    async def flash(self, blob):
+    async def flash(self, blob, metadata):
+
+        # Firmware information
+        fw_io = io.BytesIO(blob)
+        fw_len = len(blob)
+
         print("Getting device info.")
-        response = await self.bootloader_message(BootloaderRequest.GET_INFO)
-        self.logger.debug(response)
-        print('Connected to', HubType(response.type_id))
+        info = await self.bootloader_message(BootloaderRequest.GET_INFO)
+        self.logger.debug(info)
+
+        hub_type = HubType(info.type_id)
+        print('Connected to', hub_type)
+        fw_hub_type = HubType(metadata['device-id'])
+        if hub_type != fw_hub_type:
+            await self.disconnect()
+            raise RuntimeError(f'Firmware is for {str(fw_hub_type)}' +
+                               f' but we are connected to {str(hub_type)}')
+
+        # TODO: Use write with response on CityHub
 
         print("Erasing flash.")
         response = await self.bootloader_message(BootloaderRequest.ERASE_FLASH)
         self.logger.debug(response)
+
+        print('Validating size.')
+        size_payload = struct.pack('<I', fw_len)
+        response = await self.bootloader_message(BootloaderRequest.INIT_LOADER, size_payload)
+        self.logger.debug(response)
+
+        print('flashing firmware...')
+        with tqdm(total=fw_len, unit='B', unit_scale=True) as pbar:
+            addr = info.start_addr
+            while True:
+
+                # BLE packet can only handle up to 14 bytes at a time
+                payload = fw_io.read(14)
+                if not payload:
+                    break
+
+                size = len(payload)
+                data = struct.pack('<BI' + 'B' * size, size + 4, addr, *payload)
+                addr += size
+                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, data)
+                self.logger.debug(response)
+                # If we send data too fast, we can overrun the Bluetooth
+                # buffer on the hub
+                await asyncio.sleep(10 / 1000)
+                pbar.update(size)
+            asyncio.sleep(5)
 
 
 def sum_complement(fw, max_size):
@@ -235,11 +280,11 @@ def create_firmware(base, mpy, metadata):
     return firmware
 
 
-async def flash_firmware(blob):
+async def flash_firmware(blob, metadata):
     address = await find_device("LEGO Bootloader", 15)
     print("Found: ", address)
     updater = BootloaderConnection()
     updater.logger.setLevel(logging.DEBUG)
     await updater.connect(address)
-    await updater.flash(blob)
+    await updater.flash(blob, metadata)
     await updater.disconnect()

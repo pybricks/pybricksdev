@@ -112,7 +112,7 @@ def _flash(args):
         )
         print('Creating firmware.')
         firmware = create_firmware(firmware_base.read(), mpy, metadata)
-        await flash_firmware(firmware)
+        await flash_firmware(firmware, metadata)
     asyncio.run(_main())
 
 
