@@ -2,7 +2,6 @@
 
 import argparse
 import asyncio
-import logging
 from os import path
 import validators
 
@@ -11,27 +10,30 @@ from pybricksdev.connections import PUPConnection, EV3Connection
 from pybricksdev.ble import find_device
 
 
+def _parse_script_arg(script_arg):
+    """Save user script argument to a file if it is a Python one-liner."""
+    if not path.exists(script_arg):
+        return save_script(script_arg)
+    return script_arg
+
+
 def _compile(args):
-    """pybricksdev compile"""
+    """wrapper for: pybricksdev compile"""
     parser = argparse.ArgumentParser(
         prog='pybricksdev compile',
         description='Compile a Pybricks program without running it.',
     )
     # The argument is a filename or a Python one-liner.
     parser.add_argument('script')
-    script = parser.parse_args(args).script
-
-    # If the user does not provide a file, assume they provide Python code.
-    if not path.exists(script):
-        script = save_script(script)
+    script_path = _parse_script_arg(parser.parse_args(args).script)
 
     # Compile the script and print the result
-    mpy = asyncio.run(compile_file(script))
+    mpy = asyncio.run(compile_file(script_path))
     print_mpy(mpy)
 
 
 def _run(args):
-    """pybricksdev run"""
+    """wrapper for: pybricksdev run"""
     parser = argparse.ArgumentParser(
         prog='pybricksdev run',
         description='Run a Pybricks program.',
@@ -41,13 +43,10 @@ def _run(args):
     parser.add_argument('script')
     args = parser.parse_args(args)
 
-    # If the user does not provide a file, assume they provide Python code.
-    if not path.exists(args.script):
-        script = save_script(args.script)
-    else:
-        script = args.script
+    # Convert script argument to valid path
+    script_path = _parse_script_arg(args.script)
 
-    async def _main(script):
+    async def _main(script_path):
 
         # Check device argument
         if validators.ip_address.ipv4(args.device):
@@ -64,13 +63,14 @@ def _run(args):
 
         # Connect to the address and run the script
         await hub.connect(address)
-        await hub.run(script)
+        await hub.run(script_path)
         await hub.disconnect()
 
-    asyncio.run(_main(script))
+    asyncio.run(_main(script_path))
 
 
 def _flash(args):
+    """wrapper for: pybricksdev flash"""
     print("I'm the flash tool")
 
 
