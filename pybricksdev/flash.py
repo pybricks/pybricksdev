@@ -14,51 +14,48 @@ import logging
 
 from pybricksdev.ble import BLEStreamConnection, find_device
 
-ErrorReply = namedtuple('ErrorReply', ['msg_type', 'error'])
-EraseReply = namedtuple('EraseReply', ['result'])
-FlashReply = namedtuple('FlashReply', ['checksum', 'count'])
-InitReply = namedtuple('InitReply', ['result'])
-InfoReply = namedtuple('InfoReply',
-                       ['version', 'start_addr', 'end_addr', 'type_id'])
-ChecksumReply = namedtuple('ChecksumReply', ['checksum'])
-FlashStateReply = namedtuple('FlashStateReply', ['level'])
+
+class BootloaderRequest():
+    """Bootloader request structure."""
+
+    def __init__(self, command, name, request_format, data_format):
+        self.command = command
+        self.ReplyClass = namedtuple(name, request_format)
+        self.data_format = data_format
+        self.reply_len = 1 + struct.calcsize(data_format)
+
+    def make_request(self):
+        return bytearray((self.command,))
+
+    def parse_reply(self, reply):
+        return self.ReplyClass(*struct.unpack(self.data_format, reply[1:]))
 
 
-class FlashLoaderFunction():
-    ERASE_FLASH     = (0x11, 1 + 1)
-    PROGRAM_FLASH   = (0x22, 1 + 1 + 4)
-    START_APP       = (0x33, 1)
-    INIT_LOADER     = (0x44, 1 + 1)
-    GET_INFO        = (0x55, 1 + 4 + 4 + 4 + 1)
-    GET_CHECKSUM    = (0x66, 1 + 1)
-    GET_FLASH_STATE = (0x77, 1 + 1)
-    DISCONNECT      = (0x88, 1)
-
-
-def parse(msg):
-    # ignore fake message from BLEventQ.get_messages()
-    if msg[0] == 15:
-        return
-
-    # error
-    elif msg[0] == 0x05 and msg[2] == 0x05:
-        reply = ErrorReply(*struct.unpack('<BB', msg[3:]))
-
-    elif msg[0] == FlashLoaderFunction.ERASE_FLASH[0]:
-        reply = EraseReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.PROGRAM_FLASH[0]:
-        reply = FlashReply(*struct.unpack('<BI', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.INIT_LOADER[0]:
-        reply = InitReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_INFO[0]:
-        reply = InfoReply(*struct.unpack('<iIIB', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_CHECKSUM[0]:
-        reply = ChecksumReply(*struct.unpack('<B', msg[1:]))
-    elif msg[0] == FlashLoaderFunction.GET_FLASH_STATE[0]:
-        reply = FlashStateReply(*struct.unpack('<B', msg[1:]))
-    else:
-        raise RuntimeError('Unknown message type {}'.format(hex(msg[0])))
-    return reply
+# Create the static instances
+BootloaderRequest.ERASE_FLASH = BootloaderRequest(
+    0x11, 'Erase', ['result'], '<B'
+)
+BootloaderRequest.PROGRAM_FLASH = BootloaderRequest(
+    0x22, 'Flash', ['checksum', 'count'], '<BI'
+)
+BootloaderRequest.START_APP = BootloaderRequest(
+    0x33, 'Start', [], ''
+)
+BootloaderRequest.INIT_LOADER = BootloaderRequest(
+    0x44, 'Init', ['result'], '<B'
+)
+BootloaderRequest.GET_INFO = BootloaderRequest(
+    0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB'
+)
+BootloaderRequest.GET_CHECKSUM = BootloaderRequest(
+    0x66, 'Checksum', ['checksum'], '<B'
+)
+BootloaderRequest.GET_FLASH_STATE = BootloaderRequest(
+    0x77, 'State', ['level'], '<B'
+)
+BootloaderRequest.DISCONNECT = BootloaderRequest(
+    0x88, 'Disconnect', [], ''
+)
 
 
 class HubType(IntEnum):
@@ -100,11 +97,11 @@ class BootloaderConnection(BLEStreamConnection):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
-        cmd, self.reply_len = msg
+        self.reply_len = msg.reply_len
         self.reply = bytearray()
 
         # Write message
-        total = bytearray((cmd,))
+        total = msg.make_request()
         if payload is not None:
             total += payload
         await self.write(total)
@@ -113,7 +110,7 @@ class BootloaderConnection(BLEStreamConnection):
         if self.reply_len > 0:
             self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
             await self.reply_ready.wait()
-            return parse(self.reply)
+            return msg.parse_reply(self.reply)
 
     def char_handler(self, char):
         """Handles new incoming characters. Overrides BLEStreamConnection to
@@ -141,12 +138,13 @@ class BootloaderConnection(BLEStreamConnection):
         return char
 
     async def flash(self, blob):
-        info = await self.bootloader_message(FlashLoaderFunction.GET_INFO)
-        if not isinstance(info, InfoReply):
-            raise RuntimeError('Failed to get device info')
+        info = await self.bootloader_message(BootloaderRequest.GET_INFO)
+        print(info)
+        # if not isinstance(info, InfoReply):
+        #     raise RuntimeError('Failed to get device info')
 
-        hub_type = HubType(info.type_id)
-        print('Connected to', hub_type)
+        # hub_type = HubType(info.type_id)
+        # print('Connected to', hub_type)
 
         # TODO: apply city hub patch
 
