@@ -1,11 +1,17 @@
+"""Command line wrapper around pybricksdev library. Do not import from here."""
+
 import argparse
 import asyncio
+import logging
 from os import path
 
 from pybricksdev.compile import save_script, compile_file, print_mpy
+from pybricksdev.connections import PUPConnection
+from pybricksdev.ble import find_device
 
 
 def _compile(args):
+    """pybricksdev compile"""
     parser = argparse.ArgumentParser(
         prog='pybricksdev compile',
         description='Compile a Pybricks program without running it.',
@@ -24,14 +30,28 @@ def _compile(args):
 
 
 def _run(args):
+    """pybricksdev run"""
     parser = argparse.ArgumentParser(
         prog='pybricksdev run',
         description='Run a Pybricks program.',
     )
+    # The argument is a filename or a Python one-liner.
     parser.add_argument('script')
-    args = parser.parse_args(args)
+    script = parser.parse_args(args).script
 
-    print("I'm the run tool and I will run {0}.".format(args.script))
+    # If the user does not provide a file, assume they provide Python code.
+    if not path.exists(script):
+        script = save_script(script)
+
+    async def _main():
+        hub = PUPConnection()
+        hub.logger.setLevel(logging.WARN)
+        address = await find_device('Pybricks Hub', timeout=5)
+        await hub.connect(address)
+        await hub.run(script)
+        await hub.disconnect()
+
+    asyncio.run(_main())
 
 
 def _flash(args):
