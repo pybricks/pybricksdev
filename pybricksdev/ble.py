@@ -102,6 +102,9 @@ class BLEStreamConnection():
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.WARNING)
 
+        # Are we connected?
+        self.connected = False
+
     def char_handler(self, char):
         """Handles new incoming characters. Intended to be overridden.
 
@@ -130,6 +133,7 @@ class BLEStreamConnection():
     def disconnected_handler(self, client, *args):
         """Handles disconnected event. Intended to be overridden."""
         self.logger.info("Disconnected by server.")
+        self.connected = False
 
     def _data_handler(self, sender, data):
         """Handles new incoming data. Calls char and line parsers when ready.
@@ -182,13 +186,16 @@ class BLEStreamConnection():
         self.client.set_disconnected_callback(self.disconnected_handler)
         await self.client.start_notify(self.char_tx_UUID, self._data_handler)
         print("Connected successfully!")
+        self.connected = True
 
     async def disconnect(self):
         """Disconnects the client from the server."""
         await self.client.stop_notify(self.char_tx_UUID)
-        self.logger.debug("Disconnecting...")
-        await self.client.disconnect()  # FIXME: handle already disconnected
-        self.logger.info("Disconnected by client.")
+        if self.connected:
+            self.logger.debug("Disconnecting...")
+            await self.client.disconnect()
+            self.logger.info("Disconnected by client.")
+            self.connected = False
 
     async def write(self, data, pause=0.05):
         """Write bytes to the server, split to chunks of maximum mtu size.
