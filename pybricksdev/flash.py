@@ -28,7 +28,10 @@ class BootloaderRequest():
         return bytearray((self.command,))
 
     def parse_reply(self, reply):
-        return self.ReplyClass(*struct.unpack(self.data_format, reply[1:]))
+        if reply[0] == self.command:
+            return self.ReplyClass(*struct.unpack(self.data_format, reply[1:]))
+        else:
+            raise ValueError("Unknown message: {0}".format(reply))
 
 
 # Create the static instances
@@ -138,18 +141,14 @@ class BootloaderConnection(BLEStreamConnection):
         return char
 
     async def flash(self, blob):
-        info = await self.bootloader_message(BootloaderRequest.GET_INFO)
-        print(info)
-        # if not isinstance(info, InfoReply):
-        #     raise RuntimeError('Failed to get device info')
+        print("Getting device info.")
+        response = await self.bootloader_message(BootloaderRequest.GET_INFO)
+        self.logger.debug(response)
+        print('Connected to', HubType(response.type_id))
 
-        # hub_type = HubType(info.type_id)
-        # print('Connected to', hub_type)
-
-        # TODO: apply city hub patch
-
-        # TODO: process firmware metadata/confirm hub type
-
+        print("Erasing flash.")
+        response = await self.bootloader_message(BootloaderRequest.ERASE_FLASH)
+        self.logger.debug(response)
 
 
 def sum_complement(fw, max_size):
