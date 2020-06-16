@@ -112,7 +112,9 @@ def _flash(args):
         )
         print('Creating firmware.')
         firmware = create_firmware(firmware_base.read(), mpy, metadata)
-        await flash_firmware(firmware, metadata)
+        address = await find_device("LEGO Bootloader", 15)
+        print("Found: ", address)
+        await flash_firmware(address, firmware, metadata)
     asyncio.run(_main())
 
 

@@ -191,7 +191,7 @@ class BootloaderConnection(BLEStreamConnection):
                 self.logger.debug(response)
                 # If we send data too fast, we can overrun the Bluetooth
                 # buffer on the hub
-                await asyncio.sleep(10 / 1000)
+                # await asyncio.sleep(10 / 1000)
                 pbar.update(size)
             asyncio.sleep(5)
 
@@ -280,11 +280,9 @@ def create_firmware(base, mpy, metadata):
     return firmware
 
 
-async def flash_firmware(blob, metadata):
-    address = await find_device("LEGO Bootloader", 15)
-    print("Found: ", address)
+async def flash_firmware(address, blob, metadata):
     updater = BootloaderConnection()
-    updater.logger.setLevel(logging.DEBUG)
+    updater.logger.setLevel(logging.WARNING)
     await updater.connect(address)
     await updater.flash(blob, metadata)
     await updater.disconnect()
