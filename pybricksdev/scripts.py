@@ -2,12 +2,16 @@
 
 import argparse
 import asyncio
+import io
+import json
 from os import path
 import validators
+import zipfile
 
+from pybricksdev.ble import find_device
 from pybricksdev.compile import save_script, compile_file, print_mpy
 from pybricksdev.connections import PUPConnection, EV3Connection
-from pybricksdev.ble import find_device
+from pybricksdev.flash import create_firmware
 
 
 def _parse_script_arg(script_arg):
@@ -71,7 +75,37 @@ def _run(args):
 
 def _flash(args):
     """wrapper for: pybricksdev flash"""
-    print("I'm the flash tool")
+
+    parser = argparse.ArgumentParser(
+        prog='pybricksdev flash',
+        description='Flashes firmware on LEGO Powered Up devices.')
+    parser.add_argument('firmware',
+                        metavar='<firmware-file>',
+                        type=argparse.FileType('rb'),
+                        help='The firmware file')
+    parser.add_argument('-d',
+                        '--delay',
+                        metavar='<milliseconds>',
+                        type=int,
+                        default=10,
+                        help='Delay between Bluetooth packets (default: 10).')
+    parser.add_argument(
+        '-m',
+        '--main',
+        metavar='<main.py>',
+        type=argparse.FileType(),
+        help='main.py file to use instead of one from firmware file')
+    args = parser.parse_args(args)
+
+    firmware_zip = zipfile.ZipFile(args.firmware)
+    firmware_base = firmware_zip.open('firmware-base.bin')
+    main_py = args.main or io.TextIOWrapper(firmware_zip.open('main.py'))
+    metadata = json.load(firmware_zip.open('firmware.metadata.json'))
+
+    async def _main(script_path):
+        print('compiling main.py...')
+        mpy = await compile_file(main_py.read(), metadata['mpy-cross-options'], metadata['mpy-abi-version'])
+        firmware = create_firmware(firmware_base.read(), mpy, metadata)
 
 
 def entry():
@@ -97,3 +131,7 @@ def entry():
         _run(args.arguments)
     elif args.tool == 'flash':
         _flash(args.arguments)
+
+
+if __name__ == "__main__":
+    entry()

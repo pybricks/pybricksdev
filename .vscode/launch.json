@@ -8,10 +8,10 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/pybricksdev/run.py",
+            "program": "${workspaceFolder}/pybricksdev/scripts.py",
             "console": "integratedTerminal",
             "args": [
-                "--file", "demo/shortdemo.py"
+                "flash", "-d", "4", "../pybricks-micropython/bricks/cplushub/build/firmware.zip"
             ]
         }
     ]
