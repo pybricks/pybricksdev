@@ -152,17 +152,15 @@ class PUPConnection(BLEStreamConnection):
         if checksum != reply:
             raise ValueError("Did not receive expected checksum.")
 
-    async def run(self, py_path, mpy_cross_path=None):
+    async def run(self, py_path):
         """Run a Pybricks MicroPython script on the hub and print output.
 
         Arguments:
             py_path (str):
                 Path to MicroPython script.
-            mpy_cross_path (str):
-                Path to mpy-cross. Choose None to use default from package.
         """
         # Compile the script to mpy format
-        mpy = await compile_file(py_path, mpy_cross_path)
+        mpy = await compile_file(py_path)
 
         # Get length of file and send it as bytes to hub
         length = len(mpy).to_bytes(4, byteorder='little')

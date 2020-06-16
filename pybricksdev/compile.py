@@ -21,14 +21,12 @@ def make_build_dir():
         raise OSError("A file named build already exists.")
 
 
-async def run_mpy_cross(args, mpy_cross_path=None):
+async def run_mpy_cross(args):
     """Runs mpy-cross asynchronously with given arguments.
 
     Arguments:
         args:
             Arguments to pass to mpy-cross.
-        mpy_cross_path (str or None):
-            Path to mpy-cross. Choose None to use default from package.
 
     Returns:
         str: stdout.
@@ -38,13 +36,9 @@ async def run_mpy_cross(args, mpy_cross_path=None):
 
     """
 
-    # If no path to mpy-cross is given, use packaged version
-    if mpy_cross_path is None:
-        mpy_cross_path = mpy_cross.mpy_cross
-
     # Run the process asynchronously
     proc = await asyncio.create_subprocess_exec(
-        mpy_cross_path, *args,
+        mpy_cross.mpy_cross, *args,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE)
 
@@ -57,14 +51,12 @@ async def run_mpy_cross(args, mpy_cross_path=None):
     return stdout.decode()
 
 
-async def compile_file(py_path, mpy_cross_path=None):
+async def compile_file(py_path):
     """Compiles a Python file with mpy-cross and return as bytes.
 
     Arguments:
         py_path (str):
             Path to script that is to be compiled.
-        mpy_cross_path (str):
-            Path to mpy-cross. Choose None to use default from package.
 
     Returns:
         str: stdout.
@@ -74,16 +66,14 @@ async def compile_file(py_path, mpy_cross_path=None):
     """
 
     # Get version info
-    print(await run_mpy_cross(["--version"], mpy_cross_path))
+    print(await run_mpy_cross(["--version"]))
 
     # Make the build directory
     make_build_dir()
 
     # Cross-compile Python file to .mpy and raise errors if any
     mpy_path = os.path.join(BUILD_DIR, Path(py_path).stem + ".mpy")
-    await run_mpy_cross(
-        [py_path, "-mno-unicode", "-o", mpy_path], mpy_cross_path
-    )
+    await run_mpy_cross([py_path, "-mno-unicode", "-o", mpy_path])
 
     # Read the .mpy file and return as bytes
     with open(mpy_path, "rb") as mpy:
