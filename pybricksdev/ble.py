@@ -148,6 +148,10 @@ class BLEStreamConnection():
             if append is not None:
                 self.char_buf.append(append)
 
+        # Some applications don't have any lines to process
+        if self.EOL is None:
+            return
+
         # Break up data into lines and take those out of the buffer
         lines = []
         while True:
