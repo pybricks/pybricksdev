@@ -96,7 +96,7 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply_len = 0
         self.reply = bytearray()
 
-    async def send_bootloader_message(self, msg):
+    async def bootloader_message(self, msg):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
@@ -142,6 +142,14 @@ class BootloaderConnection(BLEStreamConnection):
                 self.reply_ready.clear()
 
         return char
+
+    async def flash(self, blob):
+        info = await self.bootloader_message(FlashLoaderFunction.GET_INFO)
+        if not isinstance(info, InfoReply):
+            raise RuntimeError('Failed to get device info')
+
+        hub_type = HubType(info.type_id)
+        print('Connected to', hub_type)
 
 
 def sum_complement(fw, max_size):
@@ -234,8 +242,5 @@ async def flash_firmware(blob):
     updater = BootloaderConnection()
     updater.logger.setLevel(logging.DEBUG)
     await updater.connect(address)
-    r = await updater.send_bootloader_message(FlashLoaderFunction.GET_INFO)
-    q = await updater.send_bootloader_message(FlashLoaderFunction.GET_INFO)
-    print(r, q)
-    await asyncio.sleep(3)
+    await updater.flash(blob)
     await updater.disconnect()
