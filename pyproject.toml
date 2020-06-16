@@ -22,6 +22,7 @@ mpy-cross = "==1.12"
 nbstripout = "*"
 python = "^3.8.2"
 tqdm = "*"
+validators = "*"
 
 [tool.poetry.dev-dependencies]
 flake8 = "*"
