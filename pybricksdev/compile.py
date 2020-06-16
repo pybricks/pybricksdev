@@ -2,8 +2,6 @@
 # Copyright (c) 2019-2020 The Pybricks Authors
 
 import os
-import argparse
-import subprocess
 from pathlib import Path
 import mpy_cross
 import asyncio
@@ -108,32 +106,7 @@ def save_script(py_string):
     return py_path
 
 
-# Base arg parser shared by all tools that have to compile Pybricks scripts
-# to bytes one way or another
-compile_argparser = argparse.ArgumentParser()
-group = compile_argparser.add_mutually_exclusive_group(required=True)
-group.add_argument("--file", dest="file", nargs="?", const=1, type=str)
-group.add_argument("--string", dest="string", nargs="?", const=1, type=str)
-compile_argparser.add_argument(
-    "--mpy_cross", dest="mpy_cross", nargs="?", type=str, required=False
-)
-
-
-if __name__ == "__main__":
-
-    # Get base parser, then parse
-    parser = compile_argparser
-    parser.description = (
-        "Convert MicroPython scripts or commands to .mpy bytes."
-    )
-    args = parser.parse_args()
-
-    # Get file path
-    path = save_script(args.string) if args.file is None else args.file
-
-    # Convert to bytes
-    data = compile_file(path, args.mpy_cross)
-
+def print_mpy(data):
     # Print as string as a sanity check.
     print("\nBytes:")
     print(data)

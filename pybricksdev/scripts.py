@@ -1,8 +1,26 @@
 import argparse
+import asyncio
+from os import path
+
+from pybricksdev.compile import save_script, compile_file, print_mpy
 
 
 def _compile(args):
-    print("I'm the compile tool")
+    parser = argparse.ArgumentParser(
+        prog='pybricksdev compile',
+        description='Compile a Pybricks program without running it.',
+    )
+    # The argument is a filename or a Python one-liner.
+    parser.add_argument('script')
+    script = parser.parse_args(args).script
+
+    # If the user does not provide a file, assume they provide Python code.
+    if not path.exists(script):
+        script = save_script(script)
+
+    # Compile the script and print the result
+    mpy = asyncio.run(compile_file(script))
+    print_mpy(mpy)
 
 
 def _run(args):
