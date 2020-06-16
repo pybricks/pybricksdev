@@ -96,7 +96,7 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply_len = 0
         self.reply = bytearray()
 
-    async def bootloader_message(self, msg):
+    async def bootloader_message(self, msg, payload=None):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
@@ -104,10 +104,14 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply = bytearray()
 
         # Write message
-        await self.write(bytes((cmd,)))
+        total = bytearray((cmd,))
+        if payload is not None:
+            total += payload
+        await self.write(total)
 
         # If we expect a reply, await for it
         if self.reply_len > 0:
+            self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
             await self.reply_ready.wait()
             return parse(self.reply)
 
@@ -127,16 +131,9 @@ class BootloaderConnection(BLEStreamConnection):
         if self.reply_len > 0:
             self.reply.append(char)
 
-            # Debug reply progress
-            self.logger.debug(
-                "Received reply byte {0}/{1}".format(
-                    len(self.reply), self.reply_len
-                )
-            )
-
             # If reply is complete, set the reply_ready event
             if len(self.reply) == self.reply_len:
-                self.logger.debug("Reply complete.")
+                self.logger.debug("Awaiting reply complete.")
                 self.reply_len = 0
                 self.reply_ready.set()
                 self.reply_ready.clear()
@@ -150,6 +147,11 @@ class BootloaderConnection(BLEStreamConnection):
 
         hub_type = HubType(info.type_id)
         print('Connected to', hub_type)
+
+        # TODO: apply city hub patch
+
+        # TODO: process firmware metadata/confirm hub type
+
 
 
 def sum_complement(fw, max_size):
