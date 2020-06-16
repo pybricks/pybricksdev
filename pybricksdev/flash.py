@@ -1,27 +1,17 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2019-2020 The Pybricks Authors
 
-import argparse
+import asyncio
 import io
-import json
-import os
 import struct
-import subprocess
 import sys
-import tempfile
 import typing
 import uuid
-import zipfile
 from collections import namedtuple
 from enum import IntEnum
-
-import mpy_cross
-from bricknil import start
-from bricknil.hub import Hub
-from bricknil.process import Process
-from bricknil.message_dispatch import MessageDispatch
-from curio import UniversalQueue, sleep
 from tqdm import tqdm
+
+from pybricksdev.ble import BLEStreamConnection, find_device
 
 ErrorReply = namedtuple('ErrorReply', ['msg_type', 'error'])
 EraseReply = namedtuple('EraseReply', ['result'])
@@ -72,10 +62,6 @@ def parse(self, msg: bytearray):
     return reply
 
 
-# Hack to override parsing notifications
-MessageDispatch.parse = parse
-
-
 class HubType(IntEnum):
     MOVEHUB = 0x40  # BOOST Move Hub
     CITYHUB = 0x41  # Hub No. 4
@@ -98,27 +84,18 @@ class HubType(IntEnum):
             return s
 
 
-class FirmwareUpdateHub(Process):
+class FirmwareUpdateHub(BLEStreamConnection):
     uart_uuid = uuid.UUID('00001625-1212-efde-1623-785feabcd123')
     char_uuid = uuid.UUID('00001626-1212-efde-1623-785feabcd123')
     query_port_info = None
 
     def __init__(self, firmware: typing.io.BinaryIO, firmware_size: int,
                  metadata: dict, delay: int):
-        super().__init__("LEGO Bootloader")
-        self.ble_id = None
-        self.ble_name = "LEGO Bootloader"
-        self.manufacturer_id = 0x00
+
         self.firmware = firmware
         self.firmware_size = firmware_size
         self.metadata = metadata
         self.delay = delay
-        self.message_queue = None
-        self.peripherals = {}
-        self.peripheral_queue = UniversalQueue()
-
-    async def peripheral_message_loop(self):
-        pass
 
     async def run(self):
         print('getting device info...')
@@ -199,12 +176,6 @@ class FirmwareUpdateHub(Process):
             await sleep(0.1)
         await self.message_queue.put(
             (msg_name, self, bytearray(msg_bytes), response))
-
-
-async def setup(firmware: typing.io.BinaryIO, firmware_size: int,
-                metadata: dict, delay: int):
-    Hub.hubs.append(FirmwareUpdateHub(firmware, firmware_size, metadata,
-                                      delay))
 
 
 def sum_complement(fw, max_size):
@@ -291,76 +262,6 @@ def create_firmware(base, mpy, metadata):
     return firmware
 
 
-def compile_file(main_py, metadata):
-    """Compiles a main.py file into a main.mpy file.
-
-    Parameters
-    ----------
-    main_py : str
-        The main.py file
-    metadata : dict
-        firmware metadata
-
-    Returns
-    -------
-    bytes
-        compiled main.mpy binary blob
-    """
-    out, _ = mpy_cross.run('--version', stdout=subprocess.PIPE).communicate()
-    mpy_version = int(out.decode().strip()[-1])
-    if mpy_version != metadata['mpy-abi-version']:
-        print('Firmware package expects mpy-cross ABI ' +
-              f'v{metadata["mpy-abi-version"]:} but we have v{mpy_version}',
-              file=sys.stderr)
-        exit(1)
-
-    with tempfile.TemporaryDirectory('lpf2-flasher') as tmp_dir:
-        with open(os.path.join(tmp_dir, 'main.py'), 'w') as f:
-            f.write(main_py)
-        code = mpy_cross.run(
-            *metadata['mpy-cross-options'],
-            'main.py',
-            cwd=tmp_dir,
-        ).wait()
-        if code:
-            exit(code)
-        with open(os.path.join(tmp_dir, 'main.mpy'), 'rb') as f:
-            return f.read()
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description='Flashes firmware on LEGO Powered Up devices.')
-    parser.add_argument('firmware',
-                        metavar='<firmware-file>',
-                        type=argparse.FileType('rb'),
-                        help='The firmware file')
-    parser.add_argument('-d',
-                        '--delay',
-                        metavar='<milliseconds>',
-                        type=int,
-                        default=10,
-                        help='Delay between Bluetooth packets (default: 10).')
-    parser.add_argument(
-        '-m',
-        '--main',
-        metavar='<main.py>',
-        type=argparse.FileType(),
-        help='main.py file to use instead of one from firmware file')
-    args = parser.parse_args()
-
-    firmware_zip = zipfile.ZipFile(args.firmware)
-    firmware_base = firmware_zip.open('firmware-base.bin')
-    main_py = args.main or io.TextIOWrapper(firmware_zip.open('main.py'))
-    metadata = json.load(firmware_zip.open('firmware.metadata.json'))
-
-    print('compiling main.py...')
-    mpy = compile_file(main_py.read(), metadata)
-    firmware = create_firmware(firmware_base.read(), mpy, metadata)
-
-    start(lambda: setup(io.BytesIO(firmware), len(firmware), metadata, args.
-                        delay))
-
-
-if __name__ == '__main__':
-    main()
+async def flash_firmware(blob):
+    address = await find_device("LEGO Bootloader", 15)
+    print(address)

@@ -11,7 +11,7 @@ import zipfile
 from pybricksdev.ble import find_device
 from pybricksdev.compile import save_script, compile_file, print_mpy
 from pybricksdev.connections import PUPConnection, EV3Connection
-from pybricksdev.flash import create_firmware
+from pybricksdev.flash import create_firmware, flash_firmware
 
 
 def _parse_script_arg(script_arg):
@@ -97,15 +97,23 @@ def _flash(args):
         help='main.py file to use instead of one from firmware file')
     args = parser.parse_args(args)
 
+    # FIXME: clean up main argument for consistency with the other tools
     firmware_zip = zipfile.ZipFile(args.firmware)
     firmware_base = firmware_zip.open('firmware-base.bin')
     main_py = args.main or io.TextIOWrapper(firmware_zip.open('main.py'))
     metadata = json.load(firmware_zip.open('firmware.metadata.json'))
 
-    async def _main(script_path):
-        print('compiling main.py...')
-        mpy = await compile_file(main_py.read(), metadata['mpy-cross-options'], metadata['mpy-abi-version'])
+    async def _main():
+        print('Compiling main.py.')
+        mpy = await compile_file(
+            save_script(main_py.read()),
+            metadata['mpy-cross-options'],
+            metadata['mpy-abi-version']
+        )
+        print('Creating firmware.')
         firmware = create_firmware(firmware_base.read(), mpy, metadata)
+        await flash_firmware(firmware)
+    asyncio.run(_main())
 
 
 def entry():
