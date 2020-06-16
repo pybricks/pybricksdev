@@ -26,8 +26,11 @@ class BootloaderRequest():
         if request_confirm:
             self.reply_len += 1
 
-    def make_request(self):
-        return bytearray((self.command,))
+    def make_request(self, payload=None):
+        request = bytearray((self.command,))
+        if payload is not None:
+            request += payload
+        return request
 
     def parse_reply(self, reply):
         if reply[0] == self.command:
@@ -100,7 +103,7 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply_len = 0
         self.reply = bytearray()
 
-    async def bootloader_message(self, msg, payload=None):
+    async def bootloader_message(self, msg, payload=None, delay=0.05):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
@@ -108,10 +111,8 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply = bytearray()
 
         # Write message
-        total = msg.make_request()
-        if payload is not None:
-            total += payload
-        await self.write(total)
+        request = msg.make_request(payload)
+        await self.write(request, delay)
 
         # If we expect a reply, await for it
         if self.reply_len > 0:
@@ -187,13 +188,10 @@ class BootloaderConnection(BLEStreamConnection):
                 size = len(payload)
                 data = struct.pack('<BI' + 'B' * size, size + 4, addr, *payload)
                 addr += size
-                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, data)
+                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, payload=data, delay=0.001)
                 self.logger.debug(response)
-                # If we send data too fast, we can overrun the Bluetooth
-                # buffer on the hub
-                # await asyncio.sleep(10 / 1000)
                 pbar.update(size)
-            asyncio.sleep(5)
+            await asyncio.sleep(5)
 
 
 def sum_complement(fw, max_size):
