@@ -25,14 +25,14 @@ FlashStateReply = namedtuple('FlashStateReply', ['level'])
 
 
 class FlashLoaderFunction():
-    ERASE_FLASH = (0x11, 1)
-    PROGRAM_FLASH = (0x22, 1+4)
-    START_APP = (0x33, 0)
-    INIT_LOADER = (0x44, 1)
-    GET_INFO = (0x55, 4+4+4+1)
-    GET_CHECKSUM = (0x66, 1)
-    GET_FLASH_STATE = (0x77, 1)
-    DISCONNECT = (0x88, 0)
+    ERASE_FLASH     = (0x11, 1 + 1)
+    PROGRAM_FLASH   = (0x22, 1 + 1 + 4)
+    START_APP       = (0x33, 1)
+    INIT_LOADER     = (0x44, 1 + 1)
+    GET_INFO        = (0x55, 1 + 4 + 4 + 4 + 1)
+    GET_CHECKSUM    = (0x66, 1 + 1)
+    GET_FLASH_STATE = (0x77, 1 + 1)
+    DISCONNECT      = (0x88, 1)
 
 
 def parse(msg):
@@ -109,7 +109,6 @@ class BootloaderConnection(BLEStreamConnection):
         # If we expect a reply, await for it
         if self.reply_len > 0:
             await self.reply_ready.wait()
-            self.reply_len = 0
             return parse(self.reply)
 
     def char_handler(self, char):
@@ -124,18 +123,21 @@ class BootloaderConnection(BLEStreamConnection):
             int or None: Processed character.
 
         """
-
+        # If we are expecting a nonzero reply, save the incoming character
         if self.reply_len > 0:
             self.reply.append(char)
 
+            # Debug reply progress
             self.logger.debug(
                 "Received reply byte {0}/{1}".format(
                     len(self.reply), self.reply_len
                 )
             )
 
+            # If reply is complete, set the reply_ready event
             if len(self.reply) == self.reply_len:
                 self.logger.debug("Reply complete.")
+                self.reply_len = 0
                 self.reply_ready.set()
                 self.reply_ready.clear()
 
@@ -232,7 +234,7 @@ async def flash_firmware(blob):
     updater = BootloaderConnection()
     updater.logger.setLevel(logging.DEBUG)
     await updater.connect(address)
-    r = await updater.send_bootloader_message(FlashLoaderFunction.GET_FLASH_STATE)
+    r = await updater.send_bootloader_message(FlashLoaderFunction.GET_INFO)
     q = await updater.send_bootloader_message(FlashLoaderFunction.GET_INFO)
     print(r, q)
     await asyncio.sleep(3)
