@@ -6,10 +6,10 @@ import io
 import struct
 import sys
 from collections import namedtuple
-from enum import IntEnum
 from tqdm import tqdm
 import logging
 from pybricksdev.ble import BLEStreamConnection
+import sys
 
 
 def sum_complement(fw, max_size):
@@ -89,6 +89,11 @@ def create_firmware(base, mpy, metadata):
 
     return firmware
 
+HUB_NAMES = {
+    0x40: 'Move Hub',
+    0x41: 'City Hub',
+    0x80: 'Control+ Hub'
+}
 
 class BootloaderRequest():
     """Bootloader request structure."""
@@ -142,28 +147,6 @@ BootloaderRequest.GET_FLASH_STATE = BootloaderRequest(
 BootloaderRequest.DISCONNECT = BootloaderRequest(
     0x88, 'Disconnect', [], '', True
 )
-
-
-class HubType(IntEnum):
-    MOVEHUB = 0x40  # BOOST Move Hub
-    CITYHUB = 0x41  # Hub No. 4
-    CPLUSHUB = 0x80  # TECHNIC Control+ hub (Hub No. 2)
-
-    # magic methods for argparse compatibility
-    # https://stackoverflow.com/q/43968006/1976323
-
-    def __str__(self):
-        return self.name.lower()
-
-    def __repr__(self):
-        return str(self)
-
-    @staticmethod
-    def argparse(s):
-        try:
-            return HubType[s.upper()]
-        except KeyError:
-            return s
 
 
 class BootloaderConnection(BLEStreamConnection):
@@ -231,13 +214,13 @@ class BootloaderConnection(BLEStreamConnection):
         info = await self.bootloader_message(BootloaderRequest.GET_INFO)
         self.logger.debug(info)
 
-        hub_type = HubType(info.type_id)
-        print('Connected to', hub_type)
-        fw_hub_type = HubType(metadata['device-id'])
-        if hub_type != fw_hub_type:
+        if info.type_id != metadata['device-id']:
             await self.disconnect()
-            raise RuntimeError(f'Firmware is for {str(fw_hub_type)}' +
-                               f' but we are connected to {str(hub_type)}')
+            raise RuntimeError(
+                "This firmware {0}, but we are connected to {1}.".format(
+                    HUB_NAMES[metadata['device-id']], HUB_NAMES[info.type_id]
+                )
+            )
 
         # TODO: Use write with response on CityHub
 
