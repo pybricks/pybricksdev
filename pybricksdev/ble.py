@@ -213,7 +213,10 @@ class BLEStreamConnection():
         for chunk in chunks:
             self.logger.debug("TX CHUNK: {0}".format(chunk))
             # Send one chunk
-            await self.client.write_gatt_char(self.char_rx_UUID, chunk)
+            await self.client.write_gatt_char(
+                self.char_rx_UUID,
+                bytearray(chunk)
+            )
             # Give server some time to process chunk
             await asyncio.sleep(pause)
 
