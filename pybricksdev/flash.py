@@ -1,14 +1,16 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2019-2020 The Pybricks Authors
 
-import asyncio
 import io
+from collections import namedtuple
+import json
 import struct
 import sys
-from collections import namedtuple
 from tqdm import tqdm
-import logging
+import zipfile
+
 from pybricksdev.ble import BLERequestsConnection
+from pybricksdev.compile import save_script, compile_file
 
 
 def sum_complement(fw, max_size):
@@ -48,20 +50,29 @@ def sum_complement(fw, max_size):
     return correction
 
 
-def create_firmware(base, mpy, metadata):
+async def create_firmware(firmware_zip):
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
-        base (bytes):
-            base firmware binary blob
-        mpy (bytes):
-            main.mpy binary blob
-        metadata (dict):
-            firmware metadata
+        firmware_zip (str):
+            Path to the firmware zip file.
 
     Returns:
-        bytes: composite binary blob with correct padding and checksum
+        bytes: Composite binary blob with correct padding and checksum.
+        dict: Meta data for this firmware file.
     """
+
+    archive = zipfile.ZipFile(firmware_zip)
+    base = archive.open('firmware-base.bin').read()
+    main_py = io.TextIOWrapper(archive.open('main.py'))
+    metadata = json.load(archive.open('firmware.metadata.json'))
+
+    mpy = await compile_file(
+        save_script(main_py.read()),
+        metadata['mpy-cross-options'],
+        metadata['mpy-abi-version']
+    )
+
     # start with base firmware binary blob
     firmware = bytearray(base)
     # pad with 0s until user-mpy-offset
@@ -86,7 +97,7 @@ def create_firmware(base, mpy, metadata):
               file=sys.stderr)
         exit(1)
 
-    return firmware
+    return firmware, metadata
 
 
 HUB_NAMES = {

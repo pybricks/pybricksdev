@@ -82,7 +82,6 @@ def _flash(args):
         description='Flashes firmware on LEGO Powered Up devices.')
     parser.add_argument('firmware',
                         metavar='<firmware-file>',
-                        type=argparse.FileType('rb'),
                         help='The firmware file')
     parser.add_argument('-d',
                         '--delay',
@@ -91,29 +90,11 @@ def _flash(args):
                         type=int,
                         default=10,
                         help='Delay between Bluetooth packets (default: 10).')
-    parser.add_argument(
-        '-m',
-        '--main',
-        metavar='<main.py>',
-        type=argparse.FileType(),
-        help='main.py file to use instead of one from firmware file')
     args = parser.parse_args(args)
 
-    # FIXME: clean up main argument for consistency with the other tools
-    firmware_zip = zipfile.ZipFile(args.firmware)
-    firmware_base = firmware_zip.open('firmware-base.bin')
-    main_py = args.main or io.TextIOWrapper(firmware_zip.open('main.py'))
-    metadata = json.load(firmware_zip.open('firmware.metadata.json'))
-
     async def _main():
-        print('Compiling main.py')
-        mpy = await compile_file(
-            save_script(main_py.read()),
-            metadata['mpy-cross-options'],
-            metadata['mpy-abi-version']
-        )
         print('Creating firmware')
-        firmware = create_firmware(firmware_base.read(), mpy, metadata)
+        firmware, metadata = await create_firmware(args.firmware)
         address = await find_device('LEGO Bootloader', 15)
         print('Found:', address)
         updater = BootloaderConnection()
