@@ -95,6 +95,13 @@ HUB_NAMES = {
     0x80: 'Control+ Hub'
 }
 
+# FIXME: This belongs in metadata
+PAYLOAD_SIZE = {
+    0x40: 14,
+    0x41: 32,  # untested
+    0x80: 32,
+}
+
 
 class BootloaderRequest():
     """Bootloader request structure."""
@@ -156,7 +163,7 @@ class BootloaderConnection(BLERequestsConnection):
         """Initialize the BLE Connection for Bootloader service."""
         super().__init__('00001626-1212-efde-1623-785feabcd123')
 
-    async def bootloader_request(self, request, payload=None, delay=0.05):
+    async def bootloader_request(self, request, payload=None, delay=0.05, timeout=None):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
@@ -169,7 +176,7 @@ class BootloaderConnection(BLERequestsConnection):
         # If we expect a reply, await for it
         if request.reply_len > 0:
             self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
-            reply = await self.wait_for_reply()
+            reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 
     async def flash(self, firmware, metadata, delay):
@@ -178,11 +185,12 @@ class BootloaderConnection(BLERequestsConnection):
         firmware_io = io.BytesIO(firmware)
         firmware_size = len(firmware)
 
-        print("Getting device info.")
+        # Request hub information
+        self.logger.info("Getting device info.")
         info = await self.bootloader_request(self.GET_INFO)
         self.logger.debug(info)
 
-        # Check hub ID
+        # Verify hub ID against ID in firmware package
         if info.type_id != metadata['device-id']:
             await self.disconnect()
             raise RuntimeError(
@@ -193,46 +201,50 @@ class BootloaderConnection(BLERequestsConnection):
 
         # TODO: Use write with response on CityHub
 
-        print("Erasing flash.")
+        # Erase existing firmware
+        self.logger.info("Erasing flash.")
         response = await self.bootloader_request(self.ERASE_FLASH)
         self.logger.debug(response)
 
-        print('Validating size.')
+        # Get the bootloader ready to accept the firmware
+        self.logger.info('Request begin update.')
         response = await self.bootloader_request(
             request=self.INIT_LOADER,
             payload=struct.pack('<I', firmware_size)
         )
         self.logger.debug(response)
+        self.logger.info('Begin update.')
 
-        count = 0
-        max_payload_size = 32
-
-        print('flashing firmware...')
+        # Percentage after which we'll check progress
+        verify_progress = 5
 
         # Maintain progress using tqdm
         with tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
 
-            # Start writing at the start address
-            addr = info.start_addr
-
             # Repeat until the whole firmware has been processed
             while firmware_io.tell() != firmware_size:
 
-                count += 1
-                if count % 1000 == 0:
-                    try:
-                        response = await asyncio.wait_for(self.bootloader_request(self.GET_CHECKSUM), 2)
-                        print(response)
-                    except (asyncio.exceptions.TimeoutError, ValueError):
-                        print("Got stuck, try disconnect")
-                        break
+                # Progress percentage
+                progress = firmware_io.tell() / firmware_size * 100
+
+                # If progressed beyond next checkpoint, check connection.
+                if progress > verify_progress:
+                    # Get checksum. This tells us the hub is still operating
+                    # normally. If we don't get it, we stop
+                    result = await self.bootloader_request(
+                        self.GET_CHECKSUM, timeout=2
+                    )
+                    self.logger.debug(result)
+
+                    # Check again after 20% more progress
+                    verify_progress += 20
 
                 # The write address is the starting address plus
                 # how much has been written already
                 address = info.start_addr + firmware_io.tell()
 
                 # Read the firmware chunk to be sent
-                payload = firmware_io.read(max_payload_size)
+                payload = firmware_io.read(PAYLOAD_SIZE[info.type_id])
 
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
