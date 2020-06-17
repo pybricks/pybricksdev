@@ -9,7 +9,6 @@ from collections import namedtuple
 from tqdm import tqdm
 import logging
 from pybricksdev.ble import BLEStreamConnection
-import sys
 
 
 def sum_complement(fw, max_size):
@@ -161,22 +160,22 @@ class BootloaderConnection(BLEStreamConnection):
         self.reply_len = 0
         self.reply = bytearray()
 
-    async def bootloader_message(self, msg, payload=None, delay=0.05):
+    async def bootloader_request(self, request, payload=None, delay=0.05):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
-        self.reply_len = msg.reply_len
+        self.reply_len = request.reply_len
         self.reply = bytearray()
 
         # Write message
-        request = msg.make_request(payload)
-        await self.write(request, delay)
+        data = request.make_request(payload)
+        await self.write(data, delay)
 
         # If we expect a reply, await for it
         if self.reply_len > 0:
             self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
             await self.reply_ready.wait()
-            return msg.parse_reply(self.reply)
+            return request.parse_reply(self.reply)
 
     def char_handler(self, char):
         """Handles new incoming characters. Overrides BLEStreamConnection to
@@ -204,16 +203,17 @@ class BootloaderConnection(BLEStreamConnection):
 
         return char
 
-    async def flash(self, blob, metadata, delay):
+    async def flash(self, firmware, metadata, delay):
 
         # Firmware information
-        fw_io = io.BytesIO(blob)
-        fw_len = len(blob)
+        firmware_io = io.BytesIO(firmware)
+        firmware_size = len(firmware)
 
         print("Getting device info.")
-        info = await self.bootloader_message(BootloaderRequest.GET_INFO)
+        info = await self.bootloader_request(BootloaderRequest.GET_INFO)
         self.logger.debug(info)
 
+        # Check hub ID
         if info.type_id != metadata['device-id']:
             await self.disconnect()
             raise RuntimeError(
@@ -225,46 +225,64 @@ class BootloaderConnection(BLEStreamConnection):
         # TODO: Use write with response on CityHub
 
         print("Erasing flash.")
-        response = await self.bootloader_message(BootloaderRequest.ERASE_FLASH)
+        response = await self.bootloader_request(BootloaderRequest.ERASE_FLASH)
         self.logger.debug(response)
 
         print('Validating size.')
-        size_payload = struct.pack('<I', fw_len)
-        response = await self.bootloader_message(BootloaderRequest.INIT_LOADER, size_payload)
+        response = await self.bootloader_request(
+            request=BootloaderRequest.INIT_LOADER,
+            payload=struct.pack('<I', firmware_size)
+        )
         self.logger.debug(response)
 
         count = 0
+        max_payload_size = 32
 
         print('flashing firmware...')
-        with tqdm(total=fw_len, unit='B', unit_scale=True) as pbar:
+
+        # Maintain progress using tqdm
+        with tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
+
+            # Start writing at the start address
             addr = info.start_addr
-            while True:
+
+            # Repeat until the whole firmware has been processed
+            while firmware_io.tell() != firmware_size:
 
                 count += 1
                 if count % 1000 == 0:
                     try:
-                        response = await asyncio.wait_for(self.bootloader_message(BootloaderRequest.GET_CHECKSUM), 2)
+                        response = await asyncio.wait_for(self.bootloader_request(BootloaderRequest.GET_CHECKSUM), 2)
                         print(response)
                     except (asyncio.exceptions.TimeoutError, ValueError):
                         print("Got stuck, try disconnect")
                         break
 
-                # BLE packet can only handle up to 14 bytes at a time
-                payload = fw_io.read(32)
-                if not payload:
-                    break
+                # The write address is the starting address plus
+                # how much has been written already
+                address = info.start_addr + firmware_io.tell()
 
-                size = len(payload)
-                data = struct.pack('<BI' + 'B' * size, size + 4, addr, *payload)
-                addr += size
-                response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, data, delay)
+                # Read the firmware chunk to be sent
+                payload = firmware_io.read(max_payload_size)
+
+                # Check if this is the last chunk to be sent
+                if firmware_io.tell() == firmware_size:
+                    # If so, request flash with confirmation request.
+                    request = BootloaderRequest.PROGRAM_FLASH
+                else:
+                    # Otherwise, do not wait for confirmation.
+                    request = BootloaderRequest.PROGRAM_FLASH_BARE
+
+                # Pack the data in the expected format
+                data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
+                response = await self.bootloader_request(request, data, delay)
                 self.logger.debug(response)
-                pbar.update(size)
+                pbar.update(len(payload))
 
 
 async def flash_firmware(address, blob, metadata, delay):
     updater = BootloaderConnection()
-    updater.logger.setLevel(logging.WARNING)
+    updater.logger.setLevel(logging.DEBUG)
     await updater.connect(address)
     await updater.flash(blob, metadata, delay/1000)
     await updater.disconnect()
