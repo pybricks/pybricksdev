@@ -2,12 +2,8 @@
 
 import argparse
 import asyncio
-import io
-import json
 from os import path
 import validators
-import zipfile
-import logging
 import sys
 
 from pybricksdev.ble import find_device
