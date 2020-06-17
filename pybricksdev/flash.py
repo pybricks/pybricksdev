@@ -5,14 +5,89 @@ import asyncio
 import io
 import struct
 import sys
-import typing
-import uuid
 from collections import namedtuple
 from enum import IntEnum
 from tqdm import tqdm
 import logging
+from pybricksdev.ble import BLEStreamConnection
 
-from pybricksdev.ble import BLEStreamConnection, find_device
+
+def sum_complement(fw, max_size):
+    """Calculates the checksum of a firmware file using the sum complement
+    method of adding each 32-bit word and the returning the two's complement
+    as the checksum.
+
+    Arguments:
+        fw (file):
+            The firmware file (a binary buffer - e.g. a file opened in 'rb' mode)
+        max_size (int):
+            The maximum size of the firmware file.
+
+    Returns:
+        int: The correction needed to make the checksum of the file == 0.
+    """
+    checksum = 0
+    size = 0
+
+    while True:
+        word = fw.read(4)
+        if not word:
+            break
+        checksum += struct.unpack('I', word)[0]
+        size += 4
+
+    if size > max_size:
+        print('firmware + main.mpy is too large"', file=sys.stderr)
+        exit(1)
+
+    for _ in range(size, max_size, 4):
+        checksum += 0xffffffff
+
+    checksum &= 0xffffffff
+    correction = checksum and (1 << 32) - checksum or 0
+
+    return correction
+
+
+def create_firmware(base, mpy, metadata):
+    """Creates a firmware blob from base firmware and main.mpy file.
+
+    Arguments:
+        base (bytes):
+            base firmware binary blob
+        mpy (bytes):
+            main.mpy binary blob
+        metadata (dict):
+            firmware metadata
+
+    Returns:
+        bytes: composite binary blob with correct padding and checksum
+    """
+    # start with base firmware binary blob
+    firmware = bytearray(base)
+    # pad with 0s until user-mpy-offset
+    firmware.extend(
+        0 for _ in range(metadata['user-mpy-offset'] - len(firmware)))
+    # append 32-bit little-endian main.mpy file size
+    firmware.extend(struct.pack('<I', len(mpy)))
+    # append main.mpy file
+    firmware.extend(mpy)
+    # pad with 0s to align to 4-byte boundary
+    firmware.extend(0 for _ in range(-len(firmware) % 4))
+
+    # append 32-bit little-endian checksum
+    if metadata['checksum-type'] == "sum":
+        firmware.extend(
+            struct.pack(
+                '<I',
+                sum_complement(io.BytesIO(firmware),
+                               metadata['max-firmware-size'] - 4)))
+    else:
+        print(f'Unknown checksum type "{metadata["checksum-type"]}"',
+              file=sys.stderr)
+        exit(1)
+
+    return firmware
 
 
 class BootloaderRequest():
@@ -202,91 +277,6 @@ class BootloaderConnection(BLEStreamConnection):
                 response = await self.bootloader_message(BootloaderRequest.PROGRAM_FLASH_BARE, data, delay)
                 self.logger.debug(response)
                 pbar.update(size)
-            await asyncio.sleep(5)
-
-
-def sum_complement(fw, max_size):
-    """Calculates the checksum of a firmware file using the sum complement
-    method of adding each 32-bit word and the returning the two's complement
-    as the checksum.
-
-    Parameters
-    ----------
-    fw : file
-        The firmware file (a binary buffer - e.g. a file opened in 'rb' mode)
-    max_size : int
-        The maximum size of the firmware file.
-
-    Returns
-    -------
-    int
-        The correction needed to make the checksum of the file == 0.
-    """
-    checksum = 0
-    size = 0
-
-    while True:
-        word = fw.read(4)
-        if not word:
-            break
-        checksum += struct.unpack('I', word)[0]
-        size += 4
-
-    if size > max_size:
-        print('firmware + main.mpy is too large"', file=sys.stderr)
-        exit(1)
-
-    for _ in range(size, max_size, 4):
-        checksum += 0xffffffff
-
-    checksum &= 0xffffffff
-    correction = checksum and (1 << 32) - checksum or 0
-
-    return correction
-
-
-def create_firmware(base, mpy, metadata):
-    """Creates a firmware blob from base firmware and main.mpy file.
-
-    Parameters
-    ----------
-    base : bytes
-        base firmware binary blob
-    mpy : bytes
-        main.mpy binary blob
-    metadata : dict
-        firmware metadata
-
-    Returns
-    -------
-    bytes
-        composite binary blob with correct padding and checksum
-    """
-    # start with base firmware binary blob
-    firmware = bytearray(base)
-    # pad with 0s until user-mpy-offset
-    firmware.extend(
-        0 for _ in range(metadata['user-mpy-offset'] - len(firmware)))
-    # append 32-bit little-endian main.mpy file size
-    firmware.extend(struct.pack('<I', len(mpy)))
-    # append main.mpy file
-    firmware.extend(mpy)
-    # pad with 0s to align to 4-byte boundary
-    firmware.extend(0 for _ in range(-len(firmware) % 4))
-
-    # append 32-bit little-endian checksum
-    if metadata['checksum-type'] == "sum":
-        firmware.extend(
-            struct.pack(
-                '<I',
-                sum_complement(io.BytesIO(firmware),
-                               metadata['max-firmware-size'] - 4)))
-    else:
-        print(f'Unknown checksum type "{metadata["checksum-type"]}"',
-              file=sys.stderr)
-        exit(1)
-
-    return firmware
 
 
 async def flash_firmware(address, blob, metadata, delay):
