@@ -8,11 +8,16 @@ from os import path
 import validators
 import zipfile
 import logging
+import sys
 
 from pybricksdev.ble import find_device
 from pybricksdev.compile import save_script, compile_file, print_mpy
 from pybricksdev.connections import PUPConnection, EV3Connection
 from pybricksdev.flash import create_firmware, BootloaderConnection
+
+
+PROG_NAME = (f'{path.basename(sys.executable)} -m pybricksdev'
+             if sys.argv[0].endswith('__main__.py') else sys.argv[0])
 
 
 def _parse_script_arg(script_arg):
@@ -25,7 +30,7 @@ def _parse_script_arg(script_arg):
 def _compile(args):
     """wrapper for: pybricksdev compile"""
     parser = argparse.ArgumentParser(
-        prog='pybricksdev compile',
+        prog=f'{PROG_NAME} compile',
         description='Compile a Pybricks program without running it.',
     )
     # The argument is a filename or a Python one-liner.
@@ -40,7 +45,7 @@ def _compile(args):
 def _run(args):
     """wrapper for: pybricksdev run"""
     parser = argparse.ArgumentParser(
-        prog='pybricksdev run',
+        prog=f'{PROG_NAME} run',
         description='Run a Pybricks program.',
     )
     # The argument is a filename or a Python one-liner.
@@ -55,7 +60,7 @@ def _run(args):
 
         # Check device argument
         if validators.ip_address.ipv4(args.device):
-            # If the device is an IP adress, it's an EV3 Brick with ev3dev.
+            # If the device is an IP address, it's an EV3 Brick with ev3dev.
             hub = EV3Connection()
             address = args.device
         else:
@@ -78,7 +83,7 @@ def _flash(args):
     """wrapper for: pybricksdev flash"""
 
     parser = argparse.ArgumentParser(
-        prog='pybricksdev flash',
+        prog=f'{PROG_NAME} flash',
         description='Flashes firmware on LEGO Powered Up devices.')
     parser.add_argument('firmware',
                         metavar='<firmware-file>',
@@ -111,7 +116,7 @@ def entry():
 
     # Provide main description and help.
     parser = argparse.ArgumentParser(
-        prog='pybricksdev',
+        prog=PROG_NAME,
         description='Utilities for Pybricks developers.'
     )
 

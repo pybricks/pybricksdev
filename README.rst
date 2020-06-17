@@ -48,7 +48,7 @@ device named ``Pybricks Hub`` that it finds.
 
     poetry run pybricksdev run --help
 
-    # Run a oneliner on a Pybricks hub
+    # Run a one-liner on a Pybricks hub
     poetry run pybricksdev run 'Pybricks Hub' 'print("Hello!"); print("world!");'
 
     # Run script on the first device we find called Pybricks hub
