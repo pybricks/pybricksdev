@@ -1,4 +1,4 @@
-"""Command line wrapper around pybricksdev library. Do not import from here."""
+"""Command line wrapper around pybricksdev library."""
 
 import argparse
 import asyncio

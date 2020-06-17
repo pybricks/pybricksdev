@@ -10,7 +10,7 @@ homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
 
 [tool.poetry.scripts]
-pybricksdev = 'pybricksdev.scripts:entry'
+pybricksdev = 'pybricksdev.__main__:entry'
 
 [tool.poetry.dependencies]
 asyncssh = "*"

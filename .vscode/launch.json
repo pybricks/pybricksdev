@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Run pybricksdev",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/pybricksdev/scripts.py",
+            "module": "pybricksdev",
             "console": "integratedTerminal",
             "args": [
                 "flash", "-d", "10", "../pybricks-micropython/bricks/cplushub/build/firmware.zip"
