@@ -185,6 +185,10 @@ mccabe = ">=0.6.0,<0.7.0"
 pycodestyle = ">=2.6.0a1,<2.7.0"
 pyflakes = ">=2.2.0,<2.3.0"
 
+[package.dependencies.importlib-metadata]
+python = "<3.8"
+version = "*"
+
 [[package]]
 category = "main"
 description = "A featureful, immutable, and correct URL for Python."
@@ -205,6 +209,22 @@ name = "idna"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "2.9"
+
+[[package]]
+category = "main"
+description = "Read metadata from Python packages"
+marker = "python_version < \"3.8\""
+name = "importlib-metadata"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
+version = "1.6.1"
+
+[package.dependencies]
+zipp = ">=0.5"
+
+[package.extras]
+docs = ["sphinx", "rst.linker"]
+testing = ["packaging", "pep517", "importlib-resources (>=1.3)"]
 
 [[package]]
 category = "main"
@@ -303,14 +323,14 @@ description = "An autocompletion tool for Python that can be used for text edito
 name = "jedi"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.17.0"
+version = "0.17.1"
 
 [package.dependencies]
-parso = ">=0.7.0"
+parso = ">=0.7.0,<0.8.0"
 
 [package.extras]
 qa = ["flake8 (3.7.9)"]
-testing = ["colorama", "docopt", "pytest (>=3.9.0,<5.0.0)"]
+testing = ["Django (<3.1)", "colorama", "docopt", "pytest (>=3.9.0,<5.0.0)"]
 
 [[package]]
 category = "main"
@@ -339,6 +359,10 @@ attrs = ">=17.4.0"
 pyrsistent = ">=0.14.0"
 setuptools = "*"
 six = ">=1.11.0"
+
+[package.dependencies.importlib-metadata]
+python = "<3.8"
+version = "*"
 
 [package.extras]
 format = ["idna", "jsonpointer (>1.13)", "rfc3987", "strict-rfc3339", "webcolors"]
@@ -589,6 +613,11 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "0.13.1"
 
+[package.dependencies]
+[package.dependencies.importlib-metadata]
+python = "<3.8"
+version = ">=0.12"
+
 [package.extras]
 dev = ["pre-commit", "tox"]
 
@@ -608,8 +637,8 @@ category = "main"
 description = "Library for building powerful interactive command lines in Python"
 name = "prompt-toolkit"
 optional = false
-python-versions = ">=3.6.1"
-version = "3.0.5"
+python-versions = ">=3.6"
+version = "3.0.3"
 
 [package.dependencies]
 wcwidth = "*"
@@ -637,10 +666,10 @@ description = ""
 name = "pybricks"
 optional = false
 python-versions = "^3.5"
-version = "2.0.0"
+version = "3.0.0a3"
 
 [package.source]
-reference = "0779b8df167e2c9bd0ae57831ce67ecfe969c1c8"
+reference = "3554814c861ae0a11f3b6aba471478ffb5a5ab3a"
 type = "git"
 url = "https://github.com/pybricks/pybricks-api.git"
 [[package]]
@@ -2425,6 +2454,10 @@ pluggy = ">=0.12,<1.0"
 py = ">=1.5.0"
 wcwidth = "*"
 
+[package.dependencies.importlib-metadata]
+python = "<3.8"
+version = ">=0.12"
+
 [package.extras]
 checkqa-mypy = ["mypy (v0.761)"]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
@@ -2447,7 +2480,7 @@ marker = "platform_system == \"Windows\""
 name = "pythonnet"
 optional = false
 python-versions = "*"
-version = "2.5.0"
+version = "2.5.1"
 
 [package.dependencies]
 pycparser = "*"
@@ -2670,6 +2703,19 @@ notebook = ">=4.4.1"
 
 [[package]]
 category = "main"
+description = "Backport of pathlib-compatible object wrapper for zip files"
+marker = "python_version < \"3.8\""
+name = "zipp"
+optional = false
+python-versions = ">=3.6"
+version = "3.1.0"
+
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
+testing = ["jaraco.itertools", "func-timeout"]
+
+[[package]]
+category = "main"
 description = "Interfaces for Python"
 marker = "platform_system == \"Linux\""
 name = "zope.interface"
@@ -2686,8 +2732,8 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "4fe881d09f9ddb07fd23660ffd14ca1a629536d1dc0043e7964bde96c0d43c16"
-python-versions = "^3.8.2"
+content-hash = "55096bc89cd0bff1d8663e40c6726436feb94ba46a9a9063492078fa1d241043"
+python-versions = "^3.6"
 
 [metadata.files]
 appnope = [
@@ -2805,6 +2851,10 @@ idna = [
     {file = "idna-2.9-py2.py3-none-any.whl", hash = "sha256:a068a21ceac8a4d63dbfd964670474107f541babbd2250d61922f029858365fa"},
     {file = "idna-2.9.tar.gz", hash = "sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"},
 ]
+importlib-metadata = [
+    {file = "importlib_metadata-1.6.1-py2.py3-none-any.whl", hash = "sha256:15ec6c0fd909e893e3a08b3a7c76ecb149122fb14b7efe1199ddd4c7c57ea958"},
+    {file = "importlib_metadata-1.6.1.tar.gz", hash = "sha256:0505dd08068cfec00f53a74a0ad927676d7757da81b7436a6eefe4c7cf75c545"},
+]
 incremental = [
     {file = "incremental-17.5.0-py2.py3-none-any.whl", hash = "sha256:717e12246dddf231a349175f48d74d93e2897244939173b01974ab6661406b9f"},
     {file = "incremental-17.5.0.tar.gz", hash = "sha256:7b751696aaf36eebfab537e458929e194460051ccad279c72b755a167eebd4b3"},
@@ -2826,8 +2876,8 @@ ipywidgets = [
     {file = "ipywidgets-7.5.1.tar.gz", hash = "sha256:e945f6e02854a74994c596d9db83444a1850c01648f1574adf144fbbabe05c97"},
 ]
 jedi = [
-    {file = "jedi-0.17.0-py2.py3-none-any.whl", hash = "sha256:cd60c93b71944d628ccac47df9a60fec53150de53d42dc10a7fc4b5ba6aae798"},
-    {file = "jedi-0.17.0.tar.gz", hash = "sha256:df40c97641cb943661d2db4c33c2e1ff75d491189423249e989bcea4464f3030"},
+    {file = "jedi-0.17.1-py2.py3-none-any.whl", hash = "sha256:1ddb0ec78059e8e27ec9eb5098360b4ea0a3dd840bedf21415ea820c21b40a22"},
+    {file = "jedi-0.17.1.tar.gz", hash = "sha256:807d5d4f96711a2bcfdd5dfa3b1ae6d09aa53832b182090b222b5efb81f52f63"},
 ]
 jinja2 = [
     {file = "Jinja2-2.11.2-py2.py3-none-any.whl", hash = "sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035"},
@@ -2952,8 +3002,8 @@ prometheus-client = [
     {file = "prometheus_client-0.8.0.tar.gz", hash = "sha256:c6e6b706833a6bd1fd51711299edee907857be10ece535126a158f911ee80915"},
 ]
 prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.5-py3-none-any.whl", hash = "sha256:df7e9e63aea609b1da3a65641ceaf5bc7d05e0a04de5bd45d05dbeffbabf9e04"},
-    {file = "prompt_toolkit-3.0.5.tar.gz", hash = "sha256:563d1a4140b63ff9dd587bda9557cffb2fe73650205ab6f4383092fb882e7dc8"},
+    {file = "prompt_toolkit-3.0.3-py3-none-any.whl", hash = "sha256:c93e53af97f630f12f5f62a3274e79527936ed466f038953dfa379d4941f651a"},
+    {file = "prompt_toolkit-3.0.3.tar.gz", hash = "sha256:a402e9bf468b63314e37460b68ba68243d55b2f8c4d0192f85a019af3945050e"},
 ]
 ptyprocess = [
     {file = "ptyprocess-0.6.0-py2.py3-none-any.whl", hash = "sha256:d7cc528d76e76342423ca640335bd3633420dc1366f258cb31d05e865ef5ca1f"},
@@ -3494,17 +3544,17 @@ python-dateutil = [
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
 ]
 pythonnet = [
-    {file = "pythonnet-2.5.0-cp27-cp27m-win32.whl", hash = "sha256:c25605d2768c58de589fbe34a69f3dd91783d9e60d66bd543fd60effa224f3c1"},
-    {file = "pythonnet-2.5.0-cp27-cp27m-win_amd64.whl", hash = "sha256:fcf0ee24d3a2a41ca1f5a74dfed8581c992c1bd3f0d36ac0a9ec9f4c0abba31f"},
-    {file = "pythonnet-2.5.0-cp35-cp35m-win32.whl", hash = "sha256:628fb08d948856a5ed238750e7a02d32f999a94c28cfae0cf83afb5b2db02812"},
-    {file = "pythonnet-2.5.0-cp35-cp35m-win_amd64.whl", hash = "sha256:0976a2a42a78c18e620d0626349e941e950d09e4591c13b3e00fd4effe4a9446"},
-    {file = "pythonnet-2.5.0-cp36-cp36m-win32.whl", hash = "sha256:5501b6016dec7b12918d79d6fb75fedd13eec54c90447e1a063727a0379b1204"},
-    {file = "pythonnet-2.5.0-cp36-cp36m-win_amd64.whl", hash = "sha256:585a170e8580528a3533944514895e462173067a5dfbb0784e5f49c45748ed83"},
-    {file = "pythonnet-2.5.0-cp37-cp37m-win32.whl", hash = "sha256:0fff3addacaa82a26b1cebce8c8049dfebf7356e06cf4532074897f96a203495"},
-    {file = "pythonnet-2.5.0-cp37-cp37m-win_amd64.whl", hash = "sha256:e8bb08c0058c5d42ecd47dc532b23d66089420ffe68ab4e75cea7820822b71f5"},
-    {file = "pythonnet-2.5.0-cp38-cp38-win32.whl", hash = "sha256:df7819c23deed9b2541e5f4fd91dd69d6f286d174f284080498ede31f9aea4a5"},
-    {file = "pythonnet-2.5.0-cp38-cp38-win_amd64.whl", hash = "sha256:796bd77a21c50414e8b15816b05bb66c90ea636786d7cf96ea77c534f274e898"},
-    {file = "pythonnet-2.5.0.tar.gz", hash = "sha256:73279c283804b9c72906fc512522d87d4c2ae1654ff3572cc8a3fc980de2891a"},
+    {file = "pythonnet-2.5.1-cp27-cp27m-win32.whl", hash = "sha256:5d1ec84c7d1ec9d31350383bb4832ef51a916e43cae11d7f7fc127985f62ab6c"},
+    {file = "pythonnet-2.5.1-cp27-cp27m-win_amd64.whl", hash = "sha256:6fb41f0b9f3cd9a7ad581e6c817ad44e8ba7cd9ee4b91bbb7718fd85284b0c65"},
+    {file = "pythonnet-2.5.1-cp35-cp35m-win32.whl", hash = "sha256:3555c3a1ed5e7359d156043e1b4a4db2c6ae90fad0e8c70547af01e76c86f374"},
+    {file = "pythonnet-2.5.1-cp35-cp35m-win_amd64.whl", hash = "sha256:faa3c2a90aadce92bfb28570830b498954243eb5c6907d41e9dcbd936ec9ca52"},
+    {file = "pythonnet-2.5.1-cp36-cp36m-win32.whl", hash = "sha256:f0cd76232072b15bba4459cbf9475d81348065ac120e20c301d2593621dd0a76"},
+    {file = "pythonnet-2.5.1-cp36-cp36m-win_amd64.whl", hash = "sha256:6b808b3278395f2a2b166844d6b23032f28cda22e5296d2e57a8ecd38cb0d554"},
+    {file = "pythonnet-2.5.1-cp37-cp37m-win32.whl", hash = "sha256:93065007501edbe9a97dff1dbb041eeb8f3c1551d469070761b7a75c24308fa2"},
+    {file = "pythonnet-2.5.1-cp37-cp37m-win_amd64.whl", hash = "sha256:6bbf050084224d54da7aeb6a90f068e90ae4d3750248700aa0acab7d657df8cd"},
+    {file = "pythonnet-2.5.1-cp38-cp38-win32.whl", hash = "sha256:71d5af9205a6f872e654b21a4f77fb2385aa9feff8760057c0518dc470f19d6f"},
+    {file = "pythonnet-2.5.1-cp38-cp38-win_amd64.whl", hash = "sha256:c1db9edf41489c1227746cf6382bd087e08b494632010a6bead92984f000a4bf"},
+    {file = "pythonnet-2.5.1.tar.gz", hash = "sha256:b4e876e0ddb52c7ce187c1abf529ef1e419743af283fde9d5769c798cf4b078f"},
 ]
 pywin32 = [
     {file = "pywin32-228-cp27-cp27m-win32.whl", hash = "sha256:37dc9935f6a383cc744315ae0c2882ba1768d9b06700a70f35dc1ce73cd4ba9c"},
@@ -3647,6 +3697,10 @@ webencodings = [
 widgetsnbextension = [
     {file = "widgetsnbextension-3.5.1-py2.py3-none-any.whl", hash = "sha256:bd314f8ceb488571a5ffea6cc5b9fc6cba0adaf88a9d2386b93a489751938bcd"},
     {file = "widgetsnbextension-3.5.1.tar.gz", hash = "sha256:079f87d87270bce047512400efd70238820751a11d2d8cb137a5a5bdbaf255c7"},
+]
+zipp = [
+    {file = "zipp-3.1.0-py3-none-any.whl", hash = "sha256:aa36550ff0c0b7ef7fa639055d797116ee891440eac1a56f378e2d3179e0320b"},
+    {file = "zipp-3.1.0.tar.gz", hash = "sha256:c599e4d75c98f6798c509911d08a22e6c021d074469042177c8c86fb92eefd96"},
 ]
 "zope.interface" = [
     {file = "zope.interface-5.1.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:645a7092b77fdbc3f68d3cc98f9d3e71510e419f54019d6e282328c0dd140dcd"},
