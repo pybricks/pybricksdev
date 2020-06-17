@@ -85,6 +85,7 @@ def _flash(args):
                         help='The firmware file')
     parser.add_argument('-d',
                         '--delay',
+                        dest='delay',
                         metavar='<milliseconds>',
                         type=int,
                         default=10,
@@ -114,7 +115,7 @@ def _flash(args):
         firmware = create_firmware(firmware_base.read(), mpy, metadata)
         address = await find_device("LEGO Bootloader", 15)
         print("Found: ", address)
-        await flash_firmware(address, firmware, metadata)
+        await flash_firmware(address, firmware, metadata, args.delay)
     asyncio.run(_main())
 
 

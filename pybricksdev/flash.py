@@ -289,9 +289,9 @@ def create_firmware(base, mpy, metadata):
     return firmware
 
 
-async def flash_firmware(address, blob, metadata):
+async def flash_firmware(address, blob, metadata, delay):
     updater = BootloaderConnection()
     updater.logger.setLevel(logging.WARNING)
     await updater.connect(address)
-    await updater.flash(blob, metadata, 0.003)
+    await updater.flash(blob, metadata, delay/1000)
     await updater.disconnect()
