@@ -9,8 +9,8 @@ import sys
 from tqdm import tqdm
 import zipfile
 
-from pybricksdev.ble import BLERequestsConnection
-from pybricksdev.compile import save_script, compile_file
+from .ble import BLERequestsConnection
+from .compile import save_script, compile_file
 
 
 def sum_complement(fw, max_size):

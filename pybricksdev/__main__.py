@@ -6,10 +6,10 @@ from os import path
 import validators
 import sys
 
-from pybricksdev.ble import find_device
-from pybricksdev.compile import save_script, compile_file, print_mpy
-from pybricksdev.connections import PUPConnection, EV3Connection
-from pybricksdev.flash import create_firmware, BootloaderConnection
+from .ble import find_device
+from .compile import save_script, compile_file, print_mpy
+from .connections import PUPConnection, EV3Connection
+from .flash import create_firmware, BootloaderConnection
 
 
 PROG_NAME = (f'{path.basename(sys.executable)} -m pybricksdev'

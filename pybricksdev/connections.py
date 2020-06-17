@@ -1,9 +1,9 @@
 import asyncio
 import asyncssh
 import os
-from pybricksdev.ble import BLEConnection
-from pybricksdev.usb import USBConnection
-from pybricksdev.compile import compile_file
+from .ble import BLEConnection
+from .usb import USBConnection
+from .compile import compile_file
 
 
 class CharacterGlue():
