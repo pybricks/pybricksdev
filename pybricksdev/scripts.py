@@ -7,11 +7,12 @@ import json
 from os import path
 import validators
 import zipfile
+import logging
 
 from pybricksdev.ble import find_device
 from pybricksdev.compile import save_script, compile_file, print_mpy
 from pybricksdev.connections import PUPConnection, EV3Connection
-from pybricksdev.flash import create_firmware, flash_firmware
+from pybricksdev.flash import create_firmware, BootloaderConnection
 
 
 def _parse_script_arg(script_arg):
@@ -105,17 +106,23 @@ def _flash(args):
     metadata = json.load(firmware_zip.open('firmware.metadata.json'))
 
     async def _main():
-        print('Compiling main.py.')
+        print('Compiling main.py')
         mpy = await compile_file(
             save_script(main_py.read()),
             metadata['mpy-cross-options'],
             metadata['mpy-abi-version']
         )
-        print('Creating firmware.')
+        print('Creating firmware')
         firmware = create_firmware(firmware_base.read(), mpy, metadata)
-        address = await find_device("LEGO Bootloader", 15)
-        print("Found: ", address)
-        await flash_firmware(address, firmware, metadata, args.delay)
+        address = await find_device('LEGO Bootloader', 15)
+        print('Found:', address)
+        updater = BootloaderConnection()
+        updater.logger.setLevel(logging.INFO)
+        await updater.connect(address)
+        print('Erasing flash and starting update')
+        await updater.flash(firmware, metadata, args.delay/1000)
+        await updater.disconnect()
+
     asyncio.run(_main())
 
 

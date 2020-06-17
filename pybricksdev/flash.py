@@ -261,9 +261,3 @@ class BootloaderConnection(BLERequestsConnection):
                 pbar.update(len(payload))
 
 
-async def flash_firmware(address, blob, metadata, delay):
-    updater = BootloaderConnection()
-    updater.logger.setLevel(logging.INFO)
-    await updater.connect(address)
-    await updater.flash(blob, metadata, delay/1000)
-    await updater.disconnect()
