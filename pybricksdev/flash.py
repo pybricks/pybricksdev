@@ -99,7 +99,7 @@ HUB_NAMES = {
 class BootloaderRequest():
     """Bootloader request structure."""
 
-    def __init__(self, command, name, request_format, data_format, request_confirm):
+    def __init__(self, command, name, request_format, data_format, request_confirm=True):
         self.command = command
         self.ReplyClass = namedtuple(name, request_format)
         self.data_format = data_format
@@ -120,38 +120,37 @@ class BootloaderRequest():
             raise ValueError("Unknown message: {0}".format(reply))
 
 
-# Create the static instances
-BootloaderRequest.ERASE_FLASH = BootloaderRequest(
-    0x11, 'Erase', ['result'], '<B', True
-)
-BootloaderRequest.PROGRAM_FLASH_BARE = BootloaderRequest(
-    0x22, 'Flash', [], '', False
-)
-BootloaderRequest.PROGRAM_FLASH = BootloaderRequest(
-    0x22, 'Flash', ['checksum', 'count'], '<BI', True
-)
-BootloaderRequest.START_APP = BootloaderRequest(
-    0x33, 'Start', [], '', True
-)
-BootloaderRequest.INIT_LOADER = BootloaderRequest(
-    0x44, 'Init', ['result'], '<B', True
-)
-BootloaderRequest.GET_INFO = BootloaderRequest(
-    0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB', True
-)
-BootloaderRequest.GET_CHECKSUM = BootloaderRequest(
-    0x66, 'Checksum', ['checksum'], '<B', True
-)
-BootloaderRequest.GET_FLASH_STATE = BootloaderRequest(
-    0x77, 'State', ['level'], '<B', True
-)
-BootloaderRequest.DISCONNECT = BootloaderRequest(
-    0x88, 'Disconnect', [], '', True
-)
-
-
 class BootloaderConnection(BLERequestsConnection):
     """Connect to Powered Up Hub Bootloader and update firmware."""
+
+    # Static BootloaderRequest instances for particular messages
+    ERASE_FLASH = BootloaderRequest(
+        0x11, 'Erase', ['result'], '<B'
+    )
+    PROGRAM_FLASH_BARE = BootloaderRequest(
+        0x22, 'Flash', [], '', False
+    )
+    PROGRAM_FLASH = BootloaderRequest(
+        0x22, 'Flash', ['checksum', 'count'], '<BI'
+    )
+    START_APP = BootloaderRequest(
+        0x33, 'Start', [], ''
+    )
+    INIT_LOADER = BootloaderRequest(
+        0x44, 'Init', ['result'], '<B'
+    )
+    GET_INFO = BootloaderRequest(
+        0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB'
+    )
+    GET_CHECKSUM = BootloaderRequest(
+        0x66, 'Checksum', ['checksum'], '<B'
+    )
+    GET_FLASH_STATE = BootloaderRequest(
+        0x77, 'State', ['level'], '<B'
+    )
+    DISCONNECT = BootloaderRequest(
+        0x88, 'Disconnect', [], ''
+    )
 
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
@@ -180,7 +179,7 @@ class BootloaderConnection(BLERequestsConnection):
         firmware_size = len(firmware)
 
         print("Getting device info.")
-        info = await self.bootloader_request(BootloaderRequest.GET_INFO)
+        info = await self.bootloader_request(self.GET_INFO)
         self.logger.debug(info)
 
         # Check hub ID
@@ -195,12 +194,12 @@ class BootloaderConnection(BLERequestsConnection):
         # TODO: Use write with response on CityHub
 
         print("Erasing flash.")
-        response = await self.bootloader_request(BootloaderRequest.ERASE_FLASH)
+        response = await self.bootloader_request(self.ERASE_FLASH)
         self.logger.debug(response)
 
         print('Validating size.')
         response = await self.bootloader_request(
-            request=BootloaderRequest.INIT_LOADER,
+            request=self.INIT_LOADER,
             payload=struct.pack('<I', firmware_size)
         )
         self.logger.debug(response)
@@ -222,7 +221,7 @@ class BootloaderConnection(BLERequestsConnection):
                 count += 1
                 if count % 1000 == 0:
                     try:
-                        response = await asyncio.wait_for(self.bootloader_request(BootloaderRequest.GET_CHECKSUM), 2)
+                        response = await asyncio.wait_for(self.bootloader_request(self.GET_CHECKSUM), 2)
                         print(response)
                     except (asyncio.exceptions.TimeoutError, ValueError):
                         print("Got stuck, try disconnect")
@@ -238,10 +237,10 @@ class BootloaderConnection(BLERequestsConnection):
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
                     # If so, request flash with confirmation request.
-                    request = BootloaderRequest.PROGRAM_FLASH
+                    request = self.PROGRAM_FLASH
                 else:
                     # Otherwise, do not wait for confirmation.
-                    request = BootloaderRequest.PROGRAM_FLASH_BARE
+                    request = self.PROGRAM_FLASH_BARE
 
                 # Pack the data in the expected format
                 data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
@@ -252,7 +251,7 @@ class BootloaderConnection(BLERequestsConnection):
 
 async def flash_firmware(address, blob, metadata, delay):
     updater = BootloaderConnection()
-    updater.logger.setLevel(logging.DEBUG)
+    updater.logger.setLevel(logging.INFO)
     await updater.connect(address)
     await updater.flash(blob, metadata, delay/1000)
     await updater.disconnect()
