@@ -8,7 +8,7 @@ import sys
 from collections import namedtuple
 from tqdm import tqdm
 import logging
-from pybricksdev.ble import BLEStreamConnection
+from pybricksdev.ble import BLERequestsConnection
 
 
 def sum_complement(fw, max_size):
@@ -88,11 +88,13 @@ def create_firmware(base, mpy, metadata):
 
     return firmware
 
+
 HUB_NAMES = {
     0x40: 'Move Hub',
     0x41: 'City Hub',
     0x80: 'Control+ Hub'
 }
+
 
 class BootloaderRequest():
     """Bootloader request structure."""
@@ -148,60 +150,28 @@ BootloaderRequest.DISCONNECT = BootloaderRequest(
 )
 
 
-class BootloaderConnection(BLEStreamConnection):
+class BootloaderConnection(BLERequestsConnection):
     """Connect to Powered Up Hub Bootloader and update firmware."""
-
-    UUID = '00001626-1212-efde-1623-785feabcd123'
 
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
-        super().__init__(self.UUID, self.UUID, 40, None)
-        self.reply_ready = asyncio.Event()
-        self.reply_len = 0
-        self.reply = bytearray()
+        super().__init__('00001626-1212-efde-1623-785feabcd123')
 
     async def bootloader_request(self, request, payload=None, delay=0.05):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
-        self.reply_len = request.reply_len
-        self.reply = bytearray()
+        self.prepare_reply(request.reply_len)
 
         # Write message
         data = request.make_request(payload)
         await self.write(data, delay)
 
         # If we expect a reply, await for it
-        if self.reply_len > 0:
+        if request.reply_len > 0:
             self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
-            await self.reply_ready.wait()
-            return request.parse_reply(self.reply)
-
-    def char_handler(self, char):
-        """Handles new incoming characters. Overrides BLEStreamConnection to
-        raise flags when new messages are ready.
-
-        Arguments:
-            char (int):
-                Character/byte to process.
-
-        Returns:
-            int or None: Processed character.
-
-        """
-        self.logger.debug("CHAR {0}".format(char))
-        # If we are expecting a nonzero reply, save the incoming character
-        if self.reply_len > 0:
-            self.reply.append(char)
-
-            # If reply is complete, set the reply_ready event
-            if len(self.reply) == self.reply_len:
-                self.logger.debug("Awaiting reply complete.")
-                self.reply_len = 0
-                self.reply_ready.set()
-                self.reply_ready.clear()
-
-        return char
+            reply = await self.wait_for_reply()
+            return request.parse_reply(reply)
 
     async def flash(self, firmware, metadata, delay):
 

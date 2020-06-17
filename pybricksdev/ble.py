@@ -1,5 +1,5 @@
 from bleak import BleakScanner, BleakClient
-from asyncio import sleep
+import asyncio
 import logging
 
 
@@ -58,7 +58,7 @@ async def find_device(name, timeout=5):
                     await scanner.stop()
                     return dev.address
         # Await until we check again.
-        await sleep(INTERVAL)
+        await asyncio.sleep(INTERVAL)
 
     # If we are here, scanning has timed out.
     await scanner.stop()
@@ -215,4 +215,73 @@ class BLEStreamConnection():
             # Send one chunk
             await self.client.write_gatt_char(self.char_rx_UUID, chunk)
             # Give server some time to process chunk
-            await sleep(pause)
+            await asyncio.sleep(pause)
+
+
+class BLERequestsConnection(BLEStreamConnection):
+    """Sends messages and awaits replies of known length.
+
+    This can be used for devices with known commands and known replies, such
+    as some bootloaders to update firmware over the air.
+    """
+
+    def __init__(self, UUID):
+        """Initialize the BLE Connection."""
+        self.reply_ready = asyncio.Event()
+        self.prepare_reply(0)
+        super().__init__(UUID, UUID, 1024, None)
+
+    def char_handler(self, char):
+        """Handles new incoming characters. Overrides BLEStreamConnection to
+        raise flags when a new reply is ready.
+
+        Arguments:
+            char (int):
+                Character/byte to process.
+        """
+        self.logger.debug("CHAR {0}".format(char))
+
+        # If we are expecting a nonzero reply, save the incoming character
+        if self.reply_len > 0:
+            self.reply.append(char)
+
+            # If reply is complete, set the reply_ready event
+            if len(self.reply) == self.reply_len:
+                self.logger.debug("Reply complete: {0}".format(self.reply))
+                self.reply_len = 0
+                self.reply_ready.set()
+                self.reply_ready.clear()
+
+    def prepare_reply(self, length):
+        """Clears existing replies and gets buffer ready for receiving.
+
+        This is usually called prior to the write operation, to ensure we
+        receive some of the bytes while are still awaiting the sending process.
+
+        length (int):
+                Number of bytes to wait for.
+        """
+        self.reply_len = length
+        self.reply = bytearray()
+        self.reply_ready.clear()
+
+    async def wait_for_reply(self, timeout=None):
+        """Awaits for given number of characters since prepare_reply.
+
+        Arguments:
+            timeout (float or None):
+                Time out to await. Same as asyncio.wait_for.
+
+        Returns:
+            bytearray: The reply.
+
+        Raises
+            TimeOutError. Same as asyncio.wait_for.
+        """
+        # Await for the reply ready event to be raised.
+        await asyncio.wait_for(self.reply_ready.wait(), timeout)
+
+        # Return reply and clear internal buffer
+        reply = self.reply
+        self.prepare_reply(0)
+        return reply
