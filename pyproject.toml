@@ -15,8 +15,6 @@ pybricksdev = 'pybricksdev.scripts:entry'
 [tool.poetry.dependencies]
 asyncssh = "*"
 bleak = "*"
-bricknil = { git = "https://github.com/pybricks/bricknil.git", branch = "firmware" }
-curio = "*"
 jupyter = "*"
 mpy-cross = "==1.12"
 nbstripout = "*"
