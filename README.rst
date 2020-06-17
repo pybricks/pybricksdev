@@ -34,7 +34,8 @@ Flashing Pybricks MicroPython firmware
     poetry run pybricksdev flash ../pybricks-micropython/bricks/cplushub/build/firmware.zip -d 15
 
 Replace the example path with the path to the firmware archive. Decrease the
-delay `d` between package for faster transfer. Increase the delay if it fails.
+delay ``d`` between data packages for faster transfer. Increase the delay if it
+fails.
 
 Running Pybricks MicroPython programs
 ---------------------------------------
@@ -48,17 +49,29 @@ device named ``Pybricks Hub`` that it finds.
     poetry run pybricksdev run --help
 
     # Run a oneliner on a Pybricks hub
-    poetry run pybricksdev run 'print("Hello!"); print("world!");'
+    poetry run pybricksdev run 'Pybricks Hub' 'print("Hello!"); print("world!");'
 
-    # Run hello.py on a Pybricks hub
-    poetry run pybricksdev run demo/hello.py
+    # Run script on the first device we find called Pybricks hub
+    poetry run pybricksdev run 'Pybricks Hub' demo/shortdemo.py
+
+    # Run script on 90:84:2B:4A:2B:75
+    poetry run pybricksdev run 90:84:2B:4A:2B:75 demo/shortdemo.py
+
+    # Run script on ev3dev at 192.168.0.102
+    poetry run pybricksdev run 192.168.0.102 demo/shortdemo.py
 
 Compiling Pybricks MicroPython programs without running
 --------------------------------------------------------
 
 This can be used to compile programs. Instead of also running them as above,
-it just prints the output on the screen instead. Use as above, but replace
-`pybricks run` with `pybricks compile`.
+it just prints the output on the screen instead.
+
+::
+
+    poetry run pybricksdev compile demo/shortdemo.py
+
+    poetry run pybricksdev compile 'print("Hello!"); print("world!");'
+
 
 This is mainly intended for developers who want to quickly inspect the
 contents of the ``.mpy`` file. To get the actual file, just use ``mpy-cross``
