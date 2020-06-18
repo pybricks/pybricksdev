@@ -2,9 +2,11 @@
 
 import argparse
 import asyncio
-from os import path
 import validators
 import sys
+
+from abc import ABC, abstractmethod
+from os import path
 
 from .ble import find_device
 from .compile import save_script, compile_file, print_mpy
@@ -16,6 +18,29 @@ PROG_NAME = (f'{path.basename(sys.executable)} -m pybricksdev'
              if sys.argv[0].endswith('__main__.py') else sys.argv[0])
 
 
+class Tool(ABC):
+    """Common base class for tool implementations."""
+
+    @abstractmethod
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        """
+        Overrinding methods must at least do the following::
+
+            parser = subparsers.add_parser('tool', ...)
+            parser.tool = self
+
+        Then additional arguments can be added using the ``parser`` object.
+        """
+        pass
+
+    @abstractmethod
+    async def run(self, args: argparse.Namespace):
+        """
+        Overriding methods should provide an implementation to run the tool.
+        """
+        pass
+
+
 def _parse_script_arg(script_arg):
     """Save user script argument to a file if it is a Python one-liner."""
     if not path.exists(script_arg):
@@ -23,36 +48,42 @@ def _parse_script_arg(script_arg):
     return script_arg
 
 
-def _compile(args):
-    """wrapper for: pybricksdev compile"""
-    parser = argparse.ArgumentParser(
-        prog=f'{PROG_NAME} compile',
-        description='Compile a Pybricks program without running it.',
-    )
-    # The argument is a filename or a Python one-liner.
-    parser.add_argument('script')
-    script_path = _parse_script_arg(parser.parse_args(args).script)
+class Compile(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'compile',
+            help='Compile a Pybricks program without running it.',
+        )
+        parser.tool = self
+        # The argument is a filename or a Python one-liner.
+        parser.add_argument(
+            'script',
+            metavar='<script>',
+            help='Path to a MicroPython script or inline script.',
+        )
 
-    # Compile the script and print the result
-    mpy = asyncio.run(compile_file(script_path))
-    print_mpy(mpy)
+    async def run(self, args: argparse.Namespace):
+        script_path = _parse_script_arg(args.script)
+
+        # Compile the script and print the result
+        mpy = await compile_file(script_path)
+        print_mpy(mpy)
 
 
-def _run(args):
-    """wrapper for: pybricksdev run"""
-    parser = argparse.ArgumentParser(
-        prog=f'{PROG_NAME} run',
-        description='Run a Pybricks program.',
-    )
-    # The argument is a filename or a Python one-liner.
-    parser.add_argument('device')
-    parser.add_argument('script')
-    args = parser.parse_args(args)
+class Run(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'run',
+            help='Run a Pybricks program.',
+        )
+        parser.tool = self
+        # The argument is a filename or a Python one-liner.
+        parser.add_argument('device', metavar='<device>')
+        parser.add_argument('script', metavar='<script>')
 
-    # Convert script argument to valid path
-    script_path = _parse_script_arg(args.script)
-
-    async def _main(script_path):
+    async def run(self, args: argparse.Namespace):
+        # Convert script argument to valid path
+        script_path = _parse_script_arg(args.script)
 
         # Check device argument
         if validators.ip_address.ipv4(args.device):
@@ -72,28 +103,26 @@ def _run(args):
         await hub.run(script_path)
         await hub.disconnect()
 
-    asyncio.run(_main(script_path))
 
+class Flash(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'flash',
+            help='Flashes firmware on LEGO Powered Up devices.'
+        )
+        parser.tool = self
+        parser.add_argument('firmware',
+                            metavar='<firmware-file>',
+                            help='The firmware file')
+        parser.add_argument('-d',
+                            '--delay',
+                            dest='delay',
+                            metavar='<milliseconds>',
+                            type=int,
+                            default=10,
+                            help='Delay between Bluetooth packets (default: 10).')
 
-def _flash(args):
-    """wrapper for: pybricksdev flash"""
-
-    parser = argparse.ArgumentParser(
-        prog=f'{PROG_NAME} flash',
-        description='Flashes firmware on LEGO Powered Up devices.')
-    parser.add_argument('firmware',
-                        metavar='<firmware-file>',
-                        help='The firmware file')
-    parser.add_argument('-d',
-                        '--delay',
-                        dest='delay',
-                        metavar='<milliseconds>',
-                        type=int,
-                        default=10,
-                        help='Delay between Bluetooth packets (default: 10).')
-    args = parser.parse_args(args)
-
-    async def _main():
+    async def run(self, args: argparse.Namespace):
         print('Creating firmware')
         firmware, metadata = await create_firmware(args.firmware)
         address = await find_device('LEGO Bootloader', 15)
@@ -104,8 +133,6 @@ def _flash(args):
         await updater.flash(firmware, metadata, args.delay/1000)
         await updater.disconnect()
 
-    asyncio.run(_main())
-
 
 def entry():
     """Main entry point to the pybricksdev command line utility."""
@@ -113,23 +140,25 @@ def entry():
     # Provide main description and help.
     parser = argparse.ArgumentParser(
         prog=PROG_NAME,
-        description='Utilities for Pybricks developers.'
+        description='Utilities for Pybricks developers.',
+        epilog='Run `%(prog)s <tool> --help` for tool-specific arguments.',
     )
 
-    # The first argument is which tool we run.
-    parser.add_argument('tool', choices=['run', 'compile', 'flash'])
+    subparsers = parser.add_subparsers(
+        metavar='<tool>',
+        dest='tool',
+        help='The tool to use.',
+    )
 
-    # All remaining arguments get passed to the respective tool.
-    parser.add_argument('arguments', nargs=argparse.REMAINDER)
+    for tool in Compile(), Run(), Flash():
+        tool.add_parser(subparsers)
+
     args = parser.parse_args()
 
-    # Run the respective tool with those remaining arguments
-    if args.tool == 'compile':
-        _compile(args.arguments)
-    elif args.tool == 'run':
-        _run(args.arguments)
-    elif args.tool == 'flash':
-        _flash(args.arguments)
+    if not args.tool:
+        parser.error(f'Missing name of tool: {"|".join(subparsers.choices.keys())}')
+
+    asyncio.run(subparsers.choices[args.tool].tool.run(args))
 
 
 if __name__ == "__main__":
