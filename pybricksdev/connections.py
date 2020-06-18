@@ -9,7 +9,7 @@ class CharacterGlue():
     """Glues incoming bytes into a buffer and splits it into lines."""
 
     def __init__(self, EOL, **kwargs):
-        """Initializes and configures connection settings.
+        """Initialize the buffer.
 
         Arguments:
             EOL (bytes):
@@ -24,7 +24,7 @@ class CharacterGlue():
         super().__init__(**kwargs)
 
     def char_handler(self, char):
-        """Handles new incoming characters. Intended to be overridden.
+        """Handles new incoming characters.
 
         Arguments:
             char (int):
@@ -38,7 +38,7 @@ class CharacterGlue():
         return char
 
     def line_handler(self, line):
-        """Handles new incoming lines..
+        """Handles new incoming lines.
 
         The default just prints the line that comes in.
 
@@ -87,7 +87,7 @@ class CharacterGlue():
 
 
 class PybricksPUPProtocol(CharacterGlue):
-    """Connect to Pybricks Hubs and run MicroPython scripts."""
+    """Parse and send data to make Pybricks Hubs run MicroPython scripts."""
 
     UNKNOWN = 0
     IDLE = 1
@@ -96,7 +96,7 @@ class PybricksPUPProtocol(CharacterGlue):
     AWAITING_CHECKSUM = 4
 
     def __init__(self, **kwargs):
-        """Initialize the BLE Connection with settings for Pybricks service."""
+        """Initialize the protocol state."""
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
@@ -106,7 +106,7 @@ class PybricksPUPProtocol(CharacterGlue):
     def char_handler(self, char):
         """Handles new incoming characters.
 
-        This overrides the same method from BLEStreamConnection to change what
+        This overrides the same method from CharacterGlue to change what
         we do with individual incoming characters/bytes.
 
         If we are awaiting the checksum, it raises the event to say the
@@ -205,6 +205,7 @@ class PybricksPUPProtocol(CharacterGlue):
 
     async def wait_until_not_running(self):
         """Awaits until the script is no longer running."""
+        # FIXME: handle using event on state change
         await asyncio.sleep(0.5)
         while True:
             await asyncio.sleep(0.1)
@@ -271,7 +272,7 @@ class PybricksPUPProtocol(CharacterGlue):
         await self.wait_until_not_running()
 
 
-class BLEPUPConnection(BLEConnection, PybricksPUPProtocol):
+class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
 
     def __init__(self):
         """Initialize the BLE Connection with settings for Pybricks service."""

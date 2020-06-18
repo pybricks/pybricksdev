@@ -99,6 +99,19 @@ class BLEConnection():
 
         super().__init__(**kwargs)
 
+    def data_handler(self, sender, data):
+        """Handles new incoming data and raise event when a new reply is ready.
+
+        This is usually overridden by a mixin class.
+
+        Arguments:
+            sender (str):
+                Sender uuid.
+            data (bytes):
+                Bytes to process.
+        """
+        self.logger.debug("DATA {0}".format(data))
+
     def disconnected_handler(self, client, *args):
         """Handles disconnected event. Intended to be overridden."""
         self.logger.info("Disconnected by server.")
@@ -151,8 +164,6 @@ class BLEConnection():
             )
             # Give server some time to process chunk
             await asyncio.sleep(pause)
-
-
 
 
 class BLERequestsConnection(BLEConnection):
