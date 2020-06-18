@@ -1,11 +1,93 @@
 import asyncio
 import asyncssh
 import os
-from pybricksdev.ble import BLEStreamConnection
+from pybricksdev.ble import BLEConnection
 from pybricksdev.compile import compile_file
 
 
-class PUPConnection(BLEStreamConnection):
+class CharacterGlue():
+    """Glues incoming bytes into a buffer and splits it into lines."""
+
+    def __init__(self, EOL, **kwargs):
+        """Initializes and configures connection settings.
+
+        Arguments:
+            EOL (bytes):
+                Character sequence that signifies end of line.
+
+        """
+        self.EOL = EOL
+
+        # Create empty rx buffer
+        self.char_buf = bytearray(b'')
+
+        super().__init__(**kwargs)
+
+    def char_handler(self, char):
+        """Handles new incoming characters. Intended to be overridden.
+
+        Arguments:
+            char (int):
+                Character/byte to process.
+
+        Returns:
+            int or None: Processed character.
+
+        """
+        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
+        return char
+
+    def line_handler(self, line):
+        """Handles new incoming lines..
+
+        The default just prints the line that comes in.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
+        print(line)
+
+    def data_handler(self, sender, data):
+        """Handles new incoming data. Calls char and line parsers when ready.
+
+        Arguments:
+            sender (str):
+                Sender uuid.
+            data (bytearray):
+                Incoming data.
+        """
+        self.logger.debug("RX DATA: {0}".format(data))
+
+        # For each new character, call its handler and add to buffer if any
+        for byte in data:
+            append = self.char_handler(byte)
+            if append is not None:
+                self.char_buf.append(append)
+
+        # Some applications don't have any lines to process
+        if self.EOL is None:
+            return
+
+        # Break up data into lines and take those out of the buffer
+        lines = []
+        while True:
+            # Find and split at end of line
+            index = self.char_buf.find(self.EOL)
+            # If no more line end is found, we are done
+            if index < 0:
+                break
+            # If we found a line, save it, and take it from the buffer
+            lines.append(self.char_buf[0:index])
+            del self.char_buf[0:index+len(self.EOL)]
+
+        # Call handler for each line that we found
+        for line in lines:
+            self.line_handler(line)
+
+
+
+class PUPConnection(BLEConnection, CharacterGlue):
     """Connect to Pybricks Hubs and run MicroPython scripts."""
 
     UNKNOWN = 0
@@ -14,15 +96,17 @@ class PUPConnection(BLEStreamConnection):
     ERROR = 3
     AWAITING_CHECKSUM = 4
 
-    CharRXUUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
-    CharTXUUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
-
     def __init__(self):
         """Initialize the BLE Connection with settings for Pybricks service."""
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
-        super().__init__(self.CharRXUUID, self.CharTXUUID, 20, b'\r\n')
+        super().__init__(
+            char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+            char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+            mtu=20,
+            EOL=b'\r\n'
+        )
 
     def char_handler(self, char):
         """Handles new incoming characters.
