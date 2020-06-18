@@ -86,8 +86,7 @@ class CharacterGlue():
             self.line_handler(line)
 
 
-
-class PUPConnection(BLEConnection, CharacterGlue):
+class PybricksPUPProtocol(CharacterGlue):
     """Connect to Pybricks Hubs and run MicroPython scripts."""
 
     UNKNOWN = 0
@@ -96,17 +95,12 @@ class PUPConnection(BLEConnection, CharacterGlue):
     ERROR = 3
     AWAITING_CHECKSUM = 4
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """Initialize the BLE Connection with settings for Pybricks service."""
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
-        super().__init__(
-            char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-            char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-            mtu=20,
-            EOL=b'\r\n'
-        )
+        super().__init__(**kwargs)
 
     def char_handler(self, char):
         """Handles new incoming characters.
@@ -163,15 +157,6 @@ class PUPConnection(BLEConnection, CharacterGlue):
 
         # If there is nothing special about this line, print it.
         print(line.decode())
-
-    def disconnected_handler(self, client, *args):
-        """Processes external disconnection event.
-
-        This overrides the same method from BLEStreamConnection to change what
-        we do when the connection is broken. Here, we just set the state.
-        """
-        self.set_state(self.UNKNOWN)
-        self.logger.info("Disconnected by server.")
 
     def set_state(self, new_state):
         """Updates state if it is new.
@@ -265,6 +250,18 @@ class PUPConnection(BLEConnection, CharacterGlue):
         await self.wait_until_not_running()
 
 
+class PUPConnection(BLEConnection, PybricksPUPProtocol):
+
+    def __init__(self):
+        """Initialize the BLE Connection with settings for Pybricks service."""
+
+        super().__init__(
+            char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+            char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+            mtu=20,
+            EOL=b'\r\n'
+        )
+
 class ExtendedPUPConnection(PUPConnection):
     """Connect to Pybricks Hubs and run MicroPython scripts.
 
@@ -313,6 +310,8 @@ class ExtendedPUPConnection(PUPConnection):
         # We don't want to do anything special with this line, so call
         # the handler from the parent class to deal with it.
         super().line_handler(line)
+
+
 
 
 class EV3Connection():
