@@ -100,6 +100,7 @@ class PybricksPUPProtocol(CharacterGlue):
         self.state = self.UNKNOWN
         self.checksum = None
         self.checksum_ready = asyncio.Event()
+        self.log_file = None
         super().__init__(**kwargs)
 
     def char_handler(self, char):
@@ -133,11 +134,8 @@ class PybricksPUPProtocol(CharacterGlue):
             return char
 
     def line_handler(self, line):
-        """Handles new incoming lines.
-
-        This overrides the same method from BLEStreamConnection to change what
-        we do with lines. In this application, we check if the line equals a
-        state change message. Otherwise, we just print it.
+        """Handles new incoming lines. Handle special actions if needed,
+        otherwise just print it as regular lines.
 
         Arguments:
             line (bytearray):
@@ -153,6 +151,29 @@ class PybricksPUPProtocol(CharacterGlue):
             return
         if line == b'>>>> ERROR':
             self.set_state(self.ERROR)
+            return
+
+        # The line tells us to open a log file, so do it.
+        if b'PB_OF' in line:
+            if self.log_file is not None:
+                raise OSError("Log file is already open!")
+            name = line[6:].decode()
+            self.logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, 'w')
+            return
+
+        # The line tells us to close a log file, so do it.
+        if b'PB_EOF' in line:
+            if self.log_file is None:
+                raise OSError("No log file is currently open!")
+            self.logger.info("Done saving log.")
+            self.log_file.close()
+            self.log_file = None
+            return
+
+        # If we are processing datalog, save current line to the open file.
+        if self.log_file is not None:
+            print(line.decode(), file=self.log_file)
             return
 
         # If there is nothing special about this line, print it.
@@ -250,7 +271,7 @@ class PybricksPUPProtocol(CharacterGlue):
         await self.wait_until_not_running()
 
 
-class PUPConnection(BLEConnection, PybricksPUPProtocol):
+class BLEPUPConnection(BLEConnection, PybricksPUPProtocol):
 
     def __init__(self):
         """Initialize the BLE Connection with settings for Pybricks service."""
@@ -261,57 +282,6 @@ class PUPConnection(BLEConnection, PybricksPUPProtocol):
             mtu=20,
             EOL=b'\r\n'
         )
-
-class ExtendedPUPConnection(PUPConnection):
-    """Connect to Pybricks Hubs and run MicroPython scripts.
-
-    This extends the BasePUPConnection with experimental line parses that
-    allow users to let the hub interact with the PC.
-    """
-
-    def __init__(self):
-        self.log_file = None
-        super().__init__()
-
-    def line_handler(self, line):
-        """Handles new incoming lines.
-
-        This overrides the same method from BasicPUPConnection to add
-        file saving functionality. If no special datalog line is detected,
-        it calls the default line handler.
-
-        Arguments:
-            line (bytearray):
-                Line to process.
-        """
-        # The line tells us to open a log file, so do it.
-        if b'PB_OF' in line:
-            if self.log_file is not None:
-                raise OSError("Log file is already open!")
-            name = line[6:].decode()
-            self.logger.info("Saving log to {0}.".format(name))
-            self.log_file = open(name, 'w')
-            return
-
-        # The line tells us to close a log file, so do it.
-        if b'PB_EOF' in line:
-            if self.log_file is None:
-                raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
-            self.log_file.close()
-            self.log_file = None
-            return
-
-        # If we are processing datalog, save current line to the open file.
-        if self.log_file is not None:
-            print(line.decode(), file=self.log_file)
-            return
-
-        # We don't want to do anything special with this line, so call
-        # the handler from the parent class to deal with it.
-        super().line_handler(line)
-
-
 
 
 class EV3Connection():
