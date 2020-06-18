@@ -2,6 +2,7 @@ import asyncio
 import asyncssh
 import os
 from pybricksdev.ble import BLEConnection
+from pybricksdev.usb import USBConnection
 from pybricksdev.compile import compile_file
 
 
@@ -101,7 +102,7 @@ class PybricksPUPProtocol(CharacterGlue):
         self.checksum = None
         self.checksum_ready = asyncio.Event()
         self.log_file = None
-        super().__init__(**kwargs)
+        super().__init__(EOL=b'\r\n', **kwargs)
 
     def char_handler(self, char):
         """Handles new incoming characters.
@@ -151,6 +152,8 @@ class PybricksPUPProtocol(CharacterGlue):
             return
         if line == b'>>>> ERROR':
             self.set_state(self.ERROR)
+            return
+        if line == b'--------------':
             return
 
         # The line tells us to open a log file, so do it.
@@ -280,10 +283,16 @@ class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
         super().__init__(
             char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
             char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-            mtu=20,
-            EOL=b'\r\n'
+            mtu=20
         )
 
+
+class USBPUPConnection(PybricksPUPProtocol, USBConnection):
+
+    def __init__(self):
+        """Initialize."""
+
+        super().__init__()
 
 class EV3Connection():
     """ev3dev SSH connection for running pybricks-micropython scripts.

@@ -68,6 +68,7 @@ async def find_device(name, timeout=5):
 
 
 class BLEConnection():
+    """Configure BLE, connect, send data, and handle receive events."""
 
     def __init__(self, char_rx_UUID, char_tx_UUID, mtu, **kwargs):
         """Initializes and configures connection settings.
@@ -100,7 +101,7 @@ class BLEConnection():
         super().__init__(**kwargs)
 
     def data_handler(self, sender, data):
-        """Handles new incoming data and raise event when a new reply is ready.
+        """Handles new incoming data.
 
         This is usually overridden by a mixin class.
 
@@ -164,6 +165,8 @@ class BLEConnection():
             )
             # Give server some time to process chunk
             await asyncio.sleep(pause)
+
+            #FIXME no wait after last chunk
 
 
 class BLERequestsConnection(BLEConnection):
