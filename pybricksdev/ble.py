@@ -67,9 +67,9 @@ async def find_device(name, timeout=5):
     )
 
 
-class BLEStreamConnection():
+class BLEConnection():
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL):
+    def __init__(self, char_rx_UUID, char_tx_UUID, mtu):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -77,100 +77,20 @@ class BLEStreamConnection():
                 UUID for RX.
             char_rx_UUID (str):
                 UUID for TX.
-            mtr (int):
+            mtu (int):
                 Maximum number of bytes per write operation.
-            EOL (bytes):
-                Character sequence that signifies end of line.
 
         """
         # Save given settings
         self.char_rx_UUID = char_rx_UUID
         self.char_tx_UUID = char_tx_UUID
-        self.EOL = EOL
         self.mtu = mtu
-
-        # Create empty rx buffer
-        self.char_buf = bytearray(b'')
-
-        # Get a logger and set at given level
-        self.logger = logging.getLogger('BLEStreamConnection')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
-        # Are we connected?
         self.connected = False
-
-    def char_handler(self, char):
-        """Handles new incoming characters. Intended to be overridden.
-
-        Arguments:
-            char (int):
-                Character/byte to process.
-
-        Returns:
-            int or None: Processed character.
-
-        """
-        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
-        return char
-
-    def line_handler(self, line):
-        """Handles new incoming lines. Intended to be overridden.
-
-        The default just prints the line that comes in.
-
-        Arguments:
-            line (bytearray):
-                Line to process.
-        """
-        print(line)
 
     def disconnected_handler(self, client, *args):
         """Handles disconnected event. Intended to be overridden."""
         self.logger.info("Disconnected by server.")
         self.connected = False
-
-    def _data_handler(self, sender, data):
-        """Handles new incoming data. Calls char and line parsers when ready.
-
-        Arguments:
-            sender (str):
-                Sender uuid.
-            data (bytearray):
-                Incoming data.
-        """
-        self.logger.debug("RX DATA: {0}".format(data))
-
-        # For each new character, call its handler and add to buffer if any
-        for byte in data:
-            append = self.char_handler(byte)
-            if append is not None:
-                self.char_buf.append(append)
-
-        # Some applications don't have any lines to process
-        if self.EOL is None:
-            return
-
-        # Break up data into lines and take those out of the buffer
-        lines = []
-        while True:
-            # Find and split at end of line
-            index = self.char_buf.find(self.EOL)
-            # If no more line end is found, we are done
-            if index < 0:
-                break
-            # If we found a line, save it, and take it from the buffer
-            lines.append(self.char_buf[0:index])
-            del self.char_buf[0:index+len(self.EOL)]
-
-        # Call handler for each line that we found
-        for line in lines:
-            self.line_handler(line)
 
     async def connect(self, address):
         """Creates connection to server at given address.
@@ -184,7 +104,7 @@ class BLEStreamConnection():
         self.client = BleakClient(address)
         await self.client.connect()
         self.client.set_disconnected_callback(self.disconnected_handler)
-        await self.client.start_notify(self.char_tx_UUID, self._data_handler)
+        await self.client.start_notify(self.char_tx_UUID, self.data_handler)
         print("Connected successfully!")
         self.connected = True
 
@@ -221,7 +141,104 @@ class BLEStreamConnection():
             await asyncio.sleep(pause)
 
 
-class BLERequestsConnection(BLEStreamConnection):
+class BLEStreamConnection(BLEConnection):
+
+    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, EOL):
+        """Initializes and configures connection settings.
+
+        Arguments:
+            char_rx_UUID (str):
+                UUID for RX.
+            char_rx_UUID (str):
+                UUID for TX.
+            mtr (int):
+                Maximum number of bytes per write operation.
+            EOL (bytes):
+                Character sequence that signifies end of line.
+
+        """
+        self.EOL = EOL
+
+        # Create empty rx buffer
+        self.char_buf = bytearray(b'')
+
+        # Get a logger and set at given level
+        self.logger = logging.getLogger('BLEStreamConnection')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s: %(levelname)7s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.WARNING)
+
+        # Base connection
+        super().__init__(char_rx_UUID, char_tx_UUID, mtu)
+
+    def char_handler(self, char):
+        """Handles new incoming characters. Intended to be overridden.
+
+        Arguments:
+            char (int):
+                Character/byte to process.
+
+        Returns:
+            int or None: Processed character.
+
+        """
+        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
+        return char
+
+    def line_handler(self, line):
+        """Handles new incoming lines. Intended to be overridden.
+
+        The default just prints the line that comes in.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
+        print(line)
+
+    def data_handler(self, sender, data):
+        """Handles new incoming data. Calls char and line parsers when ready.
+
+        Arguments:
+            sender (str):
+                Sender uuid.
+            data (bytearray):
+                Incoming data.
+        """
+        self.logger.debug("RX DATA: {0}".format(data))
+
+        # For each new character, call its handler and add to buffer if any
+        for byte in data:
+            append = self.char_handler(byte)
+            if append is not None:
+                self.char_buf.append(append)
+
+        # Some applications don't have any lines to process
+        if self.EOL is None:
+            return
+
+        # Break up data into lines and take those out of the buffer
+        lines = []
+        while True:
+            # Find and split at end of line
+            index = self.char_buf.find(self.EOL)
+            # If no more line end is found, we are done
+            if index < 0:
+                break
+            # If we found a line, save it, and take it from the buffer
+            lines.append(self.char_buf[0:index])
+            del self.char_buf[0:index+len(self.EOL)]
+
+        # Call handler for each line that we found
+        for line in lines:
+            self.line_handler(line)
+
+
+class BLERequestsConnection(BLEConnection):
     """Sends messages and awaits replies of known length.
 
     This can be used for devices with known commands and known replies, such
@@ -232,28 +249,43 @@ class BLERequestsConnection(BLEStreamConnection):
         """Initialize the BLE Connection."""
         self.reply_ready = asyncio.Event()
         self.prepare_reply(0)
-        super().__init__(UUID, UUID, 1024, None)
 
-    def char_handler(self, char):
-        """Handles new incoming characters. Overrides BLEStreamConnection to
-        raise flags when a new reply is ready.
+        # Get a logger and set at given level
+        self.logger = logging.getLogger('BLERequestsConnection')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s: %(levelname)7s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.WARNING)
+
+        super().__init__(UUID, UUID, 1024)
+
+    def data_handler(self, sender, data):
+        """Handles new incoming data and raise event when a new reply is ready.
 
         Arguments:
-            char (int):
-                Character/byte to process.
+            sender (str):
+                Sender uuid.
+            data (bytes):
+                Bytes to process.
         """
-        self.logger.debug("CHAR {0}".format(char))
+        self.logger.debug("DATA {0}".format(data))
 
-        # If we are expecting a nonzero reply, save the incoming character
-        if self.reply_len > 0:
-            self.reply.append(char)
+        # Process incoming characters one by one
+        for char in data:
 
-            # If reply is complete, set the reply_ready event
-            if len(self.reply) == self.reply_len:
-                self.logger.debug("Reply complete: {0}".format(self.reply))
-                self.reply_len = 0
-                self.reply_ready.set()
-                self.reply_ready.clear()
+            # If we are expecting a nonzero reply, save the incoming character
+            if self.reply_len > 0:
+                self.reply.append(char)
+
+                # If reply is complete, set the reply_ready event
+                if len(self.reply) == self.reply_len:
+                    self.logger.debug("Reply complete: {0}".format(self.reply))
+                    self.reply_len = 0
+                    self.reply_ready.set()
+                    self.reply_ready.clear()
 
     def prepare_reply(self, length):
         """Clears existing replies and gets buffer ready for receiving.
