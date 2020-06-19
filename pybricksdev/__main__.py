@@ -77,9 +77,16 @@ class Run(Tool):
             help='Run a Pybricks program.',
         )
         parser.tool = self
-        # The argument is a filename or a Python one-liner.
-        parser.add_argument('device', metavar='<device>')
-        parser.add_argument('script', metavar='<script>')
+        parser.add_argument(
+            'device',
+            metavar='<device>',
+            help='Hostname or IP address or Bluetooth device name or Bluetooth address',
+        )
+        parser.add_argument(
+            'script',
+            metavar='<script>',
+            help='Path to a MicroPython script or inline script.',
+        )
 
     async def run(self, args: argparse.Namespace):
         # Convert script argument to valid path
