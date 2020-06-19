@@ -271,4 +271,7 @@ class BootloaderConnection(BLERequestsConnection):
                 self.logger.debug(response)
                 pbar.update(len(payload))
 
-
+        # Reboot the hub
+        self.logger.info('Request reboot.')
+        response = await self.bootloader_request(self.START_APP)
+        self.logger.debug(response)

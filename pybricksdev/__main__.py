@@ -139,7 +139,6 @@ class Flash(Tool):
         await updater.connect(address)
         print('Erasing flash and starting update')
         await updater.flash(firmware, metadata, args.delay/1000)
-        await updater.disconnect()
 
 
 def entry():
