@@ -14,7 +14,7 @@ pybricksdev = 'pybricksdev.__main__:entry'
 
 [tool.poetry.dependencies]
 asyncssh = "*"
-bleak = "*"
+bleak = { git = "https://github.com/pybricks/bleak.git", branch = "master" }
 jupyter = "*"
 mpy-cross = "==1.12"
 nbstripout = "*"

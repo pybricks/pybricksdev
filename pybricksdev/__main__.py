@@ -2,8 +2,9 @@
 
 import argparse
 import asyncio
-import validators
+import platform
 import sys
+import validators
 
 from abc import ABC, abstractmethod
 from os import path
@@ -165,7 +166,16 @@ def entry():
     if not args.tool:
         parser.error(f'Missing name of tool: {"|".join(subparsers.choices.keys())}')
 
-    asyncio.run(subparsers.choices[args.tool].tool.run(args))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(subparsers.choices[args.tool].tool.run(args))
+
+    # HACK: https://github.com/hbldh/bleak/issues/111
+    if platform.system() == 'Darwin':
+        from bleak.backends.corebluetooth.client import cbapp
+        cbapp.ns_run_loop_done = True
+        pending = asyncio.all_tasks(cbapp.main_loop)
+        task = asyncio.gather(*pending)
+        cbapp.main_loop.run_until_complete(task)
 
 
 if __name__ == "__main__":

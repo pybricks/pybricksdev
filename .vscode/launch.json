@@ -5,13 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run pybricksdev",
+            "name": "Python: Run pybricksdev flash",
             "type": "python",
             "request": "launch",
             "module": "pybricksdev",
             "console": "integratedTerminal",
             "args": [
                 "flash", "-d", "10", "../pybricks-micropython/bricks/cplushub/build/firmware.zip"
+            ]
+        },
+        {
+            "name": "Python: Run pybricksdev compile",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "compile", "pybricksdev/__init__.py"
             ]
         }
     ]

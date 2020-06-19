@@ -100,6 +100,10 @@ pyobjc-framework-CoreBluetooth = "*"
 pythonnet = "*"
 txdbus = "*"
 
+[package.source]
+reference = "9c87ac06a7f04e9d36c553cfcf51f4b955d2c03a"
+type = "git"
+url = "https://github.com/pybricks/bleak.git"
 [[package]]
 category = "main"
 description = "Foreign Function Interface for Python calling C code."
@@ -2732,7 +2736,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "55096bc89cd0bff1d8663e40c6726436feb94ba46a9a9063492078fa1d241043"
+content-hash = "5ac2d0370fdceeb36a0731968997e06e48feb87a778979cc6117069ac6634e07"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -2764,10 +2768,7 @@ bleach = [
     {file = "bleach-3.1.5-py2.py3-none-any.whl", hash = "sha256:2bce3d8fab545a6528c8fa5d9f9ae8ebc85a56da365c7f85180bfe96a35ef22f"},
     {file = "bleach-3.1.5.tar.gz", hash = "sha256:3c4c520fdb9db59ef139915a5db79f8b51bc2a7257ea0389f30c846883430a4b"},
 ]
-bleak = [
-    {file = "bleak-0.6.4-py2.py3-none-any.whl", hash = "sha256:ab078ade024d84b95aeb0f6667f6a1977749b4b41dfeeb28284953448c17122d"},
-    {file = "bleak-0.6.4.tar.gz", hash = "sha256:1dc32899d0700c5b5ed9abf642dfee28ac62b1fb5d7be5fa5a6db104dec9a03c"},
-]
+bleak = []
 cffi = [
     {file = "cffi-1.14.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1cae98a7054b5c9391eb3249b86e0e99ab1e02bb0cc0575da191aedadbdf4384"},
     {file = "cffi-1.14.0-cp27-cp27m-manylinux1_i686.whl", hash = "sha256:cf16e3cf6c0a5fdd9bc10c21687e19d29ad1fe863372b5543deaec1039581a30"},
