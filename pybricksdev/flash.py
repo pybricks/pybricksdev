@@ -100,24 +100,25 @@ async def create_firmware(firmware_zip):
     return firmware, metadata
 
 
-# NAME, PAYLOAD_SIZE, WRITE_WITH_RESPONSE requirement
+# NAME, PAYLOAD_SIZE requirement
 HUB_INFO = {
-    0x40: ('Move Hub', 14, False),
-    0x41: ('City Hub', 32, True),
-    0x80: ('Control+ Hub', 32, False)
+    0x40: ('Move Hub', 14),
+    0x41: ('City Hub', 32),
+    0x80: ('Control+ Hub', 32)
 }
 
 
 class BootloaderRequest():
     """Bootloader request structure."""
 
-    def __init__(self, command, name, request_format, data_format, request_confirm=True):
+    def __init__(self, command, name, request_format, data_format, request_reply=True, write_with_response=True):
         self.command = command
         self.ReplyClass = namedtuple(name, request_format)
         self.data_format = data_format
         self.reply_len = struct.calcsize(data_format)
-        if request_confirm:
+        if request_reply:
             self.reply_len += 1
+        self.write_with_response = write_with_response
 
     def make_request(self, payload=None):
         request = bytearray((self.command,))
@@ -140,10 +141,10 @@ class BootloaderConnection(BLERequestsConnection):
         0x11, 'Erase', ['result'], '<B'
     )
     PROGRAM_FLASH_BARE = BootloaderRequest(
-        0x22, 'Flash', [], '', False
+        0x22, 'Flash', [], '', False, False
     )
     PROGRAM_FLASH = BootloaderRequest(
-        0x22, 'Flash', ['checksum', 'count'], '<BI'
+        0x22, 'Flash', ['checksum', 'count'], '<BI', True, False
     )
     START_APP = BootloaderRequest(
         0x33, 'Start', [], '', False
@@ -176,7 +177,7 @@ class BootloaderConnection(BLERequestsConnection):
 
         # Write message
         data = request.make_request(payload)
-        await self.write(data, delay)
+        await self.write(data, delay, request.write_with_response)
 
         # If we expect a reply, await for it
         if request.reply_len > 0:
@@ -196,7 +197,7 @@ class BootloaderConnection(BLERequestsConnection):
         self.logger.debug(info)
 
         # Hub specific settings
-        hub_name, max_data_size, write_with_response = HUB_INFO[info.type_id]
+        hub_name, max_data_size = HUB_INFO[info.type_id]
 
         # Verify hub ID against ID in firmware package
         if info.type_id != metadata['device-id']:

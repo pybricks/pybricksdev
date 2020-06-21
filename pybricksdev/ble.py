@@ -143,7 +143,7 @@ class BLEConnection():
             self.logger.info("Disconnected by client.")
             self.connected = False
 
-    async def write(self, data, pause=0.05):
+    async def write(self, data, pause=0.05, with_response=False):
         """Write bytes to the server, split to chunks of maximum mtu size.
 
         Arguments:
@@ -151,17 +151,24 @@ class BLEConnection():
                 Data to be sent to the server.
             pause (float):
                 Time between chunks of data.
+            with_response (bool):
+                Write with or without reponse.
         """
         # Chop data into chunks of maximum tranmission size
         chunks = [data[i: i + self.mtu] for i in range(0, len(data), self.mtu)]
 
         # Send the chunks one by one
         for chunk in chunks:
-            self.logger.debug("TX CHUNK: {0}".format(chunk))
+            self.logger.debug(
+                "TX CHUNK: {0}, {1} response".format(
+                    chunk, "with" if with_response else "without"
+                )
+            )
             # Send one chunk
             await self.client.write_gatt_char(
                 self.char_rx_UUID,
-                bytearray(chunk)
+                bytearray(chunk),
+                with_response
             )
             # Give server some time to process chunk
             await asyncio.sleep(pause)
