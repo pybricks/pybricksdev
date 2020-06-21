@@ -127,7 +127,6 @@ class PybricksPUPProtocol(CharacterGlue):
             # are ready to process it.
             self.checksum = char
             self.checksum_ready.set()
-            self.checksum_ready.clear()
             self.logger.debug("RX CHECKSUM: {0}".format(char))
             return None
         else:
@@ -193,16 +192,21 @@ class PybricksPUPProtocol(CharacterGlue):
             self.logger.debug("New State: {0}".format(new_state))
             self.state = new_state
 
+    def prepare_checksum(self):
+        """Prepare state to start receiving checksum."""
+        self.set_state(self.AWAITING_CHECKSUM)
+        self.checksum = None
+        self.checksum_ready.clear()
+
     async def wait_for_checksum(self):
         """Awaits and returns a checksum character.
 
         Returns:
             int: checksum character
         """
-        self.set_state(self.AWAITING_CHECKSUM)
         await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
         result = self.checksum
-        self.checksum = None
+        self.prepare_checksum()
         self.set_state(self.IDLE)
         return result
 
@@ -234,6 +238,9 @@ class PybricksPUPProtocol(CharacterGlue):
         checksum = 0
         for b in data:
             checksum ^= b
+
+        # Clear existing checksum
+        self.prepare_checksum()
 
         # Send the data
         await self.write(data)
@@ -293,6 +300,7 @@ class USBPUPConnection(PybricksPUPProtocol, USBConnection):
         """Initialize."""
 
         super().__init__()
+
 
 class EV3Connection():
     """ev3dev SSH connection for running pybricks-micropython scripts.
