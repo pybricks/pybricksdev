@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import logging
 import platform
 import sys
 import validators
@@ -136,6 +137,7 @@ class Flash(Tool):
         address = await find_device('LEGO Bootloader', 15)
         print('Found:', address)
         updater = BootloaderConnection()
+        updater.logger.setLevel(logging.INFO)
         await updater.connect(address)
         print('Erasing flash and starting update')
         await updater.flash(firmware, metadata, args.delay/1000)
