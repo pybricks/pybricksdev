@@ -13,6 +13,7 @@ repository = "https://github.com/pybricks/pybricksdev"
 pybricksdev = 'pybricksdev.__main__:entry'
 
 [tool.poetry.dependencies]
+aioserial = "*"
 asyncssh = "*"
 bleak = { git = "https://github.com/pybricks/bleak.git", branch = "master" }
 jupyter = "*"

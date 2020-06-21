@@ -1,7 +1,18 @@
 [[package]]
 category = "main"
+description = "An asynchronous serial port library of Python"
+name = "aioserial"
+optional = false
+python-versions = ">=3.6,<4.0"
+version = "1.2.3"
+
+[package.dependencies]
+pyserial = "*"
+
+[[package]]
+category = "main"
 description = "Disable App Nap on OS X 10.9"
-marker = "sys_platform == \"darwin\" or platform_system == \"Darwin\" or python_version >= \"3.3\" and sys_platform == \"darwin\""
+marker = "python_version >= \"3.3\" and sys_platform == \"darwin\" or platform_system == \"Darwin\""
 name = "appnope"
 optional = false
 python-versions = "*"
@@ -68,6 +79,7 @@ visualize = ["graphviz (>0.5.1)", "Twisted (>=16.1.1)"]
 [[package]]
 category = "main"
 description = "Specifications for callback functions passed in to an API"
+marker = "python_version >= \"3.3\""
 name = "backcall"
 optional = false
 python-versions = "*"
@@ -101,7 +113,7 @@ pythonnet = "*"
 txdbus = "*"
 
 [package.source]
-reference = "9c87ac06a7f04e9d36c553cfcf51f4b955d2c03a"
+reference = "af0148c9aad4c63f4f8fd89f57015793f8a6aa73"
 type = "git"
 url = "https://github.com/pybricks/bleak.git"
 [[package]]
@@ -324,6 +336,7 @@ test = ["pytest (>=3.6.0)", "pytest-cov", "mock"]
 [[package]]
 category = "main"
 description = "An autocompletion tool for Python that can be used for text editors."
+marker = "python_version >= \"3.3\""
 name = "jedi"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -581,6 +594,7 @@ version = "1.4.2"
 [[package]]
 category = "main"
 description = "A Python Parser"
+marker = "python_version >= \"3.3\""
 name = "parso"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
@@ -592,7 +606,7 @@ testing = ["docopt", "pytest (>=3.0.7)"]
 [[package]]
 category = "main"
 description = "Pexpect allows easy control of interactive console applications."
-marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\""
 name = "pexpect"
 optional = false
 python-versions = "*"
@@ -604,6 +618,7 @@ ptyprocess = ">=0.5"
 [[package]]
 category = "main"
 description = "Tiny 'shelve'-like database with concurrency support"
+marker = "python_version >= \"3.3\""
 name = "pickleshare"
 optional = false
 python-versions = "*"
@@ -650,7 +665,7 @@ wcwidth = "*"
 [[package]]
 category = "main"
 description = "Run a subprocess in a pseudo terminal"
-marker = "sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or os_name != \"nt\""
 name = "ptyprocess"
 optional = false
 python-versions = "*"
@@ -2441,6 +2456,14 @@ version = "0.16.0"
 six = "*"
 
 [[package]]
+category = "main"
+description = "Python Serial Port Extension"
+name = "pyserial"
+optional = false
+python-versions = "*"
+version = "3.4"
+
+[[package]]
 category = "dev"
 description = "pytest: simple powerful testing with Python"
 name = "pytest"
@@ -2736,10 +2759,14 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "5ac2d0370fdceeb36a0731968997e06e48feb87a778979cc6117069ac6634e07"
+content-hash = "f483d015bb606258890813d2ad5338f2f8904a3e0e35e10c053b8b90913b3deb"
 python-versions = "^3.6"
 
 [metadata.files]
+aioserial = [
+    {file = "aioserial-1.2.3-py3-none-any.whl", hash = "sha256:1cd545fd9fa9015b9c4971e4e640f5ea92c70eac06cc23328c8aa4677558ac3d"},
+    {file = "aioserial-1.2.3.tar.gz", hash = "sha256:2f396da8549721c8e76204a13286db83a4e5f195a046867b669ebad0929c1847"},
+]
 appnope = [
     {file = "appnope-0.1.0-py2.py3-none-any.whl", hash = "sha256:5b26757dc6f79a3b7dc9fab95359328d5747fcb2409d331ea66d0272b90ab2a0"},
     {file = "appnope-0.1.0.tar.gz", hash = "sha256:8b995ffe925347a2138d7ac0fe77155e4311a0ea6d6da4f5128fe4b3cbe5ed71"},
@@ -3535,6 +3562,10 @@ pyparsing = [
 ]
 pyrsistent = [
     {file = "pyrsistent-0.16.0.tar.gz", hash = "sha256:28669905fe725965daa16184933676547c5bb40a5153055a8dee2a4bd7933ad3"},
+]
+pyserial = [
+    {file = "pyserial-3.4-py2.py3-none-any.whl", hash = "sha256:e0770fadba80c31013896c7e6ef703f72e7834965954a78e71a3049488d4d7d8"},
+    {file = "pyserial-3.4.tar.gz", hash = "sha256:6e2d401fdee0eab996cf734e67773a0143b932772ca8b42451440cfed942c627"},
 ]
 pytest = [
     {file = "pytest-5.4.3-py3-none-any.whl", hash = "sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1"},
