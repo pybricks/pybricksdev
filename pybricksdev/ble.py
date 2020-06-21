@@ -200,11 +200,8 @@ class BLERequestsConnection(BLEConnection):
                 Bytes to process.
         """
         self.logger.debug("DATA {0}".format(data))
-
-        # Check that incoming message has the expected length
         self.reply = data
         self.reply_ready.set()
-        self.reply_ready.clear()
 
     def prepare_reply(self):
         """Clears existing reply and wait event.

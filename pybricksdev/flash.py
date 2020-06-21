@@ -173,9 +173,11 @@ class BootloaderConnection(BLERequestsConnection):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
+        self.logger.debug("Clear and prepare reply")
         self.prepare_reply()
 
         # Write message
+        self.logger.debug("Make and write request")
         data = request.make_request(payload)
         await self.write(data, delay, request.write_with_response)
 
