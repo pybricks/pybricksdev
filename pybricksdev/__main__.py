@@ -11,7 +11,7 @@ from os import path
 
 from .ble import find_device
 from .compile import save_script, compile_file, print_mpy
-from .connections import PUPConnection, EV3Connection
+from .connections import BLEPUPConnection, EV3Connection
 from .flash import create_firmware, BootloaderConnection
 
 
@@ -100,7 +100,7 @@ class Run(Tool):
             address = args.device
         else:
             # Otherwise it is a Pybricks Hub with device name or address given.
-            hub = PUPConnection()
+            hub = BLEPUPConnection()
             if validators.mac_address(args.device):
                 address = args.device
             else:
