@@ -194,7 +194,7 @@ class BootloaderConnection(BLERequestsConnection):
         firmware_size = len(firmware)
 
         # Request hub information
-        self.logger.info("Getting device info.")
+        self.logger.debug("Getting device info.")
         info = await self.bootloader_request(self.GET_INFO)
         self.logger.debug(info)
 
@@ -210,21 +210,19 @@ class BootloaderConnection(BLERequestsConnection):
                 )
             )
 
-        # TODO: Use write with response on CityHub
-
         # Erase existing firmware
-        self.logger.info("Erasing flash.")
+        self.logger.debug("Erasing flash.")
         response = await self.bootloader_request(self.ERASE_FLASH)
         self.logger.debug(response)
 
         # Get the bootloader ready to accept the firmware
-        self.logger.info('Request begin update.')
+        self.logger.debug('Request begin update.')
         response = await self.bootloader_request(
             request=self.INIT_LOADER,
             payload=struct.pack('<I', firmware_size)
         )
         self.logger.debug(response)
-        self.logger.info('Begin update.')
+        self.logger.debug('Begin update.')
 
         # Percentage after which we'll check progress
         verify_progress = 5
@@ -272,6 +270,6 @@ class BootloaderConnection(BLERequestsConnection):
                 pbar.update(len(payload))
 
         # Reboot the hub
-        self.logger.info('Request reboot.')
+        self.logger.debug('Request reboot.')
         response = await self.bootloader_request(self.START_APP)
         self.logger.debug(response)
