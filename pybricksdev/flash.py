@@ -100,17 +100,11 @@ async def create_firmware(firmware_zip):
     return firmware, metadata
 
 
-HUB_NAMES = {
-    0x40: 'Move Hub',
-    0x41: 'City Hub',
-    0x80: 'Control+ Hub'
-}
-
-# FIXME: This belongs in metadata
-PAYLOAD_SIZE = {
-    0x40: 14,
-    0x41: 32,  # untested
-    0x80: 32,
+# NAME, PAYLOAD_SIZE, WRITE_WITH_RESPONSE requirement
+HUB_INFO = {
+    0x40: ('Move Hub', 14, False),
+    0x41: ('City Hub', 32, True),
+    0x80: ('Control+ Hub', 32, False)
 }
 
 
@@ -201,12 +195,15 @@ class BootloaderConnection(BLERequestsConnection):
         info = await self.bootloader_request(self.GET_INFO)
         self.logger.debug(info)
 
+        # Hub specific settings
+        hub_name, max_data_size, write_with_response = HUB_INFO[info.type_id]
+
         # Verify hub ID against ID in firmware package
         if info.type_id != metadata['device-id']:
             await self.disconnect()
             raise RuntimeError(
                 "This firmware {0}, but we are connected to {1}.".format(
-                    HUB_NAMES[metadata['device-id']], HUB_NAMES[info.type_id]
+                    HUB_INFO[metadata['device-id']][0], hub_name
                 )
             )
 
@@ -255,7 +252,7 @@ class BootloaderConnection(BLERequestsConnection):
                 address = info.start_addr + firmware_io.tell()
 
                 # Read the firmware chunk to be sent
-                payload = firmware_io.read(PAYLOAD_SIZE[info.type_id])
+                payload = firmware_io.read(max_data_size)
 
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
