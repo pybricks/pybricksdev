@@ -179,7 +179,7 @@ class BLERequestsConnection(BLEConnection):
     def __init__(self, UUID):
         """Initialize the BLE Connection."""
         self.reply_ready = asyncio.Event()
-        self.prepare_reply(0)
+        self.prepare_reply()
 
         super().__init__(UUID, UUID, 1024)
 
@@ -194,31 +194,18 @@ class BLERequestsConnection(BLEConnection):
         """
         self.logger.debug("DATA {0}".format(data))
 
-        # Process incoming characters one by one
-        for char in data:
+        # Check that incoming message has the expected length
+        self.reply = data
+        self.reply_ready.set()
+        self.reply_ready.clear()
 
-            # If we are expecting a nonzero reply, save the incoming character
-            if self.reply_len > 0:
-                self.reply.append(char)
-
-                # If reply is complete, set the reply_ready event
-                if len(self.reply) == self.reply_len:
-                    self.logger.debug("Reply complete: {0}".format(self.reply))
-                    self.reply_len = 0
-                    self.reply_ready.set()
-                    self.reply_ready.clear()
-
-    def prepare_reply(self, length):
-        """Clears existing replies and gets buffer ready for receiving.
+    def prepare_reply(self):
+        """Clears existing reply and wait event.
 
         This is usually called prior to the write operation, to ensure we
         receive some of the bytes while are still awaiting the sending process.
-
-        length (int):
-                Number of bytes to wait for.
         """
-        self.reply_len = length
-        self.reply = bytearray()
+        self.reply = None
         self.reply_ready.clear()
 
     async def wait_for_reply(self, timeout=None):
@@ -239,5 +226,5 @@ class BLERequestsConnection(BLEConnection):
 
         # Return reply and clear internal buffer
         reply = self.reply
-        self.prepare_reply(0)
+        self.prepare_reply()
         return reply

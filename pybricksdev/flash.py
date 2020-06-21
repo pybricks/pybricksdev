@@ -178,7 +178,7 @@ class BootloaderConnection(BLERequestsConnection):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
-        self.prepare_reply(request.reply_len)
+        self.prepare_reply()
 
         # Write message
         data = request.make_request(payload)
@@ -186,7 +186,7 @@ class BootloaderConnection(BLERequestsConnection):
 
         # If we expect a reply, await for it
         if request.reply_len > 0:
-            self.logger.debug("Awaiting reply of {0}".format(self.reply_len))
+            self.logger.debug("Awaiting reply")
             reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 
