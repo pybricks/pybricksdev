@@ -57,14 +57,14 @@ class Compile(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
             'compile',
-            help='Compile a Pybricks program without running it.',
+            help='compile a Pybricks program without running it',
         )
         parser.tool = self
         # The argument is a filename or a Python one-liner.
         parser.add_argument(
             'script',
             metavar='<script>',
-            help='Path to a MicroPython script or inline script.',
+            help='path to a MicroPython script or inline script',
         )
 
     async def run(self, args: argparse.Namespace):
@@ -81,18 +81,18 @@ class Run(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
             'run',
-            help='Run a Pybricks program.',
+            help='run a Pybricks program',
         )
         parser.tool = self
         parser.add_argument(
             'device',
             metavar='<device>',
-            help='Hostname or IP address or Bluetooth device name or Bluetooth address',
+            help='hostname or IP address or Bluetooth device name or Bluetooth address',
         )
         parser.add_argument(
             'script',
             metavar='<script>',
-            help='Path to a MicroPython script or inline script.',
+            help='path to a MicroPython script or inline script',
         )
 
     async def run(self, args: argparse.Namespace):
@@ -125,19 +125,19 @@ class Flash(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
             'flash',
-            help='Flashes firmware on LEGO Powered Up devices.'
+            help='flash firmware on a LEGO Powered Up device'
         )
         parser.tool = self
         parser.add_argument('firmware',
                             metavar='<firmware-file>',
-                            help='The firmware file')
+                            help='the firmware file')
         parser.add_argument('-d',
                             '--delay',
                             dest='delay',
                             metavar='<milliseconds>',
                             type=int,
                             default=10,
-                            help='Delay between Bluetooth packets (default: 10).')
+                            help='delay between Bluetooth packets (default: %(default)i)')
 
     async def run(self, args: argparse.Namespace):
         from .ble import find_device
@@ -169,7 +169,7 @@ def entry():
     subparsers = parser.add_subparsers(
         metavar='<tool>',
         dest='tool',
-        help='The tool to use.',
+        help='the tool to use',
     )
 
     for tool in Compile(), Run(), Flash():
