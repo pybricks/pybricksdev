@@ -14,9 +14,11 @@ from os import path
 
 import argcomplete
 
+from . import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
 
-PROG_NAME = (f'{path.basename(sys.executable)} -m pybricksdev'
-             if sys.argv[0].endswith('__main__.py') else sys.argv[0])
+
+PROG_NAME = (f'{path.basename(sys.executable)} -m {MODULE_NAME}'
+             if sys.argv[0].endswith('__main__.py') else path.basename(sys.argv[0]))
 
 
 class Tool(ABC):
@@ -161,6 +163,8 @@ def entry():
         description='Utilities for Pybricks developers.',
         epilog='Run `%(prog)s <tool> --help` for tool-specific arguments.',
     )
+
+    parser.add_argument('-v', '--version', action='version', version=f'{MODULE_NAME} v{MODULE_VERSION}')
 
     subparsers = parser.add_subparsers(
         metavar='<tool>',
