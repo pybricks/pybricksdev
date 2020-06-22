@@ -13,18 +13,18 @@ repository = "https://github.com/pybricks/pybricksdev"
 pybricksdev = 'pybricksdev.__main__:entry'
 
 [tool.poetry.dependencies]
-aioserial = "*"
-asyncssh = "*"
+aioserial = "^1.2.3"
+asyncssh = "^2.2.1"
 bleak = { git = "https://github.com/pybricks/bleak.git", branch = "master" }
-jupyter = "*"
+jupyter = "^1.0.0"
 mpy-cross = "==1.12"
-nbstripout = "*"
+nbstripout = "^0.3.8"
 python = "^3.6"
-tqdm = "*"
-validators = "*"
+tqdm = "^4.46.1"
+validators = "^0.15.0"
 
 [tool.poetry.dev-dependencies]
-flake8 = "*"
+flake8 = "^3.8.3"
 pytest = "^5.2"
 pybricks = { git = "https://github.com/pybricks/pybricks-api.git", branch = "master" }
 
