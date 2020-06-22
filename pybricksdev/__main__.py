@@ -27,7 +27,7 @@ class Tool(ABC):
     @abstractmethod
     def add_parser(self, subparsers: argparse._SubParsersAction):
         """
-        Overrinding methods must at least do the following::
+        Overriding methods must at least do the following::
 
             parser = subparsers.add_parser('tool', ...)
             parser.tool = self
