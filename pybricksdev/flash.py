@@ -4,9 +4,11 @@
 import io
 from collections import namedtuple
 import json
+import os
 import struct
 import sys
 from tqdm import tqdm
+import typing
 import zipfile
 
 from .ble import BLERequestsConnection
@@ -50,12 +52,12 @@ def sum_complement(fw, max_size):
     return correction
 
 
-async def create_firmware(firmware_zip):
+async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]):
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
-        firmware_zip (str):
-            Path to the firmware zip file.
+        firmware_zip:
+            Path to the firmware zip file or a file-like object.
 
     Returns:
         bytes: Composite binary blob with correct padding and checksum.

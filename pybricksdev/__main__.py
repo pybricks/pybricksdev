@@ -128,9 +128,12 @@ class Flash(Tool):
             help='flash firmware on a LEGO Powered Up device'
         )
         parser.tool = self
-        parser.add_argument('firmware',
-                            metavar='<firmware-file>',
-                            help='the firmware file')
+        parser.add_argument(
+            'firmware',
+            metavar='<firmware-file>',
+            type=argparse.FileType(mode='rb'),
+            help='the firmware file',
+        ).completer = argcomplete.FilesCompleter(allowednames=('.zip',))
         parser.add_argument('-d',
                             '--delay',
                             dest='delay',
