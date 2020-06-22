@@ -14,6 +14,8 @@ from os import path
 
 import argcomplete
 
+from argcomplete.completers import ChoicesCompleter, FilesCompleter
+
 from . import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
 
 
@@ -133,14 +135,16 @@ class Flash(Tool):
             metavar='<firmware-file>',
             type=argparse.FileType(mode='rb'),
             help='the firmware file',
-        ).completer = argcomplete.FilesCompleter(allowednames=('.zip',))
-        parser.add_argument('-d',
-                            '--delay',
-                            dest='delay',
-                            metavar='<milliseconds>',
-                            type=int,
-                            default=10,
-                            help='delay between Bluetooth packets (default: %(default)i)')
+        ).completer = FilesCompleter(allowednames=('.zip',))
+        parser.add_argument(
+            '-d',
+            '--delay',
+            dest='delay',
+            metavar='<milliseconds>',
+            type=int,
+            default=10,
+            help='delay between Bluetooth packets (default: %(default)i)',
+        ).completer = ChoicesCompleter([5, 10, 15, 20])
 
     async def run(self, args: argparse.Namespace):
         from .ble import find_device
