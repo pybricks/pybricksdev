@@ -1,3 +1,5 @@
+# PYTHON_ARGCOMPLETE_OK
+
 """Command line wrapper around pybricksdev library."""
 
 import argparse
@@ -10,10 +12,7 @@ import validators
 from abc import ABC, abstractmethod
 from os import path
 
-from .ble import find_device
-from .compile import save_script, compile_file, print_mpy
-from .connections import BLEPUPConnection, EV3Connection
-from .flash import create_firmware, BootloaderConnection
+import argcomplete
 
 
 PROG_NAME = (f'{path.basename(sys.executable)} -m pybricksdev'
@@ -45,6 +44,8 @@ class Tool(ABC):
 
 def _parse_script_arg(script_arg):
     """Save user script argument to a file if it is a Python one-liner."""
+    from .compile import save_script
+
     if not path.exists(script_arg):
         return save_script(script_arg)
     return script_arg
@@ -65,6 +66,8 @@ class Compile(Tool):
         )
 
     async def run(self, args: argparse.Namespace):
+        from .compile import compile_file, print_mpy
+
         script_path = _parse_script_arg(args.script)
 
         # Compile the script and print the result
@@ -91,6 +94,9 @@ class Run(Tool):
         )
 
     async def run(self, args: argparse.Namespace):
+        from .ble import find_device
+        from .connections import BLEPUPConnection, EV3Connection
+
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
 
@@ -132,6 +138,9 @@ class Flash(Tool):
                             help='Delay between Bluetooth packets (default: 10).')
 
     async def run(self, args: argparse.Namespace):
+        from .ble import find_device
+        from .flash import create_firmware, BootloaderConnection
+
         print('Creating firmware')
         firmware, metadata = await create_firmware(args.firmware)
         address = await find_device('LEGO Bootloader', 15)
@@ -162,6 +171,7 @@ def entry():
     for tool in Compile(), Run(), Flash():
         tool.add_parser(subparsers)
 
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     if not args.tool:
