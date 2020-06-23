@@ -5,6 +5,7 @@
 import argparse
 import asyncio
 import logging
+import os
 import platform
 import sys
 import validators
@@ -161,6 +162,77 @@ class Flash(Tool):
         await updater.flash(firmware, metadata, args.delay/1000)
 
 
+class IPyKernel(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'ipykernel',
+            help='manage `pybricks` IPython kernel for Jupyter notebooks',
+        )
+        parser.tool = self
+
+        subcommand_subparsers = parser.add_subparsers(
+            metavar='<subcommand>',
+            dest='subcommand',
+        )
+
+        subcommand_subparsers.add_parser(
+            'install',
+            help='install the `pybricks` IPython kernel',
+        )
+
+        subcommand_subparsers.add_parser(
+            'remove',
+            help='remove the `pybricks` IPython kernel',
+        )
+
+        subcommand_subparsers.add_parser(
+            'check',
+            help='check if the `pybricks` IPython kernel is installed',
+        )
+
+    async def run(self, args: argparse.Namespace):
+        await getattr(self, args.subcommand)()
+
+    async def install(self):
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, '-m', 'ipykernel', 'install',
+            '--user',
+            '--name', 'pybricks',
+            env={**os.environ, 'PYTHONWARNINGS': 'ignore'},
+        )
+
+        await process.wait()
+
+    async def remove(self):
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, '-m', 'jupyter_client.kernelspecapp', 'remove',
+            'pybricks',
+            env={**os.environ, 'PYTHONWARNINGS': 'ignore'},
+        )
+
+        await process.wait()
+
+    async def check(self):
+        import json
+        import subprocess
+
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, '-m', 'jupyter_client.kernelspecapp', 'list',
+            '--json',
+            stdout=subprocess.PIPE,
+            env={**os.environ, 'PYTHONWARNINGS': 'ignore'},
+        )
+
+        stdout, _ = await process.communicate()
+        kernelspecs = json.loads(stdout)['kernelspecs']
+        try:
+            pybricks = kernelspecs['pybricks']
+            print(pybricks)
+        except KeyError:
+            print('Failed to find `pybricks` kernel.', file=sys.stderr)
+            sys.exit(1)
+
+
 def entry():
     """Main entry point to the pybricksdev command line utility."""
 
@@ -179,7 +251,7 @@ def entry():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash():
+    for tool in Compile(), Run(), Flash(), IPyKernel():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)

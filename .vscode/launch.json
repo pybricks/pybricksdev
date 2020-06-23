@@ -23,6 +23,16 @@
             "args": [
                 "compile", "pybricksdev/__init__.py"
             ]
+        },
+        {
+            "name": "Python: Run pybricksdev ipykernel",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "ipykernel", "check"
+            ]
         }
     ]
 }
