@@ -5,7 +5,6 @@
 import argparse
 import asyncio
 import logging
-import platform
 import sys
 import validators
 
@@ -190,14 +189,6 @@ def entry():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(subparsers.choices[args.tool].tool.run(args))
-
-    # HACK: https://github.com/hbldh/bleak/issues/111
-    if platform.system() == 'Darwin':
-        from bleak.backends.corebluetooth.client import cbapp
-        cbapp.ns_run_loop_done = True
-        pending = asyncio.all_tasks(cbapp.main_loop)
-        task = asyncio.gather(*pending)
-        cbapp.main_loop.run_until_complete(task)
 
 
 if __name__ == "__main__":
