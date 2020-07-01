@@ -16,7 +16,7 @@ pybricksdev = 'pybricksdev.__main__:entry'
 aioserial = "^1.2.3"
 argcomplete = "^1.11.1"
 asyncssh = "^2.2.1"
-bleak = { git = "https://github.com/pybricks/bleak.git", branch = "discovery" }
+bleak = { git = "https://github.com/pybricks/bleak.git", branch = "master" }
 jupyter = "^1.0.0"
 mpy-cross = "==1.12"
 nbstripout = "^0.3.8"
