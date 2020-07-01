@@ -61,8 +61,7 @@ class USBConnection():
         print("Connecting to {0}".format(port))
         self.ser = aioserial.AioSerial(port)
         self.connected = True
-        loop = asyncio.get_event_loop()
-        self.task = loop.create_task(self._read_loop())
+        self.task = asyncio.create_task(self._read_loop())
 
     async def disconnect(self):
         """Disconnects the client from the server."""
