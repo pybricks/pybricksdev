@@ -16,11 +16,11 @@ pybricksdev = 'pybricksdev.__main__:entry'
 aioserial = "^1.2.3"
 argcomplete = "^1.11.1"
 asyncssh = "^2.2.1"
-bleak = { git = "https://github.com/pybricks/bleak.git", branch = "master" }
+bleak = "~0.7"
 jupyter = "^1.0.0"
 mpy-cross = "==1.12"
 nbstripout = "^0.3.8"
-python = "^3.6"
+python = "~3.8"
 tqdm = "^4.46.1"
 validators = "^0.15.0"
 
