@@ -5,24 +5,43 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run pybricksdev flash",
+            "name": "Flash Control+ Hub",
             "type": "python",
             "request": "launch",
             "module": "pybricksdev",
             "console": "integratedTerminal",
             "args": [
-                "flash", "-d", "10", "../pybricks-micropython/bricks/cplushub/build/firmware.zip"
+                "flash",
+                "-d",
+                "10",
+                "../pybricks-micropython/bricks/cplushub/build/firmware.zip"
             ]
         },
         {
-            "name": "Python: Run pybricksdev compile",
+            "name": "Flash City Hub",
             "type": "python",
             "request": "launch",
             "module": "pybricksdev",
             "console": "integratedTerminal",
             "args": [
-                "compile", "pybricksdev/__init__.py"
+                "flash",
+                "-d",
+                "10",
+                "../pybricks-micropython/bricks/cityhub/build/firmware.zip"
             ]
-        }
+        },
+        {
+            "name": "Flash Move Hub",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "flash",
+                "-d",
+                "10",
+                "../pybricks-micropython/bricks/movehub/build/firmware.zip"
+            ]
+        },
     ]
 }
