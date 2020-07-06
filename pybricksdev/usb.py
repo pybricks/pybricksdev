@@ -47,8 +47,11 @@ class USBConnection():
     async def _read_loop(self):
         print("Started readloop")
         while self.connected:
-            char = await self.ser.read_async(1)
-            self.data_handler("", char)
+            data = await self.ser.read_all_async()
+            if len(data) > 0:
+                self.data_handler("", data)
+            else:
+                await asyncio.sleep(0.1)
 
     async def connect(self, port):
         """Creates connection to server at given address.
@@ -69,6 +72,7 @@ class USBConnection():
             self.logger.debug("Disconnecting...")
             self.ser.close()
             self.logger.info("Disconnected by client.")
+            # self.task.cancel()
             self.connected = False
 
     async def write(self, data, pause=0.05):
