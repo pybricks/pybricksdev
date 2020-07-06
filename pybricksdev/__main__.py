@@ -129,6 +129,8 @@ class Run(Tool):
             address = args.device
 
         # Connect to the address and run the script
+        hub.logger.setLevel(logging.INFO)
+
         await hub.connect(address)
         await hub.run(script_path)
         await hub.disconnect()
