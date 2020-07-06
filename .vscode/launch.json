@@ -5,6 +5,32 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run BLE",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "ble",
+                "Pybricks Hub",
+                "demo/longdemo.py"
+            ]
+        },
+        {
+            "name": "Run USB",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "usb",
+                "/dev/ttyACM0",
+                "demo/longdemo.py"
+            ]
+        },
+        {
             "name": "Flash Control+ Hub",
             "type": "python",
             "request": "launch",
