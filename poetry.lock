@@ -1,14 +1,18 @@
 [[package]]
 category = "main"
-description = "An asynchronous serial port library of Python"
+description = ""
 name = "aioserial"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = "^3.6"
 version = "1.3.0"
 
 [package.dependencies]
 pyserial = "*"
 
+[package.source]
+reference = "f9d00c2caecf756579c9b52f8d20a78564f85fbe"
+type = "git"
+url = "https://github.com/pybricks/aioserial.git"
 [[package]]
 category = "main"
 description = "Disable App Nap on OS X 10.9"
@@ -252,7 +256,7 @@ description = "IPython Kernel for Jupyter"
 name = "ipykernel"
 optional = false
 python-versions = ">=3.5"
-version = "5.3.0"
+version = "5.3.1"
 
 [package.dependencies]
 appnope = "*"
@@ -1067,14 +1071,11 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "10ab6a44df3f7aa50792ea8c1f324cf661ab02fa54e20af79838d298018695e5"
+content-hash = "781868f681cfeeacaf150c00b8e6ee0e39739fe38ae5b24aa7fa44da2b376b60"
 python-versions = "~3.8"
 
 [metadata.files]
-aioserial = [
-    {file = "aioserial-1.3.0-py3-none-any.whl", hash = "sha256:6f2ef198d2c944dffb12e0ed560222004f0d35d34b4279e26523fd207de45ff7"},
-    {file = "aioserial-1.3.0.tar.gz", hash = "sha256:3018a083d370365aea9665fe0756fd0bf84871b0f857139c90590939341f1220"},
-]
+aioserial = []
 appnope = [
     {file = "appnope-0.1.0-py2.py3-none-any.whl", hash = "sha256:5b26757dc6f79a3b7dc9fab95359328d5747fcb2409d331ea66d0272b90ab2a0"},
     {file = "appnope-0.1.0.tar.gz", hash = "sha256:8b995ffe925347a2138d7ac0fe77155e4311a0ea6d6da4f5128fe4b3cbe5ed71"},
@@ -1196,8 +1197,8 @@ incremental = [
     {file = "incremental-17.5.0.tar.gz", hash = "sha256:7b751696aaf36eebfab537e458929e194460051ccad279c72b755a167eebd4b3"},
 ]
 ipykernel = [
-    {file = "ipykernel-5.3.0-py3-none-any.whl", hash = "sha256:a8362e3ae365023ca458effe93b026b8cdadc0b73ff3031472128dd8a2cf0289"},
-    {file = "ipykernel-5.3.0.tar.gz", hash = "sha256:731adb3f2c4ebcaff52e10a855ddc87670359a89c9c784d711e62d66fccdafae"},
+    {file = "ipykernel-5.3.1-py3-none-any.whl", hash = "sha256:ca45d173ae9cd4ed8a57980529e1d8d39ea56df5358b8608dbe45733023d8df4"},
+    {file = "ipykernel-5.3.1.tar.gz", hash = "sha256:120d1e7057824a8a73d8b721725393ca7c6562655cdc1d12652316695c8b04c0"},
 ]
 ipython = [
     {file = "ipython-7.16.1-py3-none-any.whl", hash = "sha256:2dbcc8c27ca7d3cfe4fcdff7f45b27f9a8d3edfa70ff8024a71c7a8eb5f09d64"},
