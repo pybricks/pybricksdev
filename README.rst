@@ -40,25 +40,35 @@ fails.
 Running Pybricks MicroPython programs
 ---------------------------------------
 
-This compiles a MicroPython script and sends it to a hub with Pybricks firmware
-over Bluetooth Low Energy. It will attempt to send the program to the first
-device named ``Pybricks Hub`` that it finds.
+This compiles a MicroPython script and sends it to a hub with Pybricks
+firmware.
 
 ::
 
     poetry run pybricksdev run --help
 
+    #
+    # ble connection examples:
+    #
+
     # Run a one-liner on a Pybricks hub
-    poetry run pybricksdev run 'Pybricks Hub' 'print("Hello!"); print("world!");'
+    poetry run pybricksdev run ble 'Pybricks Hub' 'print("Hello!"); print("world!");'
 
     # Run script on the first device we find called Pybricks hub
-    poetry run pybricksdev run 'Pybricks Hub' demo/shortdemo.py
+    poetry run pybricksdev run ble 'Pybricks Hub' demo/shortdemo.py
 
-    # Run script on 90:84:2B:4A:2B:75
-    poetry run pybricksdev run 90:84:2B:4A:2B:75 demo/shortdemo.py
+    # Run script on 90:84:2B:4A:2B:75, skipping search
+    poetry run pybricksdev run ble 90:84:2B:4A:2B:75 demo/shortdemo.py
+
+    #
+    # Other connection examples:
+    #
 
     # Run script on ev3dev at 192.168.0.102
-    poetry run pybricksdev run 192.168.0.102 demo/shortdemo.py
+    poetry run pybricksdev run ssh 192.168.0.102 demo/shortdemo.py
+
+    # Run script on primehub at /dev/ttyACM0
+    poetry run pybricksdev run usb /dev/ttyACM0 demo/shortdemo.py
 
 Compiling Pybricks MicroPython programs without running
 --------------------------------------------------------

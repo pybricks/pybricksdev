@@ -86,6 +86,12 @@ class Run(Tool):
         )
         parser.tool = self
         parser.add_argument(
+            'conntype',
+            metavar='<connection type>',
+            help='Connection type',
+            choices=['ble', 'usb', 'ssh']
+        )
+        parser.add_argument(
             'device',
             metavar='<device>',
             help='hostname or IP address or Bluetooth device name or Bluetooth address',
@@ -98,23 +104,29 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from .ble import find_device
-        from .connections import BLEPUPConnection, EV3Connection
+        from .connections import BLEPUPConnection, EV3Connection, USBPUPConnection
 
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
 
-        # Check device argument
-        if validators.ip_address.ipv4(args.device):
-            # If the device is an IP address, it's an EV3 Brick with ev3dev.
+        # Pick the right connection
+        if args.conntype == 'ssh':
+            # So it's an ev3dev
+            if not validators.ip_address.ipv4(args.device):
+                raise ValueError("Device must be IP address.")
             hub = EV3Connection()
             address = args.device
-        else:
-            # Otherwise it is a Pybricks Hub with device name or address given.
+        elif args.conntype == 'ble':
+            # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = BLEPUPConnection()
             if validators.mac_address(args.device):
                 address = args.device
             else:
                 address = await find_device(args.device, timeout=5)
+        elif args.conntype == 'usb':
+            # It's a Pybricks Hub with USB. Port name is given.
+            hub = USBPUPConnection()
+            address = args.device
 
         # Connect to the address and run the script
         await hub.connect(address)
@@ -154,7 +166,7 @@ class Flash(Tool):
         address = await find_device('LEGO Bootloader', 15)
         print('Found:', address)
         updater = BootloaderConnection()
-        updater.logger.setLevel(logging.INFO)
+        updater.logger.setLevel(logging.DEBUG)
         await updater.connect(address)
         print('Erasing flash and starting update')
         await updater.flash(firmware, metadata, args.delay/1000)
