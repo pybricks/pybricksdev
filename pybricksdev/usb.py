@@ -81,6 +81,5 @@ class USBConnection():
                 Time between chunks of data.
         """
         self.logger.debug("TX data: {0}".format(data))
-        self.ser.write(data)
-        # Give server some time to process
-        # await asyncio.sleep(pause)
+        await self.ser.write_async(data)
+
