@@ -94,7 +94,9 @@ class Run(Tool):
         parser.add_argument(
             'device',
             metavar='<device>',
-            help='hostname or IP address or Bluetooth device name or Bluetooth address',
+            help='hostname or IP address for SSH connection; '
+                 'Bluetooth device name or Bluetooth address for BLE connection; '
+                 'serial port name for USB connection',
         )
         parser.add_argument(
             'script',
