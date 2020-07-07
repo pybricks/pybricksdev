@@ -88,7 +88,7 @@ class Run(Tool):
         parser.add_argument(
             'conntype',
             metavar='<connection type>',
-            help='Connection type',
+            help='connection type: %(choices)s',
             choices=['ble', 'usb', 'ssh']
         )
         parser.add_argument(
