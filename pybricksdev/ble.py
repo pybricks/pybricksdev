@@ -174,8 +174,6 @@ class BLEConnection():
             # Give server some time to process chunk
             await asyncio.sleep(pause)
 
-            #FIXME no wait after last chunk
-
 
 class BLERequestsConnection(BLEConnection):
     """Sends messages and awaits replies of known length.

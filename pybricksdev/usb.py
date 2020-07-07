@@ -86,4 +86,3 @@ class USBConnection():
         """
         self.logger.debug("TX data: {0}".format(data))
         await self.ser.write_async(data)
-

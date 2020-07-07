@@ -210,13 +210,20 @@ class PybricksPUPProtocol(CharacterGlue):
         self.set_state(self.IDLE)
         return result
 
-    async def wait_until_not_running(self):
-        """Awaits until the script is no longer running."""
+    async def wait_until_state(self, state):
+        """Awaits until the requested state is reached."""
         # FIXME: handle using event on state change
-        await asyncio.sleep(0.5)
         while True:
             await asyncio.sleep(0.1)
-            if self.state != self.RUNNING:
+            if self.state == state:
+                break
+
+    async def wait_until_state_is_not(self, state):
+        """Awaits until the requested state is no longer active."""
+        # FIXME: handle using event on state change
+        while True:
+            await asyncio.sleep(0.1)
+            if self.state != state:
                 break
 
     async def send_message(self, data):
@@ -279,7 +286,8 @@ class PybricksPUPProtocol(CharacterGlue):
             await self.send_message(chunk)
 
         # Wait for the program to finish
-        await self.wait_until_not_running()
+        await asyncio.sleep(0.2)
+        await self.wait_until_state_is_not(self.RUNNING)
 
 
 class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
