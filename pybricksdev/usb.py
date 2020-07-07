@@ -45,7 +45,7 @@ class USBConnection():
     #     self.connected = False
 
     async def _read_loop(self):
-        print("Started readloop")
+        self.logger.debug("Started readloop")
         while self.connected:
             data = await self.ser.read_all_async()
             if len(data) > 0:
@@ -65,6 +65,7 @@ class USBConnection():
         self.ser = aioserial.AioSerial(port)
         self.connected = True
         self.task = asyncio.create_task(self._read_loop())
+        await asyncio.sleep(0.5)
 
     async def disconnect(self):
         """Disconnects the client from the server."""

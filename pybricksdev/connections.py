@@ -258,7 +258,11 @@ class PybricksPUPProtocol(CharacterGlue):
 
         # Check the response
         if checksum != reply:
-            raise ValueError("Did not receive expected checksum.")
+            raise ValueError(
+                "Expected checksum {0} but received {1}.".format(
+                    checksum, reply
+                )
+            )
 
     async def run(self, py_path):
         """Run a Pybricks MicroPython script on the hub and print output.
