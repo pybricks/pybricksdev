@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import aioserial
+from serial.tools import list_ports
 
 
 async def find_device():
@@ -53,13 +54,22 @@ class USBConnection():
             else:
                 await asyncio.sleep(0.1)
 
-    async def connect(self, port):
+    async def connect(self, product):
         """Creates connection to server at given address.
 
         Arguments:
-            address (str):
-                Client address
+            product (str):
+                USB product string to search for
         """
+        port = None
+        devices = list_ports.comports()
+        for dev in devices:
+            if dev.product == product:
+                port = dev.device
+                break
+
+        if port is None:
+            raise OSError("Could not find hub.")
 
         print("Connecting to {0}".format(port))
         self.ser = aioserial.AioSerial(port)

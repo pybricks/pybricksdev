@@ -67,8 +67,8 @@ firmware.
     # Run script on ev3dev at 192.168.0.102
     poetry run pybricksdev run ssh 192.168.0.102 demo/shortdemo.py
 
-    # Run script on primehub at /dev/ttyACM0
-    poetry run pybricksdev run usb /dev/ttyACM0 demo/shortdemo.py
+    # Run script on primehub at
+    poetry run pybricksdev run usb 'Pybricks Hub' demo/shortdemo.py
 
 Compiling Pybricks MicroPython programs without running
 --------------------------------------------------------
