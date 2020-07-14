@@ -31,6 +31,19 @@
             ]
         },
         {
+            "name": "Run SSH",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "ssh",
+                "192.168.133.101",
+                "demo/longdemo.py"
+            ]
+        },
+        {
             "name": "Flash Control+ Hub",
             "type": "python",
             "request": "launch",
