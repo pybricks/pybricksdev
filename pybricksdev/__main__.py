@@ -121,6 +121,7 @@ class Run(Tool):
         elif args.conntype == 'ble':
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = BLEPUPConnection()
+            hub.logger.setLevel(logging.INFO)
             if validators.mac_address(args.device):
                 address = args.device
             else:
@@ -128,11 +129,10 @@ class Run(Tool):
         elif args.conntype == 'usb':
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
+            hub.logger.setLevel(logging.INFO)
             address = args.device
 
         # Connect to the address and run the script
-        hub.logger.setLevel(logging.INFO)
-
         await hub.connect(address)
         await hub.run(script_path)
         await hub.disconnect()
