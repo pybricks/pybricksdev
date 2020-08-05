@@ -13,7 +13,7 @@ repository = "https://github.com/pybricks/pybricksdev"
 pybricksdev = 'pybricksdev.__main__:entry'
 
 [tool.poetry.dependencies]
-aioserial = { git = "https://github.com/pybricks/aioserial.git", branch = "master" }
+aioserial = "^1.3.0"
 argcomplete = "^1.11.1"
 asyncssh = "^2.2.1"
 bleak = "^0.9.1"

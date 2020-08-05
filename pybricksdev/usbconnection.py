@@ -48,11 +48,11 @@ class USBConnection():
     async def _read_loop(self):
         self.logger.debug("Started readloop")
         while self.connected:
-            data = await self.ser.read_all_async()
-            if len(data) > 0:
+            data = await self.ser.read_async()
+            if data:
                 self.data_handler("", data)
-            else:
-                await asyncio.sleep(0.1)
+
+        self.ser.close()
 
     async def connect(self, product):
         """Creates connection to server at given address.
@@ -81,10 +81,10 @@ class USBConnection():
         """Disconnects the client from the server."""
         if self.connected:
             self.logger.debug("Disconnecting...")
-            self.ser.close()
-            self.logger.info("Disconnected by client.")
-            # self.task.cancel()
             self.connected = False
+            self.ser.cancel_read()
+            await self.task
+            self.logger.info("Disconnected by client.")
 
     async def write(self, data, pause=0.05):
         """Write bytes to the server, split to chunks of maximum mtu size.

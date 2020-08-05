@@ -4,16 +4,10 @@ version = "1.3.0"
 description = "An asynchronous serial port library of Python"
 category = "main"
 optional = false
-python-versions = "^3.6"
+python-versions = ">=3.6,<4.0"
 
 [package.dependencies]
 pyserial = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/pybricks/aioserial.git"
-reference = "master"
-resolved_reference = "f9d00c2caecf756579c9b52f8d20a78564f85fbe"
 
 [[package]]
 name = "appnope"
@@ -1019,10 +1013,13 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "7b2f139e0022c5b982da4594dacf0696651465791e98dce831d23ed51cbc3df5"
+content-hash = "c34085ac1108b20b564bf4ba30676810ef0be0dc902d4c373a6c9e7c9851841d"
 
 [metadata.files]
-aioserial = []
+aioserial = [
+    {file = "aioserial-1.3.0-py3-none-any.whl", hash = "sha256:6f2ef198d2c944dffb12e0ed560222004f0d35d34b4279e26523fd207de45ff7"},
+    {file = "aioserial-1.3.0.tar.gz", hash = "sha256:3018a083d370365aea9665fe0756fd0bf84871b0f857139c90590939341f1220"},
+]
 appnope = [
     {file = "appnope-0.1.0-py2.py3-none-any.whl", hash = "sha256:5b26757dc6f79a3b7dc9fab95359328d5747fcb2409d331ea66d0272b90ab2a0"},
     {file = "appnope-0.1.0.tar.gz", hash = "sha256:8b995ffe925347a2138d7ac0fe77155e4311a0ea6d6da4f5128fe4b3cbe5ed71"},
@@ -1465,10 +1462,6 @@ pyzmq = [
     {file = "pyzmq-19.0.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:654d3e06a4edc566b416c10293064732516cf8871a4522e0a2ba00cc2a2e600c"},
     {file = "pyzmq-19.0.2-cp38-cp38-win32.whl", hash = "sha256:276ad604bffd70992a386a84bea34883e696a6b22e7378053e5d3227321d9702"},
     {file = "pyzmq-19.0.2-cp38-cp38-win_amd64.whl", hash = "sha256:09d24a80ccb8cbda1af6ed8eb26b005b6743e58e9290566d2a6841f4e31fa8e0"},
-    {file = "pyzmq-19.0.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:18189fc59ff5bf46b7ccf5a65c1963326dbfc85a2bc73e9f4a90a40322b992c8"},
-    {file = "pyzmq-19.0.2-cp39-cp39-manylinux1_i686.whl", hash = "sha256:b1dd4cf4c5e09cbeef0aee83f3b8af1e9986c086a8927b261c042655607571e8"},
-    {file = "pyzmq-19.0.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:c6d653bab76b3925c65d4ac2ddbdffe09710f3f41cc7f177299e8c4498adb04a"},
-    {file = "pyzmq-19.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:949a219493a861c263b75a16588eadeeeab08f372e25ff4a15a00f73dfe341f4"},
     {file = "pyzmq-19.0.2-pp27-pypy_73-macosx_10_9_x86_64.whl", hash = "sha256:c1a31cd42905b405530e92bdb70a8a56f048c8a371728b8acf9d746ecd4482c0"},
     {file = "pyzmq-19.0.2-pp36-pypy36_pp73-macosx_10_9_x86_64.whl", hash = "sha256:a7e7f930039ee0c4c26e4dfee015f20bd6919cd8b97c9cd7afbde2923a5167b6"},
     {file = "pyzmq-19.0.2.tar.gz", hash = "sha256:296540a065c8c21b26d63e3cea2d1d57902373b16e4256afe46422691903a438"},
