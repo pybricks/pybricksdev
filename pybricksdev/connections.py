@@ -2,7 +2,7 @@ import asyncio
 import asyncssh
 import os
 from .ble import BLEConnection
-from .usb import USBConnection
+from .usbconnection import USBConnection
 from .compile import compile_file
 
 
