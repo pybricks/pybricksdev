@@ -192,14 +192,13 @@ class DFU(Tool):
 
     async def run(self, args: argparse.Namespace):
         from .flash import create_firmware
-        from .dfu import create_dfu, flash_dfu
+        from .dfu import flash_dfu
 
         print('Creating firmware')
         firmware_bin, metadata = await create_firmware(args.firmware)
 
         # Non-async dfu
-        firmware_dfu = create_dfu(firmware_bin)
-        flash_dfu(firmware_dfu)
+        flash_dfu(firmware_bin, metadata)
 
 
 def entry():
