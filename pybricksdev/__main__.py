@@ -176,6 +176,32 @@ class Flash(Tool):
         await updater.flash(firmware, metadata, args.delay/1000)
 
 
+class DFU(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'dfu',
+            help='flash firmware on a LEGO SPIKE Prime Hub'
+        )
+        parser.tool = self
+        parser.add_argument(
+            'firmware',
+            metavar='<firmware-file>',
+            type=argparse.FileType(mode='rb'),
+            help='the firmware file',
+        ).completer = FilesCompleter(allowednames=('.zip',))
+
+    async def run(self, args: argparse.Namespace):
+        from .flash import create_firmware
+        from .dfu import create_dfu, flash_dfu
+
+        print('Creating firmware')
+        firmware_bin, metadata = await create_firmware(args.firmware)
+
+        # Non-async dfu
+        firmware_dfu = create_dfu(firmware_bin)
+        flash_dfu(firmware_dfu)
+
+
 def entry():
     """Main entry point to the pybricksdev command line utility."""
 
@@ -194,7 +220,7 @@ def entry():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash():
+    for tool in Compile(), Run(), Flash(), DFU():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)

@@ -27,8 +27,11 @@ Installation steps:
     poetry install
 
 
-Flashing Pybricks MicroPython firmware
----------------------------------------
+Flashing Pybricks MicroPython firmware (Move Hub, City Hub, Control+ Hub)
+--------------------------------------------------------------------------
+
+Make sure the hub is off. Press and keep holding the hub button, and run:
+
 ::
 
     poetry run pybricksdev flash ../pybricks-micropython/bricks/cplushub/build/firmware.zip -d 15
@@ -36,6 +39,23 @@ Flashing Pybricks MicroPython firmware
 Replace the example path with the path to the firmware archive. Decrease the
 delay ``d`` between data packages for faster transfer. Increase the delay if it
 fails.
+
+You may release the button once the progress bar first appears. 
+
+Flashing Pybricks MicroPython firmware (SPIKE Prime Hub)
+-----------------------------------------------------------------------
+
+Make sure the hub is off. Press and keep holding the bluetooth button, and
+plug in USB. Keep holding the button until the bluetooth light flashes
+red/green/blue. Then run this command:
+
+::
+
+    poetry run pybricksdev dfu ../pybricks-micropython/bricks/primehub/build/firmware.zip
+
+Replace the example path with the path to the firmware archive.
+
+TODO: Document ``udev`` rules.
 
 Running Pybricks MicroPython programs
 ---------------------------------------

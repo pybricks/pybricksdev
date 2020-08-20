@@ -82,5 +82,16 @@
                 "../pybricks-micropython/bricks/movehub/build/firmware.zip"
             ]
         },
+        {
+            "name": "Flash SPIKE Prime Hub",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "dfu",
+                "../pybricks-micropython/bricks/primehub/build/firmware.zip"
+            ]
+        },
     ]
 }
