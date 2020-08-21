@@ -45,6 +45,8 @@ You may release the button once the progress bar first appears.
 Flashing Pybricks MicroPython firmware (SPIKE Prime Hub)
 -----------------------------------------------------------------------
 
+TODO: Document ``udev`` rules.
+
 Make sure the hub is off. Press and keep holding the bluetooth button, and
 plug in USB. Keep holding the button until the bluetooth light flashes
 red/green/blue. Then run this command:
@@ -55,7 +57,20 @@ red/green/blue. Then run this command:
 
 Replace the example path with the path to the firmware archive.
 
-TODO: Document ``udev`` rules.
+*Restoring the original firmware*
+
+The official SPIKE Prime app can only restore the firmware if an official
+firmware is already installed. To install an original firmware, use:
+
+::
+
+    poetry run pybricksdev dfu-restore /path/to/original/firmware.bin
+
+GitHub user @gpdaniels has obtained several original firmware versions. You
+can use this `firmware file`_ to install version `1.0.06`. After recovering
+this firmware, use the official SPIKE app to update to the
+very latest firmware. Doing so is recommend, because that will also update
+the files on the internal storage to the correct version.
 
 Running Pybricks MicroPython programs
 ---------------------------------------
@@ -111,3 +126,4 @@ paste the generated ``const uint8_t script[]`` directly ito your C code.
 
 
 .. _Pybricks Code: https://www.code.pybricks.com/
+.. _firmware file: https://github.com/gpdaniels/spike-prime/blob/master/firmware/v1.0.06.0034-b0c335b/96112deb24a934bfc19a13c7ea620f54.bin?raw=true

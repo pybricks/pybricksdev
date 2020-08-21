@@ -149,7 +149,7 @@ class Flash(Tool):
             'firmware',
             metavar='<firmware-file>',
             type=argparse.FileType(mode='rb'),
-            help='the firmware file',
+            help='the firmware .zip file',
         ).completer = FilesCompleter(allowednames=('.zip',))
         parser.add_argument(
             '-d',
@@ -201,6 +201,26 @@ class DFU(Tool):
         flash_dfu(firmware_bin, metadata)
 
 
+class DFURestore(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            'dfu-restore',
+            help='Restore official firmware on a LEGO SPIKE Prime Hub'
+        )
+        parser.tool = self
+        parser.add_argument(
+            'firmware',
+            metavar='<firmware-file>',
+            type=argparse.FileType(mode='rb'),
+            help='the firmware .bin file',
+        ).completer = FilesCompleter(allowednames=('.bin',))
+
+    async def run(self, args: argparse.Namespace):
+        from .dfu import flash_dfu
+
+        flash_dfu(args.firmware.read(), {'device-id': 0})
+
+
 def entry():
     """Main entry point to the pybricksdev command line utility."""
 
@@ -219,7 +239,7 @@ def entry():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash(), DFU():
+    for tool in Compile(), Run(), Flash(), DFU(), DFURestore():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
