@@ -33,6 +33,12 @@ def flash_dfu(firmware_bin, metadata):
     _dfu_upload.init()
     elements = _dfu_upload.read_dfu_file(outfile)
 
+    # Erase flash
+    print("Erasing flash...")
+    _dfu_upload.mass_erase()
+
     # Upload dfu file
-    _dfu_upload.write_elements(elements, False, _dfu_upload.cli_progress)
+    print("Writing new firmware...")
+    _dfu_upload.write_elements(elements, True, _dfu_upload.cli_progress)
     _dfu_upload.exit_dfu()
+    print("Done.")
