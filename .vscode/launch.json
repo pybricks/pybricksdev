@@ -14,7 +14,7 @@
                 "run",
                 "ble",
                 "Pybricks Hub",
-                "demo/longdemo.py"
+                "${file}"
             ]
         },
         {
@@ -27,7 +27,7 @@
                 "run",
                 "usb",
                 "Pybricks Hub",
-                "demo/longdemo.py"
+                "${file}"
             ]
         },
         {
@@ -40,7 +40,7 @@
                 "run",
                 "ssh",
                 "192.168.133.101",
-                "demo/longdemo.py"
+                "${file}"
             ]
         },
         {
