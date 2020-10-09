@@ -27,14 +27,14 @@ Installation steps:
     poetry install
 
 
-Flashing Pybricks MicroPython firmware (Move Hub, City Hub, Control+ Hub)
+Flashing Pybricks MicroPython firmware (Move Hub, City Hub, Technic Hub)
 --------------------------------------------------------------------------
 
 Make sure the hub is off. Press and keep holding the hub button, and run:
 
 ::
 
-    poetry run pybricksdev flash ../pybricks-micropython/bricks/cplushub/build/firmware.zip -d 15
+    poetry run pybricksdev flash ../pybricks-micropython/bricks/technichub/build/firmware.zip -d 15
 
 Replace the example path with the path to the firmware archive. Decrease the
 delay ``d`` between data packages for faster transfer. Increase the delay if it

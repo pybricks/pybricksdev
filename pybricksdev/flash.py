@@ -184,7 +184,7 @@ async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.Bi
 HUB_INFO = {
     0x40: ('Move Hub', 14),
     0x41: ('City Hub', 32),
-    0x80: ('Control+ Hub', 32)
+    0x80: ('Technic Hub', 32)
 }
 
 
