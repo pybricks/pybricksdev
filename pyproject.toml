@@ -18,7 +18,6 @@ argcomplete = "^1.11.1"
 asyncssh = "^2.2.1"
 bleak = "^0.9.1"
 mpy-cross = "==1.12"
-nbstripout = "^0.3.8"
 python = "~3.8"
 tqdm = "^4.46.1"
 validators = "^0.15.0"
@@ -30,6 +29,7 @@ pytest = "^5.2"
 pybricks = { git = "https://github.com/pybricks/pybricks-api.git", branch = "master" }
 notebook = "^6.0.3"
 ipykernel = "^5.3.1"
+nbstripout = "^0.3.8"
 
 [build-system]
 requires = ["poetry>=0.12"]

@@ -159,7 +159,7 @@ pycparser = "*"
 
 [[package]]
 name = "colorama"
-version = "0.4.3"
+version = "0.4.4"
 description = "Cross-platform colored terminal text."
 category = "dev"
 optional = false
@@ -312,7 +312,7 @@ test = ["nose (>=0.10.1)", "requests", "testpath", "pygments", "nbformat", "ipyk
 name = "ipython-genutils"
 version = "0.2.0"
 description = "Vestigial utilities from IPython"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -349,7 +349,7 @@ i18n = ["Babel (>=0.8)"]
 name = "jsonschema"
 version = "3.2.0"
 description = "An implementation of JSON Schema validation for Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -384,7 +384,7 @@ test = ["ipykernel", "ipython", "mock", "pytest", "pytest-asyncio", "async-gener
 name = "jupyter-core"
 version = "4.6.3"
 description = "Jupyter core package. A base package on which Jupyter projects rely."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "!=3.0,!=3.1,!=3.2,!=3.3,!=3.4,>=2.7"
 
@@ -445,8 +445,8 @@ python-versions = "*"
 
 [[package]]
 name = "nbclient"
-version = "0.5.0"
-description = "A client library for executing notebooks. Formally nbconvert's ExecutePreprocessor."
+version = "0.5.1"
+description = "A client library for executing notebooks. Formerly nbconvert's ExecutePreprocessor."
 category = "dev"
 optional = false
 python-versions = ">=3.6"
@@ -495,9 +495,9 @@ webpdf = ["pyppeteer (0.2.2)"]
 
 [[package]]
 name = "nbformat"
-version = "5.0.7"
+version = "5.0.8"
 description = "The Jupyter Notebook format"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -508,13 +508,14 @@ jupyter-core = "*"
 traitlets = ">=4.1"
 
 [package.extras]
-test = ["pytest", "pytest-cov", "testpath"]
+fast = ["fastjsonschema"]
+test = ["fastjsonschema", "testpath", "pytest", "pytest-cov"]
 
 [[package]]
 name = "nbstripout"
 version = "0.3.9"
 description = "Strips outputs from Jupyter and IPython notebooks"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -571,11 +572,11 @@ six = "*"
 
 [[package]]
 name = "pandocfilters"
-version = "1.4.2"
+version = "1.4.3"
 description = "Utilities for writing pandoc filters in python"
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "parso"
@@ -631,7 +632,7 @@ twisted = ["twisted"]
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.7"
+version = "3.0.8"
 description = "Library for building powerful interactive command lines in Python"
 category = "dev"
 optional = false
@@ -668,7 +669,7 @@ python-versions = "^3.5"
 type = "git"
 url = "https://github.com/pybricks/pybricks-api.git"
 reference = "master"
-resolved_reference = "500bac9929048a6bcdf36553efdaf765495fe6b8"
+resolved_reference = "3de7f92e8a6d68a5cf0bddfd270bad4bb15d38f2"
 
 [[package]]
 name = "pycodestyle"
@@ -764,7 +765,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "pyrsistent"
 version = "0.17.3"
 description = "Persistent/Functional/Immutable data structures"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -832,7 +833,7 @@ python-versions = "*"
 name = "pywin32"
 version = "228"
 description = "Python for Window Extensions"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -902,7 +903,7 @@ python-versions = ">= 3.5"
 
 [[package]]
 name = "tqdm"
-version = "4.50.0"
+version = "4.50.2"
 description = "Fast, Extensible Progress Meter"
 category = "main"
 optional = false
@@ -913,9 +914,9 @@ dev = ["py-make (>=0.1.0)", "twine", "argopt", "pydoc-markdown"]
 
 [[package]]
 name = "traitlets"
-version = "5.0.4"
+version = "5.0.5"
 description = "Traitlets Python configuration system"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -956,7 +957,7 @@ windows_platform = ["pywin32 (!=226)", "pyopenssl (>=16.0.0)", "service_identity
 
 [[package]]
 name = "txdbus"
-version = "1.1.1"
+version = "1.1.2"
 description = "A native Python implementation of the DBus protocol for Twisted applications."
 category = "main"
 optional = false
@@ -1013,7 +1014,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "c34085ac1108b20b564bf4ba30676810ef0be0dc902d4c373a6c9e7c9851841d"
+content-hash = "5f2da47b03c30d1f53926ece2d42bf0830a4d22bb4481f85fa7db79303fd6d95"
 
 [metadata.files]
 aioserial = [
@@ -1117,8 +1118,8 @@ cffi = [
     {file = "cffi-1.14.3.tar.gz", hash = "sha256:f92f789e4f9241cd262ad7a555ca2c648a98178a953af117ef7fad46aa1d5591"},
 ]
 colorama = [
-    {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
-    {file = "colorama-0.4.3.tar.gz", hash = "sha256:e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1"},
+    {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
+    {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 constantly = [
     {file = "constantly-15.1.0-py2.py3-none-any.whl", hash = "sha256:dd2fa9d6b1a51a83f0d7dd76293d734046aa176e384bf6e33b7e44880eb37c5d"},
@@ -1267,16 +1268,16 @@ mpy-cross = [
     {file = "mpy_cross-1.12-py2.py3-none-win_amd64.whl", hash = "sha256:2199dfc4858ef60860c2a7d538eb50ea21c161620b5309e80af6e536bf474086"},
 ]
 nbclient = [
-    {file = "nbclient-0.5.0-py3-none-any.whl", hash = "sha256:8a6e27ff581cee50895f44c41936ce02369674e85e2ad58643d8d4a6c36771b0"},
-    {file = "nbclient-0.5.0.tar.gz", hash = "sha256:8ad52d27ba144fca1402db014857e53c5a864a2f407be66ca9d74c3a56d6591d"},
+    {file = "nbclient-0.5.1-py3-none-any.whl", hash = "sha256:4d6b116187c795c99b9dba13d46e764d596574b14c296d60670c8dfe454db364"},
+    {file = "nbclient-0.5.1.tar.gz", hash = "sha256:01e2d726d16eaf2cde6db74a87e2451453547e8832d142f73f72fddcd4fe0250"},
 ]
 nbconvert = [
     {file = "nbconvert-6.0.7-py3-none-any.whl", hash = "sha256:39e9f977920b203baea0be67eea59f7b37a761caa542abe80f5897ce3cf6311d"},
     {file = "nbconvert-6.0.7.tar.gz", hash = "sha256:cbbc13a86dfbd4d1b5dee106539de0795b4db156c894c2c5dc382062bbc29002"},
 ]
 nbformat = [
-    {file = "nbformat-5.0.7-py3-none-any.whl", hash = "sha256:ea55c9b817855e2dfcd3f66d74857342612a60b1f09653440f4a5845e6e3523f"},
-    {file = "nbformat-5.0.7.tar.gz", hash = "sha256:54d4d6354835a936bad7e8182dcd003ca3dc0cedfee5a306090e04854343b340"},
+    {file = "nbformat-5.0.8-py3-none-any.whl", hash = "sha256:aa9450c16d29286dc69b92ea4913c1bffe86488f90184445996ccc03a2f60382"},
+    {file = "nbformat-5.0.8.tar.gz", hash = "sha256:f545b22138865bfbcc6b1ffe89ed5a2b8e2dc5d4fe876f2ca60d8e6f702a30f8"},
 ]
 nbstripout = [
     {file = "nbstripout-0.3.9-py2.py3-none-any.whl", hash = "sha256:261dcbb993bdcf194d61f2804bdc69fb437f2f3d250ffa3dcd49184189e9fb95"},
@@ -1295,7 +1296,7 @@ packaging = [
     {file = "packaging-20.4.tar.gz", hash = "sha256:4357f74f47b9c12db93624a82154e9b120fa8293699949152b22065d556079f8"},
 ]
 pandocfilters = [
-    {file = "pandocfilters-1.4.2.tar.gz", hash = "sha256:b3dd70e169bb5449e6bc6ff96aea89c5eea8c5f6ab5e207fc2f521a2cf4a0da9"},
+    {file = "pandocfilters-1.4.3.tar.gz", hash = "sha256:bc63fbb50534b4b1f8ebe1860889289e8af94a23bff7445259592df25a3906eb"},
 ]
 parso = [
     {file = "parso-0.7.1-py2.py3-none-any.whl", hash = "sha256:97218d9159b2520ff45eb78028ba8b50d2bc61dcc062a9682666f2dc4bd331ea"},
@@ -1318,8 +1319,8 @@ prometheus-client = [
     {file = "prometheus_client-0.8.0.tar.gz", hash = "sha256:c6e6b706833a6bd1fd51711299edee907857be10ece535126a158f911ee80915"},
 ]
 prompt-toolkit = [
-    {file = "prompt_toolkit-3.0.7-py3-none-any.whl", hash = "sha256:83074ee28ad4ba6af190593d4d4c607ff525272a504eb159199b6dd9f950c950"},
-    {file = "prompt_toolkit-3.0.7.tar.gz", hash = "sha256:822f4605f28f7d2ba6b0b09a31e25e140871e96364d1d377667b547bb3bf4489"},
+    {file = "prompt_toolkit-3.0.8-py3-none-any.whl", hash = "sha256:7debb9a521e0b1ee7d2fe96ee4bd60ef03c6492784de0547337ca4433e46aa63"},
+    {file = "prompt_toolkit-3.0.8.tar.gz", hash = "sha256:25c95d2ac813909f813c93fde734b6e44406d1477a9faef7c915ff37d39c0a8c"},
 ]
 ptyprocess = [
     {file = "ptyprocess-0.6.0-py2.py3-none-any.whl", hash = "sha256:d7cc528d76e76342423ca640335bd3633420dc1366f258cb31d05e865ef5ca1f"},
@@ -1494,12 +1495,12 @@ tornado = [
     {file = "tornado-6.0.4.tar.gz", hash = "sha256:0fe2d45ba43b00a41cd73f8be321a44936dc1aba233dee979f17a042b83eb6dc"},
 ]
 tqdm = [
-    {file = "tqdm-4.50.0-py2.py3-none-any.whl", hash = "sha256:2dd75fdb764f673b8187643496fcfbeac38348015b665878e582b152f3391cdb"},
-    {file = "tqdm-4.50.0.tar.gz", hash = "sha256:93b7a6a9129fce904f6df4cf3ae7ff431d779be681a95c3344c26f3e6c09abfa"},
+    {file = "tqdm-4.50.2-py2.py3-none-any.whl", hash = "sha256:43ca183da3367578ebf2f1c2e3111d51ea161ed1dc4e6345b86e27c2a93beff7"},
+    {file = "tqdm-4.50.2.tar.gz", hash = "sha256:69dfa6714dee976e2425a9aab84b622675b7b1742873041e3db8a8e86132a4af"},
 ]
 traitlets = [
-    {file = "traitlets-5.0.4-py3-none-any.whl", hash = "sha256:9664ec0c526e48e7b47b7d14cd6b252efa03e0129011de0a9c1d70315d4309c3"},
-    {file = "traitlets-5.0.4.tar.gz", hash = "sha256:86c9351f94f95de9db8a04ad8e892da299a088a64fd283f9f6f18770ae5eae1b"},
+    {file = "traitlets-5.0.5-py3-none-any.whl", hash = "sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426"},
+    {file = "traitlets-5.0.5.tar.gz", hash = "sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396"},
 ]
 twisted = [
     {file = "Twisted-20.3.0-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:cdbc4c7f0cd7a2218b575844e970f05a1be1861c607b0e048c9bceca0c4d42f7"},
@@ -1527,7 +1528,7 @@ twisted = [
     {file = "Twisted-20.3.0.tar.bz2", hash = "sha256:d72c55b5d56e176563b91d11952d13b01af8725c623e498db5507b6614fc1e10"},
 ]
 txdbus = [
-    {file = "txdbus-1.1.1.tar.gz", hash = "sha256:eefcffa4efbf82ba11222f17f5989fe1b2b6ef57226ef896c4a7084c990ba217"},
+    {file = "txdbus-1.1.2.tar.gz", hash = "sha256:8375a5fb68a12054f0def91af800c821fb2232949337756ed975f88d8ea2bc97"},
 ]
 validators = [
     {file = "validators-0.15.0.tar.gz", hash = "sha256:31e8bb01b48b48940a021b8a9576b840f98fa06b91762ef921d02cb96d38727a"},
