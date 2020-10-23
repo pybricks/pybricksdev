@@ -229,7 +229,7 @@ class BootloaderConnection(BLERequestsConnection):
         0x22, 'Flash', ['checksum', 'count'], '<BI', True, False
     )
     START_APP = BootloaderRequest(
-        0x33, 'Start', [], '', False
+        0x33, 'Start', [], '', False, False
     )
     INIT_LOADER = BootloaderRequest(
         0x44, 'Init', ['result'], '<B'
@@ -244,7 +244,7 @@ class BootloaderConnection(BLERequestsConnection):
         0x77, 'State', ['level'], '<B'
     )
     DISCONNECT = BootloaderRequest(
-        0x88, 'Disconnect', [], '', False
+        0x88, 'Disconnect', [], '', False, False
     )
 
     def __init__(self):

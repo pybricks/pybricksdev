@@ -1,9 +1,12 @@
-from bleak import BleakScanner, BleakClient
 import asyncio
 import logging
+import platform
+
+from bleak import BleakScanner, BleakClient
+from bleak.backends.device import BLEDevice
 
 
-async def find_device(name, timeout=5):
+async def find_device(name: str, timeout: float = 5) -> BLEDevice:
     """Quickly find BLE device address by friendly device name.
 
     This is an alternative to bleak.discover. Instead of waiting a long time to
@@ -17,10 +20,10 @@ async def find_device(name, timeout=5):
             When to give up searching.
 
     Returns:
-        str: Matching device address.
+        BLEDevice: Matching device.
 
     Raises:
-        TimeoutError:
+        asyncio.TimeoutError:
             Device was not found within the timeout.
     """
     print("Searching for {0}".format(name))
@@ -53,16 +56,21 @@ async def find_device(name, timeout=5):
             # Check if any of the devices found so far has the expected name.
             devices = await scanner.get_discovered_devices()
             for dev in devices:
-                # If the name matches, stop scanning and return address.
+                # HACK: work around bleak bug in Windows
+                if platform.system() == 'Windows':
+                    response = scanner._scan_responses.get(dev.details.BluetoothAddress)
+                    if response:
+                        dev.name = response.Advertisement.LocalName
+                # If the name matches, stop scanning and return.
                 if name == dev.name:
                     await scanner.stop()
-                    return dev.address
+                    return dev
         # Await until we check again.
         await asyncio.sleep(INTERVAL)
 
     # If we are here, scanning has timed out.
     await scanner.stop()
-    raise TimeoutError(
+    raise asyncio.TimeoutError(
         "Could not find {0} in {1} seconds".format(name, timeout)
     )
 
@@ -113,28 +121,22 @@ class BLEConnection():
         """
         self.logger.debug("DATA {0}".format(data))
 
-    def disconnected_handler(self, client, *args):
-        """Handles disconnected event. Intended to be overridden."""
-        self.logger.info("Disconnected by server.")
+    def disconnected_handler(self, client: BleakClient):
+        """Handles disconnected event."""
+        self.logger.debug("Disconnected.")
         self.connected = False
 
-    async def connect(self, address):
-        """Creates connection to server at given address.
+    async def connect(self, device: BLEDevice):
+        """Connects to a BLE device.
 
         Arguments:
-            address (str):
-                Client address
+            device (BLEDevice):
+                Client device
         """
 
-        print("Connecting to {0}".format(address))
-        self.client = BleakClient(address)
-        await self.client.connect()
-        try:
-            self.client.set_disconnected_callback(self.disconnected_handler)
-        except NotImplementedError:
-            # TODO: implement this in Windows backend in Bleak
-            self.logger.warning("Disconnected handler not implemented. "
-                                "This may cause unexpected behavior.")
+        print("Connecting to", device)
+        self.client = BleakClient(device)
+        await self.client.connect(disconnected_callback=self.disconnected_handler)
         await self.client.start_notify(self.char_tx_UUID, self.data_handler)
         print("Connected successfully!")
         self.connected = True
@@ -145,8 +147,6 @@ class BLEConnection():
         if self.connected:
             self.logger.debug("Disconnecting...")
             await self.client.disconnect()
-            self.logger.info("Disconnected by client.")
-            self.connected = False
 
     async def write(self, data, pause=0.05, with_response=False):
         """Write bytes to the server, split to chunks of maximum mtu size.

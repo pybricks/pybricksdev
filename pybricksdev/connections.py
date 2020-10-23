@@ -409,7 +409,7 @@ class EV3Connection():
                         process.stderr.readline(), timeout=0.1
                     )
                     print(line.strip())
-                except asyncio.exceptions.TimeoutError:
+                except asyncio.TimeoutError:
                     pass
 
     async def get(self, remote_path, local_path=None):

@@ -118,23 +118,25 @@ class Run(Tool):
             if not validators.ip_address.ipv4(args.device):
                 raise ValueError("Device must be IP address.")
             hub = EV3Connection()
-            address = args.device
+            device_or_address = args.device
         elif args.conntype == 'ble':
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = BLEPUPConnection()
             hub.logger.setLevel(logging.INFO)
             if validators.mac_address(args.device):
-                address = args.device
+                device_or_address = args.device
             else:
-                address = await find_device(args.device, timeout=5)
+                device_or_address = await find_device(args.device, timeout=5)
         elif args.conntype == 'usb':
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
             hub.logger.setLevel(logging.INFO)
-            address = args.device
+            device_or_address = args.device
+        else:
+            raise ValueError(f"Unknown connection type: {args.conntype}")
 
         # Connect to the address and run the script
-        await hub.connect(address)
+        await hub.connect(device_or_address)
         await hub.run(script_path)
         await hub.disconnect()
 
@@ -176,11 +178,11 @@ class Flash(Tool):
             from .ble import find_device
             from .flash import BootloaderConnection
 
-            address = await find_device('LEGO Bootloader', 15)
-            print('Found:', address)
+            device = await find_device('LEGO Bootloader', 15)
+            print('Found:', device)
             updater = BootloaderConnection()
             updater.logger.setLevel(logging.INFO)
-            await updater.connect(address)
+            await updater.connect(device)
             print('Erasing flash and starting update')
             await updater.flash(firmware, metadata, args.delay/1000)
 
