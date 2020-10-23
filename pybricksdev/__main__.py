@@ -162,18 +162,26 @@ class Flash(Tool):
         ).completer = ChoicesCompleter([5, 10, 15, 20])
 
     async def run(self, args: argparse.Namespace):
-        from .ble import find_device
-        from .flash import create_firmware, BootloaderConnection
+        from .flash import create_firmware
 
         print('Creating firmware')
         firmware, metadata = await create_firmware(args.firmware)
-        address = await find_device('LEGO Bootloader', 15)
-        print('Found:', address)
-        updater = BootloaderConnection()
-        updater.logger.setLevel(logging.INFO)
-        await updater.connect(address)
-        print('Erasing flash and starting update')
-        await updater.flash(firmware, metadata, args.delay/1000)
+
+        if metadata["device-id"] == 0x84:
+            from .dfu import flash_dfu
+
+            flash_dfu(firmware, metadata)
+        else:
+            from .ble import find_device
+            from .flash import BootloaderConnection
+
+            address = await find_device('LEGO Bootloader', 15)
+            print('Found:', address)
+            updater = BootloaderConnection()
+            updater.logger.setLevel(logging.INFO)
+            await updater.connect(address)
+            print('Erasing flash and starting update')
+            await updater.flash(firmware, metadata, args.delay/1000)
 
 
 class DFU(Tool):
@@ -218,7 +226,7 @@ class DFURestore(Tool):
     async def run(self, args: argparse.Namespace):
         from .dfu import flash_dfu
 
-        flash_dfu(args.firmware.read(), {'device-id': 0})
+        flash_dfu(args.firmware.read(), {'device-id': 0x84})
 
 
 def entry():

@@ -18,7 +18,7 @@ PRODUCT_ID_SPIKE_PRIME = 0x0008
 
 def flash_dfu(firmware_bin, metadata):
     # Select product id
-    if metadata['device-id'] == 0:
+    if metadata['device-id'] == 0x84:
         product_id = PRODUCT_ID_SPIKE_PRIME
     else:
         print('Unknown hub type', file=sys.stderr)

@@ -7,6 +7,7 @@ import json
 import os
 import struct
 import sys
+from typing import Tuple
 from tqdm import tqdm
 import typing
 import zipfile
@@ -124,7 +125,7 @@ def crc32_checksum(fw, max_size):
     return crc
 
 
-async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]):
+async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]) -> Tuple[bytes, dict]:
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
@@ -184,7 +185,7 @@ async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.Bi
 HUB_INFO = {
     0x40: ('Move Hub', 14),
     0x41: ('City Hub', 32),
-    0x80: ('Technic Hub', 32)
+    0x80: ('Technic Hub', 32),
 }
 
 
