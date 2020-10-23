@@ -232,6 +232,21 @@ class DFURestore(Tool):
         flash_dfu(args.firmware.read(), {'device-id': HubTypeId.PRIME_HUB})
 
 
+class Udev(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "udev",
+            help="print udev rules to stdout"
+        )
+        parser.tool = self
+
+    async def run(self, args: argparse.Namespace):
+        from importlib.resources import read_text
+        from . import resources
+
+        print(read_text(resources, resources.UDEV_RULES))
+
+
 def cli():
     """Runs ``pybricksdev`` command line utility."""
 
@@ -250,7 +265,7 @@ def cli():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash(), DFU(), DFURestore():
+    for tool in Compile(), Run(), Flash(), DFU(), DFURestore(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
