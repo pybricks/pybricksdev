@@ -10,7 +10,7 @@ homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
 
 [tool.poetry.scripts]
-pybricksdev = 'pybricksdev.__main__:cli'
+pybricksdev = 'pybricksdev.cli:main'
 
 [tool.poetry.dependencies]
 aioserial = "^1.3.0"
