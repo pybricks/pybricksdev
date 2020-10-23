@@ -64,12 +64,4 @@ def flash_dfu(firmware_bin, metadata):
                       file=sys.stderr)
                 exit(1)
 
-            exit(call([
-                dfu_util,
-                "--device",
-                f"{VENDOR_ID}:{product_id}",
-                "--alt",
-                "0",
-                "--download",
-                outfile
-            ]))
+            exit(call([dfu_util, "--alt", "0", "--download", outfile]))
