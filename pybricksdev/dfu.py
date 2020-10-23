@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from usb.core import NoBackendError
 
 from . import _dfu_upload, _dfu_create
+from .hubs import HubTypeId
 
 ADDRESS = 0x08008000
 VENDOR_ID = 0x0694
@@ -18,7 +19,7 @@ PRODUCT_ID_SPIKE_PRIME = 0x0008
 
 def flash_dfu(firmware_bin, metadata):
     # Select product id
-    if metadata['device-id'] == 0x84:
+    if metadata['device-id'] == HubTypeId.PRIME_HUB:
         product_id = PRODUCT_ID_SPIKE_PRIME
     else:
         print('Unknown hub type', file=sys.stderr)

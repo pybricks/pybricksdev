@@ -7,13 +7,14 @@ import json
 import os
 import struct
 import sys
-from typing import Tuple
+from typing import Dict, Tuple
 from tqdm import tqdm
 import typing
 import zipfile
 
 from .ble import BLERequestsConnection
 from .compile import save_script, compile_file
+from .hubs import HubTypeId
 
 
 def sum_complement(fw, max_size):
@@ -182,10 +183,10 @@ async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.Bi
 
 
 # NAME, PAYLOAD_SIZE requirement
-HUB_INFO = {
-    0x40: ('Move Hub', 14),
-    0x41: ('City Hub', 32),
-    0x80: ('Technic Hub', 32),
+HUB_INFO: Dict[HubTypeId, Tuple[str, int]] = {
+    HubTypeId.MOVE_HUB: ('Move Hub', 14),
+    HubTypeId.CITY_HUB: ('City Hub', 32),
+    HubTypeId.TECHNIC_HUB: ('Technic Hub', 32),
 }
 
 

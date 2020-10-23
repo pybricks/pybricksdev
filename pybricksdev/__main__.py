@@ -16,6 +16,7 @@ import argcomplete
 from argcomplete.completers import ChoicesCompleter, FilesCompleter
 
 from . import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
+from .hubs import HubTypeId
 
 
 PROG_NAME = (f'{path.basename(sys.executable)} -m {MODULE_NAME}'
@@ -167,7 +168,7 @@ class Flash(Tool):
         print('Creating firmware')
         firmware, metadata = await create_firmware(args.firmware)
 
-        if metadata["device-id"] == 0x84:
+        if metadata["device-id"] == HubTypeId.PRIME_HUB:
             from .dfu import flash_dfu
 
             flash_dfu(firmware, metadata)
@@ -226,7 +227,7 @@ class DFURestore(Tool):
     async def run(self, args: argparse.Namespace):
         from .dfu import flash_dfu
 
-        flash_dfu(args.firmware.read(), {'device-id': 0x84})
+        flash_dfu(args.firmware.read(), {'device-id': HubTypeId.PRIME_HUB})
 
 
 def entry():
