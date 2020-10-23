@@ -4,7 +4,7 @@
 import os
 import sys
 
-from subprocess import call
+from subprocess import DEVNULL, call
 from tempfile import TemporaryDirectory
 
 from usb.core import NoBackendError
@@ -54,11 +54,11 @@ def flash_dfu(firmware_bin, metadata):
             # prefer dfu-util-static for Windows
             dfu_util = "dfu-util-static"
 
-            if call([dfu_util, "--version"]):
+            if call([dfu_util, "--version"], stdout=DEVNULL):
                 # fall back to dfu-util if dfu-util-static was not found
                 dfu_util = "dfu-util"
 
-            if call([dfu_util, "--version"]):
+            if call([dfu_util, "--version"], stdout=DEVNULL):
                 print("No working DFU found.",
                       "Please install libusb or ensure dfu-util is in PATH.",
                       file=sys.stderr)
