@@ -26,6 +26,39 @@ Installation steps:
     pyenv install 3.8.2 # You can skip this if you already have Python >=3.8.2
     poetry install
 
+Linux USB:
+
+On Linux, ``udev`` rules are needed to allow access via USB. Save the following
+as ``/etc/udev/rules.d/99-lego.rules``.
+
+::
+
+    # MINDSTORMS NXT brick 
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0002", MODE="0666"
+
+    # MINDSTORMS NXT brick in firmware update mode (Atmel SAM-BA mode)
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="6124", MODE="0666"
+
+    # MINDSTORMS EV3 brick
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0005", MODE="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0005", MODE="0666"
+
+    # MINDSTORMS EV3 brick in firmware update mode
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0006", MODE="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0006", MODE="0666"
+
+    # SPIKE Prime hub in firmware update mode (DFU mode)
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0008", MODE="0666"
+
+    # SPIKE Prime hub
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0009", MODE="0666"
+
+    # MINDSTORMS Inventor hub
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0010", MODE="0666"
+
+    # MINDSTORMS Inventor hub in firmware update mode (DFU mode)
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0011", MODE="0666"
+
 
 Flashing Pybricks MicroPython firmware (Move Hub, City Hub, Technic Hub)
 --------------------------------------------------------------------------
@@ -44,8 +77,6 @@ You may release the button once the progress bar first appears.
 
 Flashing Pybricks MicroPython firmware (SPIKE Prime Hub)
 -----------------------------------------------------------------------
-
-TODO: Document ``udev`` rules.
 
 Make sure the hub is off. Press and keep holding the bluetooth button, and
 plug in USB. Keep holding the button until the bluetooth light flashes
