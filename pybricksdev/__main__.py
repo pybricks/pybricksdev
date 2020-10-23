@@ -232,8 +232,8 @@ class DFURestore(Tool):
         flash_dfu(args.firmware.read(), {'device-id': HubTypeId.PRIME_HUB})
 
 
-def entry():
-    """Main entry point to the pybricksdev command line utility."""
+def cli():
+    """Runs ``pybricksdev`` command line utility."""
 
     # Provide main description and help.
     parser = argparse.ArgumentParser(
@@ -264,4 +264,4 @@ def entry():
 
 
 if __name__ == "__main__":
-    entry()
+    cli()
