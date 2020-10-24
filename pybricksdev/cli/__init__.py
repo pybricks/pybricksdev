@@ -172,7 +172,7 @@ class Flash(Tool):
         firmware, metadata = await create_firmware(args.firmware)
 
         if metadata["device-id"] == HubTypeId.PRIME_HUB:
-            from .dfu import flash_dfu
+            from ..dfu import flash_dfu
 
             flash_dfu(firmware, metadata)
         else:
@@ -188,36 +188,31 @@ class Flash(Tool):
             await updater.flash(firmware, metadata, args.delay/1000)
 
 
-class DFU(Tool):
+class DFUBackup(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'dfu',
-            help='flash firmware on a LEGO SPIKE Prime Hub'
+            'backup',
+            help='backup firmware using DFU'
         )
         parser.tool = self
         parser.add_argument(
             'firmware',
             metavar='<firmware-file>',
-            type=argparse.FileType(mode='rb'),
-            help='the firmware file',
-        ).completer = FilesCompleter(allowednames=('.zip',))
+            type=argparse.FileType(mode='wb'),
+            help='the firmware .bin file',
+        ).completer = FilesCompleter(allowednames=('.bin',))
 
     async def run(self, args: argparse.Namespace):
-        from ..flash import create_firmware
-        from ..dfu import flash_dfu
+        from ..dfu import backup_dfu
 
-        print('Creating firmware')
-        firmware_bin, metadata = await create_firmware(args.firmware)
-
-        # Non-async dfu
-        flash_dfu(firmware_bin, metadata)
+        backup_dfu(args.firmware)
 
 
 class DFURestore(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'dfu-restore',
-            help='Restore official firmware on a LEGO SPIKE Prime Hub'
+            'restore',
+            help='restore firmware using DFU',
         )
         parser.tool = self
         parser.add_argument(
@@ -228,9 +223,29 @@ class DFURestore(Tool):
         ).completer = FilesCompleter(allowednames=('.bin',))
 
     async def run(self, args: argparse.Namespace):
-        from ..dfu import flash_dfu
+        from ..dfu import restore_dfu
 
-        flash_dfu(args.firmware.read(), {'device-id': HubTypeId.PRIME_HUB})
+        restore_dfu(args.firmware)
+
+
+class DFU(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "dfu",
+            help="use DFU to backup or restore firmware",
+        )
+        parser.tool = self
+        self.subparsers = parser.add_subparsers(
+            metavar="<action>",
+            dest="action",
+            help="the action to perform"
+        )
+
+        for tool in DFUBackup(), DFURestore():
+            tool.add_parser(self.subparsers)
+
+    def run(self, args: argparse.Namespace):
+        return self.subparsers.choices[args.action].tool.run(args)
 
 
 class Udev(Tool):
@@ -266,7 +281,7 @@ def main():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash(), DFU(), DFURestore(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
