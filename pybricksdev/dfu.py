@@ -6,13 +6,15 @@ import os
 import platform
 import sys
 
+from contextlib import nullcontext
+from importlib.resources import path
 from subprocess import DEVNULL, call, check_call
 from tempfile import TemporaryDirectory
-from typing import BinaryIO
+from typing import BinaryIO, ContextManager
 
 from usb.core import NoBackendError, USBError
 
-from . import _dfu_upload, _dfu_create
+from . import _dfu_upload, _dfu_create, resources
 from .hubs import HubTypeId
 
 FIRMWARE_ADDRESS = 0x08008000
@@ -26,28 +28,30 @@ SPIKE_PRIME_DEVICE = f"0x{LEGO_VID:04x}:0x{SPIKE_PRIME_PID:04x}"
 MINDSTORMS_INVENTOR_DEVICE = f"0x{LEGO_VID:04x}:0x{MINDSTORMS_INVENTOR_PID:04x}"
 
 
-def _get_dfu_util() -> str:
-    """Tests for presense of ``dfu-util`` command line tool.
+def _get_dfu_util() -> ContextManager[os.PathLike]:
+    """Gets ``dfu-util`` command line tool path.
 
-    Returns: the name of the executable.
+    Returns: Context manager containing the path. The path may no longer be
+        valid after the context manager exits.
     """
-    # prefer dfu-util-static for Windows
-    dfu_util = "dfu-util-static"
+    # Use embedded .exe for Windows
+    if platform.system() == 'Windows':
+        return path(resources, resources.DFU_UTIL_EXE)
+
+    # otherwise use system provided dfu-util
+    dfu_util = "dfu-util"
 
     try:
         check_call([dfu_util, "--version"], stdout=DEVNULL)
     except FileNotFoundError:
-        # fall back to dfu-util if dfu-util-static was not found
-        dfu_util = "dfu-util"
-        try:
-            check_call([dfu_util, "--version"], stdout=DEVNULL)
-        except FileNotFoundError:
-            print("No working DFU found.",
-                  "Please install libusb or ensure dfu-util is in PATH.",
-                  file=sys.stderr)
-            exit(1)
+        print(
+            "No working DFU found.",
+            "Please install libusb or ensure dfu-util is in PATH.",
+            file=sys.stderr,
+        )
+        exit(1)
 
-    return dfu_util
+    return nullcontext(dfu_util)
 
 
 def backup_dfu(file: BinaryIO) -> None:
@@ -63,24 +67,24 @@ def backup_dfu(file: BinaryIO) -> None:
     except NoBackendError:
         # if libusb was not found, try using dfu-util command line tool
 
-        dfu_util = _get_dfu_util()
+        with _get_dfu_util() as dfu_util:
 
-        file.close()
+            file.close()
 
-        # dfu-util won't overwrite existing files so we have to do that first
-        os.remove(file.name)
+            # dfu-util won't overwrite existing files so we have to do that first
+            os.remove(file.name)
 
-        exit(call([
-            dfu_util,
-            "--device",
-            f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-            "--alt",
-            "0",
-            "--dfuse-address",
-            f"{FIRMWARE_ADDRESS}:{FIRMWARE_SIZE}",
-            "--upload",
-            file.name
-        ]))
+            exit(call([
+                dfu_util,
+                "--device",
+                f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                "--alt",
+                "0",
+                "--dfuse-address",
+                f"{FIRMWARE_ADDRESS}:{FIRMWARE_SIZE}",
+                "--upload",
+                file.name
+            ]))
 
 
 def restore_dfu(file: BinaryIO) -> None:
@@ -95,21 +99,21 @@ def restore_dfu(file: BinaryIO) -> None:
     except NoBackendError:
         # if libusb was not found, try using dfu-util command line tool
 
-        dfu_util = _get_dfu_util()
+        with _get_dfu_util() as dfu_util:
 
-        file.close()
+            file.close()
 
-        exit(call([
-            dfu_util,
-            "--device",
-            f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-            "--alt",
-            "0",
-            "--dfuse-address",
-            f"{FIRMWARE_ADDRESS}",
-            "--download",
-            file.name
-        ]))
+            exit(call([
+                dfu_util,
+                "--device",
+                f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                "--alt",
+                "0",
+                "--dfuse-address",
+                f"{FIRMWARE_ADDRESS}",
+                "--download",
+                file.name
+            ]))
 
 
 def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
@@ -177,18 +181,18 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
         except NoBackendError:
             # if libusb was not found, try using dfu-util command line tool
 
-            dfu_util = _get_dfu_util()
+            with _get_dfu_util() as dfu_util:
 
-            # device product ID doesn't matter here since we are using the
-            # --device command line option below.
-            _dfu_create.build(outfile, [[target]], SPIKE_PRIME_DEVICE)
+                # Exact device product ID doesn't matter here since we are using
+                # the --device command line option below.
+                _dfu_create.build(outfile, [[target]], SPIKE_PRIME_DEVICE)
 
-            exit(call([
-                dfu_util,
-                "--device",
-                f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-                "--alt",
-                "0",
-                "--download",
-                outfile
-            ]))
+                exit(call([
+                    dfu_util,
+                    "--device",
+                    f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                    "--alt",
+                    "0",
+                    "--download",
+                    outfile
+                ]))
