@@ -102,6 +102,7 @@ class PybricksPUPProtocol(CharacterGlue):
         self.checksum = None
         self.checksum_ready = asyncio.Event()
         self.log_file = None
+        self.output = []
         super().__init__(EOL=b'\r\n', **kwargs)
 
     def char_handler(self, char):
@@ -179,6 +180,7 @@ class PybricksPUPProtocol(CharacterGlue):
             return
 
         # If there is nothing special about this line, print it.
+        self.output.append(line)
         print(line.decode())
 
     def set_state(self, new_state):
@@ -271,6 +273,10 @@ class PybricksPUPProtocol(CharacterGlue):
             py_path (str):
                 Path to MicroPython script.
         """
+
+        # Reset output buffer
+        self.output = []
+
         # Compile the script to mpy format
         mpy = await compile_file(py_path)
 
