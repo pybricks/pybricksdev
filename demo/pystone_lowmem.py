@@ -2,7 +2,13 @@
 
 LOOPS = 500
 
-from utime import ticks_ms, ticks_diff
+# Import ticks_ms or re-implement it
+try:
+    from utime import ticks_ms
+except ImportError:
+    from pybricks.tools import StopWatch
+    watch = StopWatch()
+    ticks_ms = watch.time
 
 __version__ = "1.2"
 
@@ -40,7 +46,7 @@ BoolGlob = FALSE
 Char1Glob = '\0'
 Char2Glob = '\0'
 Array1Glob = [0]*(51 // 2)
-Array2Glob = [x[:] for x in [Array1Glob]*(51 // 2)]
+Array2Glob = [x for x in [Array1Glob]*(51 // 2)]
 PtrGlb = None
 PtrGlbNext = None
 
@@ -57,7 +63,7 @@ def Proc0(loops=LOOPS):
     starttime = ticks_ms()
     for i in range(loops):
         pass
-    nulltime = ticks_diff(ticks_ms(), starttime)
+    nulltime = ticks_ms() - starttime
 
     PtrGlbNext = Record()
     PtrGlb = Record()
@@ -95,7 +101,7 @@ def Proc0(loops=LOOPS):
         IntLoc2 = 7 * (IntLoc3 - IntLoc2) - IntLoc1
         IntLoc1 = Proc2(IntLoc1)
 
-    benchtime = ticks_diff(ticks_ms(), starttime) - nulltime
+    benchtime = ticks_ms() - starttime - nulltime
     if benchtime == 0:
         loopsPerBenchtime = 0
     else:
@@ -220,19 +226,4 @@ def Func3(EnumParIn):
     if EnumLoc == Ident3: return TRUE
     return FALSE
 
-if __name__ == '__main__':
-    import sys
-    def error(msg):
-        print(msg, end=' ', file=sys.stderr)
-        print("usage: %s [number_of_loops]" % sys.argv[0], file=sys.stderr)
-        sys.exit(100)
-    nargs = len(sys.argv) - 1
-    if nargs > 1:
-        error("%d arguments are too many;" % nargs)
-    elif nargs == 1:
-        try: loops = int(sys.argv[1])
-        except ValueError:
-            error("Invalid argument %r;" % sys.argv[1])
-    else:
-        loops = LOOPS
-    main(loops)
+main(LOOPS)
