@@ -1,6 +1,6 @@
 """PYSTONE Benchmark Program, adapted from micropython-lib"""
 
-LOOPS = 500
+from micropython import mem_info
 
 # Import ticks_ms or re-implement it
 try:
@@ -9,6 +9,10 @@ except ImportError:
     from pybricks.tools import StopWatch
     watch = StopWatch()
     ticks_ms = watch.time
+
+mem_info()
+
+LOOPS = 500
 
 __version__ = "1.2"
 
@@ -227,3 +231,5 @@ def Func3(EnumParIn):
     return FALSE
 
 main(LOOPS)
+
+mem_info()
