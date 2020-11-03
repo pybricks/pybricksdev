@@ -179,9 +179,11 @@ class PybricksPUPProtocol(CharacterGlue):
             print(line.decode(), file=self.log_file)
             return
 
-        # If there is nothing special about this line, print it.
+        # If there is nothing special about this line, print it if requested.
         self.output.append(line)
-        print(line.decode())
+
+        if self.print_output:
+            print(line.decode())
 
     def set_state(self, new_state):
         """Updates state if it is new.
@@ -266,7 +268,7 @@ class PybricksPUPProtocol(CharacterGlue):
                 )
             )
 
-    async def run(self, py_path):
+    async def run(self, py_path, print_output=True):
         """Run a Pybricks MicroPython script on the hub and print output.
 
         Arguments:
@@ -276,6 +278,7 @@ class PybricksPUPProtocol(CharacterGlue):
 
         # Reset output buffer
         self.output = []
+        self.print_output = print_output
 
         # Compile the script to mpy format
         mpy = await compile_file(py_path)
