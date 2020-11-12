@@ -64,7 +64,7 @@ class USBConnection():
         port = None
         devices = list_ports.comports()
         for dev in devices:
-            if dev.product == product:
+            if dev.product == product or (dev.pid == 0x5740 and dev.vid == 0x0483):
                 port = dev.device
                 break
 
