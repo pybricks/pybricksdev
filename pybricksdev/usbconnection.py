@@ -48,7 +48,7 @@ class USBConnection():
     async def _read_loop(self):
         self.logger.debug("Started readloop")
         while self.connected:
-            data = await self.ser.read_async()
+            data = await self.ser.read_async(self.ser.in_waiting)
             if data:
                 self.data_handler("", data)
 
