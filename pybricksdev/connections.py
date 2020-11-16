@@ -4,6 +4,9 @@ import os
 from .ble import BLEConnection
 from .usbconnection import USBConnection
 from .compile import compile_file
+import json
+import random
+import base64
 
 
 class CharacterGlue():
@@ -321,6 +324,134 @@ class USBPUPConnection(PybricksPUPProtocol, USBConnection):
         """Initialize."""
 
         super().__init__()
+
+
+class USBRPCConnection(CharacterGlue, USBConnection):
+
+    def __init__(self, **kwargs):
+        self.m_data = [{}] * 20
+        self.i_data = []
+        self.log_file = None
+        super().__init__(EOL=b'\r', **kwargs)
+
+    async def connect(self):
+        await super().connect('LEGO Technic Large Hub in FS Mode')
+
+    def user_line_handler(self, line):
+
+        if 'PB_OF' in line:
+            if self.log_file is not None:
+                raise OSError("Log file is already open!")
+            name = line[6:]
+            self.logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, 'w')
+            return
+
+        if 'PB_EOF' in line:
+            if self.log_file is None:
+                raise OSError("No log file is currently open!")
+            self.logger.info("Done saving log.")
+            self.log_file.close()
+            self.log_file = None
+            return
+
+        if self.log_file is not None:
+            print(line, file=self.log_file)
+            return
+
+        print(line)
+
+    def line_handler(self, line):
+        try:
+            data = json.loads(line)
+            if 'e' in data:
+                print(base64.b64decode(data['e']))
+            elif 'm' in data:
+                if type(data['m']) == int:
+                    self.m_data[data['m']] = data
+                elif data['m'] == 'runtime_error':
+                    print(base64.b64decode(data['p'][3]))
+                elif data['m'] == 'userProgram.print':
+                    self.user_line_handler(base64.b64decode(data['p']['value']).decode('ascii').strip())
+                else:
+                    print("unknown", data)
+            else:
+                self.i_data.append(data)
+        except json.JSONDecodeError:
+            pass
+
+    async def send_dict(self, command):
+        await self.write(json.dumps(command).encode('ascii') + b'\r')
+
+    async def send_command(self, message, payload):
+
+        data_id = ''
+        for i in range(4):
+            c = chr(random.randint(ord('A'), ord('Z')))
+            data_id += c
+
+        data = {
+            'i': data_id,
+            'm': message,
+            'p': payload
+        }
+
+        await self.send_dict(data)
+        return data_id
+
+    async def send_command_and_get_response(self, message, payload):
+
+        data_id = await self.send_command(message, payload)
+        response = None
+
+        for i in range(30):
+
+            while len(self.i_data) > 0:
+                data = self.i_data.pop(0)
+                if data['i'] == data_id:
+                    response = data
+                    break
+
+            if response is not None:
+                return response['r']
+            else:
+                await asyncio.sleep(0.1)
+
+    async def run(self, py_path):
+        response = await self.send_command_and_get_response("program_modechange", {
+                "mode": "download"
+            })
+
+        with open(py_path, 'rb') as demo:
+            program = demo.read()
+
+        chunk_size = 512
+        chunks = [program[i:i+chunk_size] for i in range(0, len(program), chunk_size)]
+
+        while response is None or 'transferid' not in response:
+            response = await self.send_command_and_get_response("start_write_program", {
+                        "meta": {
+                            "created": 0,
+                            "modified": 0,
+                            "project_id": "Pybricksdev_",
+                            "project_id": "Pybricksdev_",
+                            "name": "Pybricksdev_____",
+                            "type": "python"
+                        },
+                        "size": len(program),
+                        "slotid": 0
+                    })
+        transferid = response['transferid']
+        for i, chunk in enumerate(chunks):
+            response = await self.send_command_and_get_response("write_package", {
+                        "data": base64.b64encode(chunk).decode('ascii'),
+                        "transferid": transferid
+                    })
+            print("Sending: {0}%".format(int((i+1)/len(chunks) * 100)))
+        await asyncio.sleep(0.5)
+        response = await self.send_command_and_get_response("program_execute", {
+                    "slotid": 0
+                })
 
 
 class EV3Connection():
