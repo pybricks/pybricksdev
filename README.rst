@@ -95,7 +95,7 @@ it just prints the output on the screen instead.
 
     poetry run pybricksdev compile demo/shortdemo.py
 
-    poetry run pybricksdev compile 'print("Hello!"); print("world!");'
+    poetry run pybricksdev compile "print('Hello!'); print('world!');"
 
 
 This is mainly intended for developers who want to quickly inspect the
