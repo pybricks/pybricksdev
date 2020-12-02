@@ -89,7 +89,7 @@
             "module": "pybricksdev",
             "console": "integratedTerminal",
             "args": [
-                "dfu",
+                "flash",
                 "../pybricks-micropython/bricks/primehub/build/firmware.zip"
             ]
         },
