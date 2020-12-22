@@ -969,11 +969,11 @@ twisted = ">=10.1"
 
 [[package]]
 name = "validators"
-version = "0.15.0"
+version = "0.18.2"
 description = "Python Data Validation for Humans™."
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.4"
 
 [package.dependencies]
 decorator = ">=3.4.0"
@@ -1014,7 +1014,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "5f2da47b03c30d1f53926ece2d42bf0830a4d22bb4481f85fa7db79303fd6d95"
+content-hash = "6c086bb033a5bc50d0884e8d49052b7eb637d56056d9f0e9276e854d2a83bedf"
 
 [metadata.files]
 aioserial = [
@@ -1531,7 +1531,8 @@ txdbus = [
     {file = "txdbus-1.1.2.tar.gz", hash = "sha256:8375a5fb68a12054f0def91af800c821fb2232949337756ed975f88d8ea2bc97"},
 ]
 validators = [
-    {file = "validators-0.15.0.tar.gz", hash = "sha256:31e8bb01b48b48940a021b8a9576b840f98fa06b91762ef921d02cb96d38727a"},
+    {file = "validators-0.18.2-py3-none-any.whl", hash = "sha256:0143dcca8a386498edaf5780cbd5960da1a4c85e0719f3ee5c9b41249c4fefbd"},
+    {file = "validators-0.18.2.tar.gz", hash = "sha256:37cd9a9213278538ad09b5b9f9134266e7c226ab1fede1d500e29e0a8fbb9ea6"},
 ]
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
