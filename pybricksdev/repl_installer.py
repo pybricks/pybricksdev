@@ -3,12 +3,15 @@ from pybricksdev.connections import CharacterGlue, USBConnection
 
 
 class USBREPLConnection(CharacterGlue, USBConnection):
+    """Run commands in a MicroPython repl and print or eval the output."""
 
     def __init__(self, **kwargs):
+        """Initialize base class with appropriate EOL for this connection."""
         self.stdout = []
         super().__init__(EOL=b'\r\n', **kwargs)
 
     def line_handler(self, line):
+        """Override base class to just store all incoming lines."""
         self.stdout.append(bytes(line))
 
     def is_ready(self):
@@ -23,7 +26,7 @@ class USBREPLConnection(CharacterGlue, USBConnection):
             await sleep(0.1)
 
     async def reboot(self):
-        """Soft reboots the hub."""
+        """Soft reboots the board."""
         await self.reset()
         await self.write(b'\x04')
         await sleep(3)
@@ -43,6 +46,7 @@ class USBREPLConnection(CharacterGlue, USBConnection):
             return b"".join(self.stdout[start_index + 1:])
 
     async def exec_and_eval(self, line):
+        """Executes one line of code and evaluates the output."""
         return eval(await self.exec_line(line))
 
 
@@ -68,6 +72,8 @@ class REPLDualBootInstaller(USBREPLConnection):
         return version_bytes[0:20].decode()
 
     async def show_image(self, image):
+        """Shows an image made as a 2D list of intensities."""
+
         # Convert 2D list to expected string format
         image_string = ":".join([
             "".join([str(round(min(abs(i), 100)*0.09)) for i in col]) for col in image
@@ -79,14 +85,10 @@ class REPLDualBootInstaller(USBREPLConnection):
 
     async def show_progress(self, progress):
         """Create 2D grid of intensities to show 0--100% 25 pixels."""
-        progress = max(0, min(round(progress), 100))
-        image = [[0 for i in range(5)] for j in range(5)]
-        for i, row in enumerate(image):
-            for j, col in enumerate(row):
-                pixel_position = (i * 5 + j) * 4
-                if progress > pixel_position:
-                    image[i][j] = min((progress - pixel_position)*25, 100)
-        await self.show_image(image)
+        await self.show_image([[
+                max(0, min((progress - (i * 5 + j) * 4) * 25, 100)) for j in range(5)
+            ] for i in range(5)
+        ])
 
 
 if __name__ == "__main__":
