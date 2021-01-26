@@ -31,19 +31,6 @@
             ]
         },
         {
-            "name": "Run USB Stock firmwae",
-            "type": "python",
-            "request": "launch",
-            "module": "pybricksdev",
-            "console": "integratedTerminal",
-            "args": [
-                "run",
-                "usb",
-                "lego",
-                "demo/stockfw"
-            ]
-        },
-        {
             "name": "Run SSH",
             "type": "python",
             "request": "launch",
@@ -55,6 +42,13 @@
                 "192.168.133.238",
                 "${relativeFile}"
             ]
+        },
+        {
+            "name": "Serial dual boot install",
+            "type": "python",
+            "request": "launch",
+            "program": "pybricksdev/repl_installer.py",
+            "console": "integratedTerminal"
         },
         {
             "name": "Flash Technic Hub",
