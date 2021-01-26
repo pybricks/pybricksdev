@@ -271,12 +271,16 @@ class PybricksPUPProtocol(CharacterGlue):
                 )
             )
 
-    async def run(self, py_path, print_output=True):
+    async def run(self, py_path, wait=True, print_output=True):
         """Run a Pybricks MicroPython script on the hub and print output.
 
         Arguments:
             py_path (str):
                 Path to MicroPython script.
+            wait (bool):
+                Whether to wait for any output until the program completes.
+            print_output(bool):
+                Whether to print the standard output.
         """
 
         # Reset output buffer
@@ -301,9 +305,10 @@ class PybricksPUPProtocol(CharacterGlue):
             )
             await self.send_message(chunk)
 
-        # Wait for the program to finish
-        await asyncio.sleep(0.2)
-        await self.wait_until_state_is_not(self.RUNNING)
+        # Optionally wait for the program to finish
+        if wait:
+            await asyncio.sleep(0.2)
+            await self.wait_until_state_is_not(self.RUNNING)
 
 
 class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
@@ -523,7 +528,7 @@ class EV3Connection():
         await self.client.sftp.put(local_path, remote_path)
         return remote_path
 
-    async def run(self, local_path):
+    async def run(self, local_path, wait=True):
         """Downloads and runs a Pybricks MicroPython script.
 
         Arguments:
@@ -531,6 +536,8 @@ class EV3Connection():
                 Path to the file to be downloaded. Relative to current working
                 directory. This same tree will be created on the EV3 if it
                 does not already exist.
+            wait (bool):
+                Whether to wait for any output until the program completes.
         """
 
         # Send script to the hub
@@ -543,7 +550,7 @@ class EV3Connection():
         # Run process asynchronously and print output as it comes in
         async with self.client.create_process(prog) as process:
             # Keep going until the process is done
-            while process.exit_status is None:
+            while process.exit_status is None and wait:
                 try:
                     line = await asyncio.wait_for(
                         process.stderr.readline(), timeout=0.1

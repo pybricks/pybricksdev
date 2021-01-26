@@ -105,6 +105,13 @@ class Run(Tool):
             metavar='<script>',
             help='path to a MicroPython script or inline script',
         )
+        parser.add_argument(
+            '--wait',
+            help='Await program completion (True) or disconnect immediately (False)',
+            required=False,
+            default='True',
+            choices=['True', 'False']
+        )
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
@@ -138,7 +145,8 @@ class Run(Tool):
 
         # Connect to the address and run the script
         await hub.connect(device_or_address)
-        await hub.run(script_path)
+        print("args.wait", args.wait)
+        await hub.run(script_path, args.wait == 'True')
         await hub.disconnect()
 
 
