@@ -31,6 +31,19 @@
             ]
         },
         {
+            "name": "Run USB Stock firmwae",
+            "type": "python",
+            "request": "launch",
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "usb",
+                "lego",
+                "demo/stockfw"
+            ]
+        },
+        {
             "name": "Run SSH",
             "type": "python",
             "request": "launch",

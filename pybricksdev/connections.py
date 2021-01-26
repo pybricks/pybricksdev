@@ -339,9 +339,6 @@ class USBRPCConnection(CharacterGlue, USBConnection):
         self.log_file = None
         super().__init__(EOL=b'\r', **kwargs)
 
-    async def connect(self):
-        await super().connect('LEGO Technic Large Hub in FS Mode')
-
     def user_line_handler(self, line):
 
         if 'PB_OF' in line:
@@ -422,7 +419,7 @@ class USBRPCConnection(CharacterGlue, USBConnection):
             else:
                 await asyncio.sleep(0.1)
 
-    async def run(self, py_path):
+    async def run(self, py_path, wait=False):
         response = await self.send_command_and_get_response("program_modechange", {
                 "mode": "download"
             })
@@ -457,6 +454,7 @@ class USBRPCConnection(CharacterGlue, USBConnection):
         response = await self.send_command_and_get_response("program_execute", {
                     "slotid": 0
                 })
+        print(response)
 
 
 class EV3Connection():

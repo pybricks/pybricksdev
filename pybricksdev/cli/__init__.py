@@ -115,7 +115,7 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import BLEPUPConnection, EV3Connection, USBPUPConnection
+        from ..connections import BLEPUPConnection, EV3Connection, USBPUPConnection, USBRPCConnection
 
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
@@ -135,6 +135,11 @@ class Run(Tool):
                 device_or_address = args.device
             else:
                 device_or_address = await find_device(args.device, timeout=5)
+        elif args.conntype == 'usb' and args.device == 'lego':
+            # It's LEGO stock firmware Hub with USB.
+            hub = USBRPCConnection()
+            hub.logger.setLevel(logging.INFO)
+            device_or_address = 'LEGO Technic Large Hub in FS Mode'
         elif args.conntype == 'usb':
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
@@ -145,7 +150,6 @@ class Run(Tool):
 
         # Connect to the address and run the script
         await hub.connect(device_or_address)
-        print("args.wait", args.wait)
         await hub.run(script_path, args.wait == 'True')
         await hub.disconnect()
 
