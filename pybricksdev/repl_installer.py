@@ -4,8 +4,6 @@ from pybricksdev.connections import CharacterGlue, USBConnection
 
 class USBREPLConnection(CharacterGlue, USBConnection):
 
-    FLASH_OFFSET = 0x8008000
-
     def __init__(self, **kwargs):
         self.stdout = []
         super().__init__(EOL=b'\r\n', **kwargs)
@@ -23,23 +21,6 @@ class USBREPLConnection(CharacterGlue, USBConnection):
         while not self.is_ready():
             await self.write(b'\x03')
             await sleep(0.1)
-
-    async def get_firmware_version(self):
-        """Gets firmware version without reboot"""
-
-        # Read boot sector
-        boot_data = await self.exec_and_eval(
-            "import firmware; firmware.flash_read(0x200)"
-        )
-
-        # Read firmware version data
-        position = int.from_bytes(boot_data[0:4], 'little') - self.FLASH_OFFSET
-        version_bytes = await self.exec_and_eval(
-            "firmware.flash_read({0})".format(position)
-        )
-
-        # Return version string
-        return version_bytes[0:20].decode()
 
     async def reboot(self):
         """Soft reboots the hub."""
@@ -64,6 +45,28 @@ class USBREPLConnection(CharacterGlue, USBConnection):
     async def exec_and_eval(self, line):
         return eval(await self.exec_line(line))
 
+
+class REPLDualBootInstaller(USBREPLConnection):
+
+    FLASH_OFFSET = 0x8008000
+
+    async def get_firmware_version(self):
+        """Gets firmware version without reboot"""
+
+        # Read boot sector
+        boot_data = await self.exec_and_eval(
+            "import firmware; firmware.flash_read(0x200)"
+        )
+
+        # Read firmware version data
+        position = int.from_bytes(boot_data[0:4], 'little') - self.FLASH_OFFSET
+        version_bytes = await self.exec_and_eval(
+            "firmware.flash_read({0})".format(position)
+        )
+
+        # Return version string
+        return version_bytes[0:20].decode()
+
     async def show_image(self, image):
         # Convert 2D list to expected string format
         image_string = ":".join([
@@ -75,14 +78,12 @@ class USBREPLConnection(CharacterGlue, USBConnection):
         await self.exec_line("hub.display.show(hub.Image('{0}'))".format(image_string))
 
     async def show_progress(self, progress):
+        """Create 2D grid of intensities to show 0--100% 25 pixels."""
         progress = max(0, min(round(progress), 100))
-
         image = [[0 for i in range(5)] for j in range(5)]
-
         for i, row in enumerate(image):
             for j, col in enumerate(row):
                 pixel_position = (i * 5 + j) * 4
-
                 if progress > pixel_position:
                     image[i][j] = min((progress - pixel_position)*25, 100)
         await self.show_image(image)
@@ -91,13 +92,13 @@ class USBREPLConnection(CharacterGlue, USBConnection):
 if __name__ == "__main__":
 
     async def main():
-        repl = USBREPLConnection()
+        repl = REPLDualBootInstaller()
         await repl.connect("LEGO Technic Large Hub in FS Mode")
 
         await repl.reset()
         print(await repl.get_firmware_version())
 
-        for i in range(100):
+        for i in range(101):
             await repl.show_progress(i)
             await sleep(0.03)
 
