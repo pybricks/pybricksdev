@@ -1,7 +1,8 @@
 from asyncio import run, sleep
+from zipfile import ZipFile
+
 from pybricksdev.connections import CharacterGlue, USBConnection
 from pybricksdev.flash import crc32_checksum
-
 
 class USBREPLConnection(CharacterGlue, USBConnection):
     """Run commands in a MicroPython repl and print or eval the output."""
@@ -293,8 +294,11 @@ if __name__ == "__main__":
             bin_file.write(base_firmware_blob)
 
         # Read Pybricks dual boot build
-        with open('../pybricks-micropython/bricks/primehub/build/firmware-dual-boot-base.bin', 'rb') as pybricks_bin:
-            combined_blob = get_combined_firmware(base_firmware_blob, pybricks_bin.read())
+        archive = ZipFile('../pybricks-micropython/bricks/primehub/build/firmware.zip')
+        pybricks_blob = archive.open('firmware-dual-boot-base.bin').read()
+
+        # Create dual boot firmware
+        combined_blob = get_combined_firmware(base_firmware_blob, pybricks_blob)
 
         # Write (combined) firmware to external flash and reboot to install
         await repl.write_firmware_blob(combined_blob)
