@@ -112,7 +112,10 @@ def crc32_checksum(fw, max_size):
     """
 
     # remove the last 4 bytes that are the placeholder for the checksum
-    fw = fw.read()[:-4]
+    try:
+        fw = fw.read()[:-4]
+    except AttributeError:
+        fw = fw[:-4]
     if len(fw) + 4 > max_size:
         raise ValueError("File is too large")
 

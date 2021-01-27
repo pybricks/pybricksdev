@@ -1,6 +1,6 @@
 from asyncio import run, sleep
 from pybricksdev.connections import CharacterGlue, USBConnection
-
+from pybricksdev.flash import crc32_checksum
 
 class USBREPLConnection(CharacterGlue, USBConnection):
     """Run commands in a MicroPython repl and print or eval the output."""
@@ -146,6 +146,12 @@ class REPLDualBootInstaller(USBREPLConnection):
 
             print("{0}%".format(int(len(blob)/size*100)), end="\r")
 
+        # Verify checksum
+        read_checksum = int.from_bytes(blob[-4:], 'little')
+        calculated_checksum = crc32_checksum(blob, len(blob))
+        if not calculated_checksum == base_firmware_info["checksum"] == read_checksum:
+            raise IOError("Backup does not have expected checksum.")
+
         # Also save a copy to disk
         with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
             bin_file.write(blob)
@@ -187,12 +193,11 @@ if __name__ == "__main__":
         print(base_firmware_info)
 
         # Back up the original firmware
-        await repl.get_base_firmware_blob(base_firmware_info)
+        base_firmware = await repl.get_base_firmware_blob(base_firmware_info)
 
+        # TODO: override boot vector, concatenate padding, add Pybricks firmware
         # for i in range(101):
         #     await repl.show_progress(i)
         #     await sleep(0.03)
-
-
 
     run(main())
