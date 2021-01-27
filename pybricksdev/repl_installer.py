@@ -31,11 +31,15 @@ class USBREPLConnection(CharacterGlue, USBConnection):
         await self.write(b'\x04')
         await sleep(3)
 
-    async def exec_line(self, line):
+    async def exec_line(self, line, wait=True):
         """Executes one line of code and returns the standard output result."""
         encoded = line.encode()
         start_index = len(self.stdout)
         await self.write(encoded + b'\r\n')
+
+        if not wait:
+            return
+
         while len(self.stdout) == start_index:
             await sleep(0.01)
         if self.stdout[start_index] != b'>>> ' + encoded:
@@ -121,6 +125,10 @@ class REPLDualBootInstaller(USBREPLConnection):
     async def get_base_firmware_blob(self, base_firmware_info):
         """Backs up original firmware with original boot vector."""
 
+        # DELETE ME
+        with open('firmware-v1.0.06.0034-b0c335b.bin', "rb") as bin_file:
+            return bin_file.read()
+
         size = base_firmware_info["size"]
         print("Backing up {0} bytes of original firmware. Progress:".format(size))
 
@@ -148,9 +156,12 @@ class REPLDualBootInstaller(USBREPLConnection):
             # Add the resulting block.
             blob += block
 
+            # Progress percentage
             progress = int(len(blob) / size * 100)
             print("{0}%".format(progress), end="\r")
-            await self.show_progress(progress / 3 + 7)
+
+            # Scale progress to fill up first two rows
+            await self.show_progress(progress / 2.77 + 4)
 
         # Verify checksum
         read_checksum = int.from_bytes(blob[-4:], 'little')
@@ -158,11 +169,45 @@ class REPLDualBootInstaller(USBREPLConnection):
         if not calculated_checksum == base_firmware_info["checksum"] == read_checksum:
             raise IOError("Backup does not have expected checksum.")
 
-        # Also save a copy to disk
-        with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
-            bin_file.write(blob)
-
         print("Backup complete\n")
+        return blob
+
+    async def write_firmware_blob(self, firmware_blob):
+        """Writes firmware to external flash to install on next boot."""
+        offline_checksum = crc32_checksum(firmware_blob, len(firmware_blob))
+        size = len(firmware_blob)
+
+        print("Preparing external flash.")
+        await self.exec_line("import firmware")
+        await self.exec_line("from firmware import appl_image_store as flw")
+        await self.exec_line("firmware.appl_image_initialise({0})".format(size))
+        await self.show_progress(44)
+
+        print("Writing firmware. Progress:")
+        chunk_size = self.READ_BLOCKS * 32
+        chunks = (firmware_blob[i:i + chunk_size] for i in range(0, size, chunk_size))
+        for i, chunk in enumerate(chunks):
+            # Write the chunk
+            await self.exec_line("flw({0})".format(repr(chunk)))
+
+            # Progress percentage
+            progress = int(i * chunk_size / size * 100)
+            print("{0}%".format(progress), end="\r")
+
+            # Scale progress to fill up Last three rows
+            await self.show_progress(44 + progress / 100 * 56)
+
+        print("Done! Verifying firmware.")
+        read_firmware_info = await self.exec_and_eval("firmware.info()")
+
+        if not read_firmware_info['upload_finished'] or \
+                read_firmware_info['valid'] == -1 or \
+                read_firmware_info['new_appl_image_calc_checksum'] != offline_checksum:
+            raise IOError("Failed to download firmware.", read_firmware_info)
+
+        # Reboot the hub
+        print("Download succeeded. Rebooting now...")
+        await self.exec_line("import umachine; umachine.reset()", wait=False)
 
     async def show_image(self, image):
         """Shows an image made as a 2D list of intensities."""
@@ -203,12 +248,16 @@ if __name__ == "__main__":
         print("Detected firmware:")
         print(base_firmware_info)
 
-        # Back up the original firmware
-        base_firmware = await repl.get_base_firmware_blob(base_firmware_info)
+        # Read original firmware
+        base_firmware_blob = await repl.get_base_firmware_blob(base_firmware_info)
+
+        # Back up copy to disk
+        with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
+            bin_file.write(base_firmware_blob)
 
         # TODO: override boot vector, concatenate padding, add Pybricks firmware
-        # for i in range(101):
-        #     await repl.show_progress(i)
-        #     await sleep(0.03)
+
+        # Write (combined) firmware to external flash and reboot to install
+        await repl.write_firmware_blob(base_firmware_blob)
 
     run(main())
