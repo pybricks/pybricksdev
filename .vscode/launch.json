@@ -44,11 +44,15 @@
             ]
         },
         {
-            "name": "Serial dual boot install",
+            "name": "Prime/Inventor Hub Dual Boot",
             "type": "python",
             "request": "launch",
-            "program": "pybricksdev/repl_installer.py",
-            "console": "integratedTerminal"
+            "module": "pybricksdev",
+            "console": "integratedTerminal",
+            "args": [
+                "dual-boot",
+                "../pybricks-micropython/bricks/primehub/build/firmware.zip"
+            ]
         },
         {
             "name": "Flash Technic Hub",
