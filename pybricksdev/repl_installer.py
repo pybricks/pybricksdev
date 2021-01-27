@@ -271,36 +271,38 @@ class REPLDualBootInstaller(USBREPLConnection):
         ])
         self.current_progress = progress
 
-
-if __name__ == "__main__":
-
-    async def main():
-
-        # Initialize connection
-        repl = REPLDualBootInstaller()
-        await repl.connect("LEGO Technic Large Hub in FS Mode")
-        await repl.reset()
+    async def install(self, firmware_archive_path):
+        """Main dual boot install script."""
+        await self.connect("LEGO Technic Large Hub in FS Mode")
+        await self.reset()
 
         # Get firmware information
-        base_firmware_info = await repl.get_base_firmware_info()
+        base_firmware_info = await self.get_base_firmware_info()
         print("Detected firmware:")
         print(base_firmware_info)
 
         # Read original firmware
-        base_firmware_blob = await repl.get_base_firmware_blob(base_firmware_info)
+        base_firmware_blob = await self.get_base_firmware_blob(base_firmware_info)
 
         # Back up copy to disk
         with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
             bin_file.write(base_firmware_blob)
 
         # Read Pybricks dual boot build
-        archive = ZipFile('../pybricks-micropython/bricks/primehub/build/firmware.zip')
+        archive = ZipFile(firmware_archive_path)
         pybricks_blob = archive.open('firmware-dual-boot-base.bin').read()
 
         # Create dual boot firmware
         combined_blob = get_combined_firmware(base_firmware_blob, pybricks_blob)
 
         # Write (combined) firmware to external flash and reboot to install
-        await repl.write_firmware_blob(combined_blob)
+        await self.write_firmware_blob(combined_blob)
+
+
+if __name__ == "__main__":
+
+    async def main():
+        installer = REPLDualBootInstaller()
+        await installer.install('../pybricks-micropython/bricks/primehub/build/firmware.zip')
 
     run(main())
