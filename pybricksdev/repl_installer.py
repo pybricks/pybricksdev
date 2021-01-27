@@ -56,6 +56,10 @@ class REPLDualBootInstaller(USBREPLConnection):
     FLASH_OFFSET = 0x8008000
     READ_BLOCKS = 8
 
+    def __init__(self):
+        self.current_progress = 0
+        super().__init__()
+
     async def get_base_firmware_info(self):
         """Gets firmware version without reboot"""
 
@@ -144,7 +148,9 @@ class REPLDualBootInstaller(USBREPLConnection):
             # Add the resulting block.
             blob += block
 
-            print("{0}%".format(int(len(blob)/size*100)), end="\r")
+            progress = int(len(blob) / size * 100)
+            print("{0}%".format(progress), end="\r")
+            await self.show_progress(progress / 3 + 7)
 
         # Verify checksum
         read_checksum = int.from_bytes(blob[-4:], 'little')
@@ -172,10 +178,15 @@ class REPLDualBootInstaller(USBREPLConnection):
 
     async def show_progress(self, progress):
         """Create 2D grid of intensities to show 0--100% 25 pixels."""
+        # Avoid updating screen if there is nothing to do
+        progress = int(progress)
+        if progress == self.current_progress:
+            return
         await self.show_image([[
                 max(0, min((progress - (i * 5 + j) * 4) * 25, 100)) for j in range(5)
             ] for i in range(5)
         ])
+        self.current_progress = progress
 
 
 if __name__ == "__main__":
