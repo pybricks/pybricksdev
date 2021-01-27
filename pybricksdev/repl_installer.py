@@ -2,6 +2,7 @@ from asyncio import run, sleep
 from pybricksdev.connections import CharacterGlue, USBConnection
 from pybricksdev.flash import crc32_checksum
 
+
 class USBREPLConnection(CharacterGlue, USBConnection):
     """Run commands in a MicroPython repl and print or eval the output."""
 
@@ -52,6 +53,44 @@ class USBREPLConnection(CharacterGlue, USBConnection):
     async def exec_and_eval(self, line):
         """Executes one line of code and evaluates the output."""
         return eval(await self.exec_line(line))
+
+
+def get_combined_firmware(bin1, bin2):
+    """Combines two firmware binary blobs and swaps their boot vectors."""
+
+    # These values are for SPIKE Prime. Also see prime_hub.ld.
+    FLASH_SIZE = 1024 * 1024
+    BIN1_BASE_OFFSET = 0x8000
+    BIN2_BASE_OFFSET = 0xC0000
+
+    bin1_size = len(bin1)
+    bin2_size = len(bin2)
+    bin2_offset = BIN2_BASE_OFFSET - BIN1_BASE_OFFSET
+    size = bin2_offset + bin2_size
+    max_size = FLASH_SIZE - BIN1_BASE_OFFSET
+
+    if bin1_size >= bin2_offset:
+        raise ValueError("base firmware is too big!")
+    if size >= max_size:
+        raise ValueError("extra firmware is too big!")
+
+    # Create a new combined firmware blob
+    blob = bytearray(bin1 + b'\xff' * (bin2_offset - bin1_size) + bin2)
+
+    # Read reset handler pointers in vector tables.
+    bin1_reset_handler = bin1[4:8]
+    bin2_reset_handler = bin2[4:8]
+
+    # Swap reset handler pointers.
+    blob[4:8] = bin2_reset_handler
+    blob[bin2_offset + 4: bin2_offset + 8] = bin1_reset_handler
+
+    # The final checksum is for the entire new blob
+    # This overrides the checksum of the second firmware.
+    blob[-4:] = crc32_checksum(blob, max_size).to_bytes(4, "little")
+
+    # Return result
+    return bytes(blob)
 
 
 class REPLDualBootInstaller(USBREPLConnection):
@@ -125,10 +164,6 @@ class REPLDualBootInstaller(USBREPLConnection):
     async def get_base_firmware_blob(self, base_firmware_info):
         """Backs up original firmware with original boot vector."""
 
-        # DELETE ME
-        with open('firmware-v1.0.06.0034-b0c335b.bin', "rb") as bin_file:
-            return bin_file.read()
-
         size = base_firmware_info["size"]
         print("Backing up {0} bytes of original firmware. Progress:".format(size))
 
@@ -197,6 +232,8 @@ class REPLDualBootInstaller(USBREPLConnection):
             # Scale progress to fill up Last three rows
             await self.show_progress(44 + progress / 100 * 56)
 
+        await self.show_progress(100)
+        await sleep(0.2)
         print("Done! Verifying firmware.")
         read_firmware_info = await self.exec_and_eval("firmware.info()")
 
@@ -255,9 +292,11 @@ if __name__ == "__main__":
         with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
             bin_file.write(base_firmware_blob)
 
-        # TODO: override boot vector, concatenate padding, add Pybricks firmware
+        # Read Pybricks dual boot build
+        with open('../pybricks-micropython/bricks/primehub/build/firmware-dual-boot-base.bin', 'rb') as pybricks_bin:
+            combined_blob = get_combined_firmware(base_firmware_blob, pybricks_bin.read())
 
         # Write (combined) firmware to external flash and reboot to install
-        await repl.write_firmware_blob(base_firmware_blob)
+        await repl.write_firmware_blob(combined_blob)
 
     run(main())
