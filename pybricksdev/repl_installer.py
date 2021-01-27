@@ -54,7 +54,7 @@ class REPLDualBootInstaller(USBREPLConnection):
 
     PYBRICKS_BASE = 0x80C0000
     FLASH_OFFSET = 0x8008000
-    BLOCK_WRITE_SIZE = 128
+    READ_BLOCKS = 8
 
     async def get_base_firmware_info(self):
         """Gets firmware version without reboot"""
@@ -109,21 +109,22 @@ class REPLDualBootInstaller(USBREPLConnection):
             "import firmware; firmware.flash_read({0})".format(
                 self.PYBRICKS_BASE - self.FLASH_OFFSET)))[4:8]
 
+    async def get_flash_block(self, address):
+        return await self.exec_and_eval(
+                "+".join(["flr({0})".format(address + i * 32) for i in range(self.READ_BLOCKS)])
+        )
+
     async def get_base_firmware_blob(self, base_firmware_info):
         """Backs up original firmware with original boot vector."""
 
         size = base_firmware_info["size"]
-        print("Backing up {0} bytes of original firmware.".format(size))
-        print("Progress:\n")
+        print("Backing up {0} bytes of original firmware. Progress:".format(size))
 
-        # Read the first chunk and reinstate the boot vector
-        blob = await self.exec_and_eval(
-            "import firmware;" +
-            "firmware.flash_read(0) +" +
-            "firmware.flash_read(32) +" +
-            "firmware.flash_read(64) +" +
-            "firmware.flash_read(96)"
-        )
+        # Import abbreviated function to reduce data transfer
+        await self.exec_line("from firmware import flash_read as flr")
+
+        # Read the first chunk and reinstate the original boot vector
+        blob = await self.get_flash_block(0)
         blob = blob[0:4] + base_firmware_info["boot_vector"] + blob[8:]
 
         # Read the remainder up to the requested size
@@ -133,16 +134,12 @@ class REPLDualBootInstaller(USBREPLConnection):
         while bytes_read < size:
 
             # Read several chunks of 32 bytes into one block.
-            block = await self.exec_and_eval(
-                "firmware.flash_read({0}) +".format(bytes_read) +
-                "firmware.flash_read({0}) +".format(bytes_read + 32) +
-                "firmware.flash_read({0}) +".format(bytes_read + 64) +
-                "firmware.flash_read({0})".format(bytes_read + 96))
+            block = await self.get_flash_block(bytes_read)
             bytes_read += len(block)
 
             # If we read past the end, cut off the extraneous bytes.
             if bytes_read > size:
-                block = block[0: size % self.BLOCK_WRITE_SIZE]
+                block = block[0: size % len(block)]
 
             # Add the resulting block.
             blob += block
