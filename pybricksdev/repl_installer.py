@@ -54,7 +54,6 @@ class REPLDualBootInstaller(USBREPLConnection):
 
     PYBRICKS_BASE = 0x80C0000
     FLASH_OFFSET = 0x8008000
-    BLOCK_READ_SIZE = 32
     BLOCK_WRITE_SIZE = 128
 
     async def get_base_firmware_info(self):
@@ -118,22 +117,28 @@ class REPLDualBootInstaller(USBREPLConnection):
         print("Progress:\n")
 
         # Read the first chunk and reinstate the boot vector
-        blob = await self.exec_and_eval("import firmware; firmware.flash_read(0)")
+        blob = await self.exec_and_eval(
+            "import firmware;" +
+            "firmware.flash_read(0) +" +
+            "firmware.flash_read(32) +" +
+            "firmware.flash_read(64) +" +
+            "firmware.flash_read(96)"
+        )
         blob = blob[0:4] + base_firmware_info["boot_vector"] + blob[8:]
 
         # Read the remainder up to the requested size
         bytes_read = len(blob)
-        reads_per_write = self.BLOCK_WRITE_SIZE // self.BLOCK_READ_SIZE
 
         # Yield new blocks until done.
         while bytes_read < size:
 
             # Read several chunks of 32 bytes into one block.
-            block = b''
-            for i in range(reads_per_write):
-                block += await self.exec_and_eval(
-                    "firmware.flash_read({0})".format(bytes_read))
-                bytes_read += self.BLOCK_READ_SIZE
+            block = await self.exec_and_eval(
+                "firmware.flash_read({0}) +".format(bytes_read) +
+                "firmware.flash_read({0}) +".format(bytes_read + 32) +
+                "firmware.flash_read({0}) +".format(bytes_read + 64) +
+                "firmware.flash_read({0})".format(bytes_read + 96))
+            bytes_read += len(block)
 
             # If we read past the end, cut off the extraneous bytes.
             if bytes_read > size:
@@ -145,7 +150,7 @@ class REPLDualBootInstaller(USBREPLConnection):
             print("{0}%".format(int(len(blob)/size*100)), end="\r")
 
         # Also save a copy to disk
-        with open("firmware-" + base_firmware_version + ".bin", "wb") as bin_file:
+        with open("firmware-" + base_firmware_info["version"] + ".bin", "wb") as bin_file:
             bin_file.write(blob)
 
         print("Backup complete\n")
