@@ -52,9 +52,12 @@ class USBREPLConnection(CharacterGlue, USBConnection):
 
 class REPLDualBootInstaller(USBREPLConnection):
 
+    PYBRICKS_BASE = 0x80C0000
     FLASH_OFFSET = 0x8008000
+    BLOCK_READ_SIZE = 32
+    BLOCK_WRITE_SIZE = 128
 
-    async def get_firmware_version(self):
+    async def get_base_firmware_info(self):
         """Gets firmware version without reboot"""
 
         # Read boot sector
@@ -63,13 +66,89 @@ class REPLDualBootInstaller(USBREPLConnection):
         )
 
         # Read firmware version data
-        position = int.from_bytes(boot_data[0:4], 'little') - self.FLASH_OFFSET
-        version_bytes = await self.exec_and_eval(
-            "firmware.flash_read({0})".format(position)
-        )
+        version_position = int.from_bytes(boot_data[0:4], 'little') - self.FLASH_OFFSET
+        base_firmware_version = (await self.exec_and_eval(
+            "firmware.flash_read({0})".format(version_position)
+        ))[0:20].decode()
 
-        # Return version string
-        return version_bytes[0:20].decode()
+        # Read firmware size data
+        checksum_position = int.from_bytes(boot_data[4:8], 'little') - self.FLASH_OFFSET
+        base_firmware_checksum = int.from_bytes((await self.exec_and_eval(
+            "firmware.flash_read({0})".format(checksum_position)))[0:4], 'little')
+        base_firmware_size = checksum_position + 4
+
+        # Read the boot vector
+        base_firmware_vector = await self.get_base_firmware_vector()
+
+        # Return firmware info
+        return {
+            "size": base_firmware_size,
+            "version": base_firmware_version,
+            "checksum": base_firmware_checksum,
+            "boot_vector": base_firmware_vector
+        }
+
+    async def get_base_firmware_vector(self):
+        """Gets base firmware boot vector, already accounting for dual boot."""
+
+        # Import firmware module
+        await self.exec_line("import firmware")
+
+        # Read base vector sector
+        base_vector_data = (await self.exec_and_eval(
+            "import firmware; firmware.flash_read(0x000)"
+        ))[4:8]
+
+        # If it's running pure stock firmware, return as is.
+        if int.from_bytes(base_vector_data, 'little') < self.PYBRICKS_BASE:
+            print("Currently running single-boot firmware.")
+            return base_vector_data
+
+        # Otherwise read the boot vector in Pybricks, which points at base.
+        print("Currently running dual-boot firmware.")
+        return (await self.exec_and_eval(
+            "import firmware; firmware.flash_read({0})".format(
+                self.PYBRICKS_BASE - self.FLASH_OFFSET)))[4:8]
+
+    async def get_base_firmware_blob(self, base_firmware_info):
+        """Backs up original firmware with original boot vector."""
+
+        size = base_firmware_info["size"]
+        print("Backing up {0} bytes of original firmware.".format(size))
+        print("Progress:\n")
+
+        # Read the first chunk and reinstate the boot vector
+        blob = await self.exec_and_eval("import firmware; firmware.flash_read(0)")
+        blob = blob[0:4] + base_firmware_info["boot_vector"] + blob[8:]
+
+        # Read the remainder up to the requested size
+        bytes_read = len(blob)
+        reads_per_write = self.BLOCK_WRITE_SIZE // self.BLOCK_READ_SIZE
+
+        # Yield new blocks until done.
+        while bytes_read < size:
+
+            # Read several chunks of 32 bytes into one block.
+            block = b''
+            for i in range(reads_per_write):
+                block += await self.exec_and_eval(
+                    "firmware.flash_read({0})".format(bytes_read))
+                bytes_read += self.BLOCK_READ_SIZE
+
+            # If we read past the end, cut off the extraneous bytes.
+            if bytes_read > size:
+                block = block[0: size % self.BLOCK_WRITE_SIZE]
+
+            # Add the resulting block.
+            blob += block
+
+            print("{0}%".format(int(len(blob)/size*100)), end="\r")
+
+        # Also save a copy to disk
+        with open("firmware-" + base_firmware_version + ".bin", "wb") as bin_file:
+            bin_file.write(blob)
+
+        print("Backup complete\n")
 
     async def show_image(self, image):
         """Shows an image made as a 2D list of intensities."""
@@ -94,14 +173,24 @@ class REPLDualBootInstaller(USBREPLConnection):
 if __name__ == "__main__":
 
     async def main():
+
+        # Initialize connection
         repl = REPLDualBootInstaller()
         await repl.connect("LEGO Technic Large Hub in FS Mode")
-
         await repl.reset()
-        print(await repl.get_firmware_version())
 
-        for i in range(101):
-            await repl.show_progress(i)
-            await sleep(0.03)
+        # Get firmware information
+        base_firmware_info = await repl.get_base_firmware_info()
+        print("Detected firmware:")
+        print(base_firmware_info)
+
+        # Back up the original firmware
+        await repl.get_base_firmware_blob(base_firmware_info)
+
+        # for i in range(101):
+        #     await repl.show_progress(i)
+        #     await sleep(0.03)
+
+
 
     run(main())
