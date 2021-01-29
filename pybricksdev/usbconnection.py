@@ -64,7 +64,8 @@ class USBConnection():
         port = None
         devices = list_ports.comports()
         for dev in devices:
-            if dev.product == product or (dev.pid == 0x5740 and dev.vid == 0x0483):
+            # FIXME: Generalize for cross platform
+            if dev.product == product or (dev.pid == 0x5740 and dev.vid == 0x0483) or (dev.vid == 0x0694 and dev.pid == 0x0010) or (dev.vid == 0x0694 and dev.pid == 0x0009):
                 port = dev.device
                 break
 
