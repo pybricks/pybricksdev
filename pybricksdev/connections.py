@@ -601,6 +601,9 @@ class PybricksHub():
         self.output = []
         self.print_output = True
 
+        self.checksum_ready = asyncio.Event()
+        self.expected_checksum = -1
+
     def line_handler(self, line):
         self.output.append(line)
         if self.print_output:
@@ -609,8 +612,15 @@ class PybricksHub():
     def nus_handler(self, sender, data):
 
         # If no program is running, read checksum bytes.
-        if not self.program_running:
-            print(data)
+        if not self.program_running and self.expected_checksum >= 0:
+            if data[0] == self.expected_checksum:
+                self.checksum_ready.set()
+                self.logger.debug("Correct checksum: {0}".format(data[0]))
+            else:
+                self.logger.warning("Expected checksum {0} but got {1}".format(
+                    self.expected_checksum,
+                    data[0]
+                ))
             return
 
         # Store incoming data
@@ -658,15 +668,24 @@ class PybricksHub():
             self.logger.info("Disconnecting...")
             await self.client.disconnect()
 
-    async def write(self, data, pause=0, with_response=False):
-        await self.client.write_gatt_char(
-            NUS_RX_UUID,
-            bytearray(data),
-            with_response
-        )
-        await asyncio.sleep(pause)
+    def get_checksum(self, block):
+        checksum = 0
+        for b in block:
+            checksum ^= b
+        return checksum
+
+    async def send_block(self, data):
+        self.checksum_ready.clear()
+        self.expected_checksum = self.get_checksum(data)
+        await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
+        try:
+            await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
+        except asyncio.TimeoutError:
+            self.logger.warning("Error during program download.")
+            return
+        self.expected_checksum = 0
 
     async def run(self, py_path, wait=True, print_output=True):
         await asyncio.sleep(4)
-        await self.write(b"    ")
+        await self.send_block(b"    ")
         await asyncio.sleep(4)
