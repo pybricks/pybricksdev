@@ -596,13 +596,15 @@ class PybricksHub():
         self.logger.setLevel(logging.WARNING)
 
         self.EOL = b"\r\n"
-        self.program_running = False
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
 
-        self.checksum_ready = asyncio.Event()
         self.expected_checksum = -1
+        self.checksum_ready = asyncio.Event()
+
+        self.program_running = False
+        self.program_state_changed = asyncio.Event()
 
     def line_handler(self, line):
         self.output.append(line)
@@ -645,9 +647,18 @@ class PybricksHub():
 
     def pybricks_service_handler(self, sender, data):
         if data[0] == 0:
+
+            # Get new state
             msg = data[1]
-            self.program_running = bool(msg & (1 << 6))
-            self.logger.info("Program running: " + str(self.program_running))
+
+            # Get new program state
+            program_running_now = bool(msg & (1 << 6))
+            self.logger.info("Program running: " + str(program_running_now))
+
+            # If program state changed, notifiy
+            if self.program_running != program_running_now:
+                self.program_state_changed.set()
+                self.program_running = program_running_now
 
     def disconnected_handler(self, client: BleakClient):
         self.logger.info("Disconnected!")
@@ -683,7 +694,7 @@ class PybricksHub():
         except asyncio.TimeoutError:
             self.logger.warning("Error during program download.")
             return
-        self.expected_checksum = 0
+        self.expected_checksum = -1
 
     async def run(self, py_path, wait=True, print_output=True):
 
@@ -703,10 +714,22 @@ class PybricksHub():
         chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
 
         # Send the data chunk by chunk
+        print("Downloading {0} bytes in {1} steps.".format(len(mpy), len(chunks)))
         for i, chunk in enumerate(chunks):
-            self.logger.info("Sending: {0}%".format(
+            print("Progress: {0}%".format(
                 round((i + 1) / len(chunks) * 100))
             )
             await self.send_block(chunk)
 
-        # Wait for program to start and stop
+        # Wait for program to start.
+        try:
+            await asyncio.wait_for(self.program_state_changed.wait(), timeout=0.5)
+            self.program_state_changed.clear()
+        except asyncio.TimeoutError:
+            self.logger.warning("Unable to start program.")
+            return
+
+        if wait:
+            # Wait for program to stop
+            await self.program_state_changed.wait()
+            self.program_state_changed.clear()

@@ -130,7 +130,7 @@ class Run(Tool):
         elif args.conntype == 'ble':
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
-            hub.logger.setLevel(logging.INFO)
+            hub.logger.setLevel(logging.WARNING)
             if validators.mac_address(args.device):
                 device_or_address = args.device
             else:
