@@ -14,7 +14,7 @@
                 "run",
                 "ble",
                 "Pybricks Hub",
-                "${file}"
+                "${workspaceFolder}/demo/shortdemo.py"
             ]
         },
         {
