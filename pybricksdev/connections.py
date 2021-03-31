@@ -8,6 +8,8 @@ import json
 import random
 import base64
 import logging
+import io
+import os
 
 from bleak import BleakClient
 
@@ -593,11 +595,49 @@ class PybricksHub():
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.WARNING)
 
+        self.EOL = b"\r\n"
+        self.program_running = False
+        self.stream_buf = bytearray()
+        self.output = []
+        self.print_output = True
+
+    def line_handler(self, line):
+        self.output.append(line)
+        if self.print_output:
+            print(line.decode())
+
     def nus_handler(self, sender, data):
-        print(data)
+
+        # If no program is running, read checksum bytes.
+        if not self.program_running:
+            print(data)
+            return
+
+        # Store incoming data
+        self.stream_buf += data
+        self.logger.debug("NUS DATA: {0}".format(data))
+
+        # Break up data into lines and take those out of the buffer
+        lines = []
+        while True:
+            # Find and split at end of line
+            index = self.stream_buf.find(self.EOL)
+            # If no more line end is found, we are done
+            if index < 0:
+                break
+            # If we found a line, save it, and take it from the buffer
+            lines.append(self.stream_buf[0:index])
+            del self.stream_buf[0:index+len(self.EOL)]
+
+        # Call handler for each line that we found
+        for line in lines:
+            self.line_handler(line)
 
     def pybricks_service_handler(self, sender, data):
-        print(data)
+        if data[0] == 0:
+            msg = data[1]
+            self.program_running = bool(msg & (1 << 6))
+            self.logger.info("Program running: " + str(self.program_running))
 
     def disconnected_handler(self, client: BleakClient):
         self.logger.info("Disconnected!")
@@ -618,5 +658,15 @@ class PybricksHub():
             self.logger.info("Disconnecting...")
             await self.client.disconnect()
 
+    async def write(self, data, pause=0, with_response=False):
+        await self.client.write_gatt_char(
+            NUS_RX_UUID,
+            bytearray(data),
+            with_response
+        )
+        await asyncio.sleep(pause)
+
     async def run(self, py_path, wait=True, print_output=True):
-        pass
+        await asyncio.sleep(4)
+        await self.write(b"    ")
+        await asyncio.sleep(4)
