@@ -686,6 +686,27 @@ class PybricksHub():
         self.expected_checksum = 0
 
     async def run(self, py_path, wait=True, print_output=True):
-        await asyncio.sleep(4)
-        await self.send_block(b"    ")
-        await asyncio.sleep(4)
+
+        # Reset output buffer
+        self.output = []
+        self.print_output = print_output
+
+        # Compile the script to mpy format
+        mpy = await compile_file(py_path)
+
+        # Get length of file and send it as bytes to hub
+        length = len(mpy).to_bytes(4, byteorder='little')
+        await self.send_block(length)
+
+        # Divide script in chunks of bytes
+        n = 100
+        chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
+
+        # Send the data chunk by chunk
+        for i, chunk in enumerate(chunks):
+            self.logger.info("Sending: {0}%".format(
+                round((i + 1) / len(chunks) * 100))
+            )
+            await self.send_block(chunk)
+
+        # Wait for program to start and stop
