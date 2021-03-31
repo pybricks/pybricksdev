@@ -115,7 +115,7 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import BLEPUPConnection, EV3Connection, USBPUPConnection, USBRPCConnection
+        from ..connections import PybricksHub, EV3Connection, USBPUPConnection, USBRPCConnection
 
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
@@ -129,7 +129,7 @@ class Run(Tool):
             device_or_address = args.device
         elif args.conntype == 'ble':
             # It is a Pybricks Hub with BLE. Device name or address is given.
-            hub = BLEPUPConnection()
+            hub = PybricksHub()
             hub.logger.setLevel(logging.INFO)
             if validators.mac_address(args.device):
                 device_or_address = args.device

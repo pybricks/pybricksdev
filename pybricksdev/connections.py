@@ -7,6 +7,9 @@ from .compile import compile_file
 import json
 import random
 import base64
+import logging
+
+from bleak import BleakClient
 
 
 class CharacterGlue():
@@ -571,3 +574,49 @@ class EV3Connection():
         await self.client.sftp.get(
             self.abs_path(remote_path), localpath=local_path
         )
+
+
+PYBRICKS_UUID = 'c5f50002-8280-46da-89f4-6d8051e4aeef'
+NUS_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+NUS_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+
+
+class PybricksHub():
+
+    def __init__(self):
+        self.logger = logging.getLogger('Pybricks Hub')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s: %(levelname)7s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.WARNING)
+
+    def nus_handler(self, sender, data):
+        print(data)
+
+    def pybricks_service_handler(self, sender, data):
+        print(data)
+
+    def disconnected_handler(self, client: BleakClient):
+        self.logger.info("Disconnected!")
+
+    async def connect(self, device):
+        self.logger.info("Connecting to " + device.address)
+        self.client = BleakClient(device)
+        await self.client.connect(disconnected_callback=self.disconnected_handler)
+        await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
+        await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
+        self.logger.info("Connected successfully!")
+        self.connected = True
+
+    async def disconnect(self):
+        await self.client.stop_notify(NUS_TX_UUID)
+        await self.client.stop_notify(PYBRICKS_UUID)
+        if self.connected:
+            self.logger.info("Disconnecting...")
+            await self.client.disconnect()
+
+    async def run(self, py_path, wait=True, print_output=True):
+        pass
