@@ -1,9 +1,9 @@
 import asyncio
 import logging
-import platform
 
 from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
 
 
 async def find_device(name: str, timeout: float = 5) -> BLEDevice:
@@ -28,51 +28,15 @@ async def find_device(name: str, timeout: float = 5) -> BLEDevice:
     """
     print("Searching for {0}".format(name))
 
-    # Flag raised by detection of a device
-    device_discovered = False
+    queue = asyncio.Queue()
 
-    def set_device_discovered(*args):
-        nonlocal device_discovered
-        device_discovered = True
+    def set_device_discovered(device: BLEDevice, _: AdvertisementData):
+        if device.name != name:
+            return
+        queue.put_nowait(device)
 
-    # Create scanner object and register callback to raise discovery flag
-    scanner = BleakScanner()
-    scanner.register_detection_callback(set_device_discovered)
-
-    # Start the scanner
-    await scanner.start()
-
-    INTERVAL = 0.1
-
-    # Sleep until a device of interest is discovered. We cheat by using the
-    # cross-platform get_discovered_devices() ahead of time, instead of waiting
-    # for the whole discover() process to complete. We call it every time
-    # a new device is detected by the register_detection_callback.
-    for i in range(round(timeout/INTERVAL)):
-        # If device_discovered flag is raised, check if it's the right one.
-        if device_discovered:
-            # Unset the flag so we only check if raised again.
-            device_discovered = False
-            # Check if any of the devices found so far has the expected name.
-            devices = await scanner.get_discovered_devices()
-            for dev in devices:
-                # HACK: work around bleak bug in Windows
-                if platform.system() == 'Windows':
-                    response = scanner._scan_responses.get(dev.details.BluetoothAddress)
-                    if response:
-                        dev.name = response.Advertisement.LocalName
-                # If the name matches, stop scanning and return.
-                if name == dev.name:
-                    await scanner.stop()
-                    return dev
-        # Await until we check again.
-        await asyncio.sleep(INTERVAL)
-
-    # If we are here, scanning has timed out.
-    await scanner.stop()
-    raise asyncio.TimeoutError(
-        "Could not find {0} in {1} seconds".format(name, timeout)
-    )
+    async with BleakScanner(detection_callback=set_device_discovered):
+        return await asyncio.wait_for(queue.get(), timeout=timeout)
 
 
 class BLEConnection():
