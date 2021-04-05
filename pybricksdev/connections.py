@@ -8,8 +8,6 @@ import json
 import random
 import base64
 import logging
-import io
-import os
 
 from bleak import BleakClient
 
