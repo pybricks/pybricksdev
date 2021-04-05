@@ -14,6 +14,9 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
 ]
+include = [
+    "AUTHORS.md"
+]
 
 [tool.poetry.scripts]
 pybricksdev = 'pybricksdev.cli:main'
