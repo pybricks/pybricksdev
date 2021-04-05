@@ -8,6 +8,12 @@ license = "MIT"
 readme = "README.rst"
 homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+]
 
 [tool.poetry.scripts]
 pybricksdev = 'pybricksdev.cli:main'
