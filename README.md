@@ -34,7 +34,7 @@ We recommend using [pipx][pipx] to install `pybricksdev` as a command line tool.
 
 Be sure to install `pipx` in the Python 3.8 runtime:
 
-    python3.8 -m pip install --update pip # ensure pip is up to date first
+    python3.8 -m pip install --upgrade pip # ensure pip is up to date first
     python3.8 -m pip install pipx
 
 If this is the first time you have installed `pipx`, run this command:
@@ -55,7 +55,7 @@ If you are using the *Python Launcher for Windows* (installed by default with
 the official Python installer), then you will need to use `py -3.8` instead
 of `python3.8`.
 
-    py -3.8 -m pip install --update pip # ensure pip is up to date first
+    py -3.8 -m pip install --upgrade pip # ensure pip is up to date first
     py -3.8 -m pip install pipx
     py -3.8 -m pipx ensurepath
     py -3.8 -m pipx install pybricksdev
