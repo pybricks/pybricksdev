@@ -322,5 +322,4 @@ def main():
     if not args.tool:
         parser.error(f'Missing name of tool: {"|".join(subparsers.choices.keys())}')
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(subparsers.choices[args.tool].tool.run(args))
+    asyncio.run(subparsers.choices[args.tool].tool.run(args))
