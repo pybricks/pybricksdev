@@ -77,7 +77,7 @@ def backup_dfu(file: BinaryIO) -> None:
             exit(call([
                 dfu_util,
                 "--device",
-                f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
                 "--alt",
                 "0",
                 "--dfuse-address",
@@ -106,7 +106,7 @@ def restore_dfu(file: BinaryIO) -> None:
             exit(call([
                 dfu_util,
                 "--device",
-                f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
                 "--alt",
                 "0",
                 "--dfuse-address",
@@ -190,7 +190,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
                 exit(call([
                     dfu_util,
                     "--device",
-                    f"{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                    f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
                     "--alt",
                     "0",
                     "--download",
