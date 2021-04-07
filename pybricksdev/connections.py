@@ -148,20 +148,6 @@ class PybricksPUPProtocol(CharacterGlue):
             line (bytearray):
                 Line to process.
         """
-
-        # If the line tells us about the state, set the state and be done.
-        if line == b'>>>> IDLE':
-            self.set_state(self.IDLE)
-            return
-        if line == b'>>>> RUNNING':
-            self.set_state(self.RUNNING)
-            return
-        if line == b'>>>> ERROR':
-            self.set_state(self.ERROR)
-            return
-        if line == b'--------------':
-            return
-
         # The line tells us to open a log file, so do it.
         if b'PB_OF' in line:
             if self.log_file is not None:
@@ -219,14 +205,6 @@ class PybricksPUPProtocol(CharacterGlue):
         self.prepare_checksum()
         self.set_state(self.IDLE)
         return result
-
-    async def wait_until_state(self, state):
-        """Awaits until the requested state is reached."""
-        # FIXME: handle using event on state change
-        while True:
-            await asyncio.sleep(0.1)
-            if self.state == state:
-                break
 
     async def wait_until_state_is_not(self, state):
         """Awaits until the requested state is no longer active."""
