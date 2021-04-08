@@ -1,15 +1,18 @@
 import asyncio
-import asyncssh
-import os
-from .ble import BLEConnection
-from .usbconnection import USBConnection
-from .compile import compile_file
-import json
-import random
 import base64
+import json
 import logging
+import os
+import random
 
+import asyncssh
+from bleak.backends.device import BLEDevice
 from bleak import BleakClient
+import semver
+
+from .ble import BLEConnection
+from .compile import compile_file
+from .usbconnection import USBConnection
 
 
 class CharacterGlue():
@@ -554,8 +557,21 @@ class EV3Connection():
         )
 
 
+# Pybricks control characteristic UUID
 PYBRICKS_UUID = 'c5f50002-8280-46da-89f4-6d8051e4aeef'
+# The minimum required Pybricks protocol version
+PYBRICKS_PROTOCOL_VERSION = semver.VersionInfo(1)
+
+# Standard Device Information Service UUID
+DI_SERVICE_UUID = '0000180a-0000-1000-8000-00805f9b34fb'
+# Standard Firmware Revision String characteristic UUID
+FW_REV_UUID = '00002a26-0000-1000-8000-00805f9b34fb'
+# Standard Software Revision String UUID (Pybricks protocol version)
+SW_REV_UUID = '00002a28-0000-1000-8000-00805f9b34fb'
+
+# Nordic UART hub Rx, pybricksdev Tx characteristic
 NUS_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+# Nordic UART hub Tx, pybricksdev Rx characteristic
 NUS_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
 
@@ -649,23 +665,45 @@ class PybricksHub:
                 if not program_running_now:
                     self.user_program_stopped.set()
 
-    def disconnected_handler(self, client: BleakClient):
-        self.logger.info("Disconnected!")
+    async def connect(self, device: BLEDevice):
+        """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
 
-    async def connect(self, device):
-        self.logger.info("Connecting to " + device.address)
+        Args:
+            device: The device to connect to.
+
+        Raises:
+            BleakError: if connecting failed (or old firmware without Device
+                Information Service)
+            RuntimeError: if Pybricks Protocol version is not supported
+        """
+        self.logger.info(f"Connecting to {device.address}")
         self.client = BleakClient(device)
-        await self.client.connect(disconnected_callback=self.disconnected_handler)
-        await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
-        await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
-        self.logger.info("Connected successfully!")
-        self.connected = True
+
+        def disconnected_handler(self, _: BleakClient):
+            self.logger.info("Disconnected!")
+            self.connected = False
+
+        await self.client.connect(disconnected_callback=disconnected_handler)
+        try:
+            self.logger.info("Connected successfully!")
+            protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
+            protocol_version = semver.VersionInfo.parse(protocol_version.decode())
+            if (
+                protocol_version < PYBRICKS_PROTOCOL_VERSION or
+                protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
+            ):
+                raise RuntimeError(f"Unsupported Pybricks protocol version: {protocol_version}")
+            await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
+            await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
+            self.connected = True
+        except BaseException as ex:
+            self.disconnect()
+            raise ex
 
     async def disconnect(self):
         if self.connected:
             self.logger.info("Disconnecting...")
             await self.client.disconnect()
-            self.connected = False
         else:
             self.logger.debug("already disconnected")
 

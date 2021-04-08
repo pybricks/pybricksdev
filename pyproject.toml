@@ -31,6 +31,7 @@ python = "~3.8"
 tqdm = "^4.46.1"
 validators = "^0.18.2"
 pyusb = "^1.0.2"
+semver = "^2.13.0"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.3"
