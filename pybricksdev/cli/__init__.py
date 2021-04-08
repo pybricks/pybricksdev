@@ -150,8 +150,10 @@ class Run(Tool):
 
         # Connect to the address and run the script
         await hub.connect(device_or_address)
-        await hub.run(script_path, args.wait == 'True')
-        await hub.disconnect()
+        try:
+            await hub.run(script_path, args.wait == 'True')
+        finally:
+            await hub.disconnect()
 
 
 class Flash(Tool):

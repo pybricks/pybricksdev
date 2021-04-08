@@ -559,7 +559,8 @@ NUS_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
 NUS_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
 
 
-class PybricksHub():
+class PybricksHub:
+    EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
         self.logger = logging.getLogger('Pybricks Hub')
@@ -571,16 +572,24 @@ class PybricksHub():
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.WARNING)
 
-        self.EOL = b"\r\n"
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
 
+        # indicates that the hub is currently connected via BLE
+        self.connected = False
+
+        # stores the next expected checksum or -1 when not expecting a checksum
         self.expected_checksum = -1
+        # indicates when a valid checksum was received
         self.checksum_ready = asyncio.Event()
 
+        # indicates is we are currently downloading a program
+        self.loading = False
+        # indicates that the user program is running
         self.program_running = False
-        self.program_state_changed = asyncio.Event()
+        # used to notify when the user program has ended
+        self.user_program_stopped = asyncio.Event()
 
     def line_handler(self, line):
         self.output.append(line)
@@ -588,9 +597,8 @@ class PybricksHub():
             print(line.decode())
 
     def nus_handler(self, sender, data):
-
-        # If no program is running, read checksum bytes.
-        if not self.program_running and self.expected_checksum >= 0:
+        # If we are currently downloading a program, treat incoming data as checksum.
+        if self.loading:
             if data[0] == self.expected_checksum:
                 self.checksum_ready.set()
                 self.logger.debug("Correct checksum: {0}".format(data[0]))
@@ -621,7 +629,7 @@ class PybricksHub():
         for line in lines:
             self.line_handler(line)
 
-    def pybricks_service_handler(self, sender, data):
+    def pybricks_service_handler(self, _: int, data: bytearray):
         if data[0] == 0:
 
             # Get new state
@@ -629,12 +637,17 @@ class PybricksHub():
 
             # Get new program state
             program_running_now = bool(msg & (1 << 6))
-            self.logger.info("Program running: " + str(program_running_now))
 
-            # If program state changed, notifiy
-            if self.program_running != program_running_now:
-                self.program_state_changed.set()
-                self.program_running = program_running_now
+            # If we are currently downloading a program, we must ignore user
+            # program running state changes, otherwise the checksum will be
+            # sent to the terminal instead of being handled by the download
+            # algorithm
+            if not self.loading:
+                if self.program_running != program_running_now:
+                    self.logger.info(f"Program running: {program_running_now}")
+                    self.program_running = program_running_now
+                if not program_running_now:
+                    self.user_program_stopped.set()
 
     def disconnected_handler(self, client: BleakClient):
         self.logger.info("Disconnected!")
@@ -649,11 +662,12 @@ class PybricksHub():
         self.connected = True
 
     async def disconnect(self):
-        await self.client.stop_notify(NUS_TX_UUID)
-        await self.client.stop_notify(PYBRICKS_UUID)
         if self.connected:
             self.logger.info("Disconnecting...")
             await self.client.disconnect()
+            self.connected = False
+        else:
+            self.logger.debug("already disconnected")
 
     def get_checksum(self, block):
         checksum = 0
@@ -664,13 +678,11 @@ class PybricksHub():
     async def send_block(self, data):
         self.checksum_ready.clear()
         self.expected_checksum = self.get_checksum(data)
-        await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
         try:
+            await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
             await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
-        except asyncio.TimeoutError:
-            self.logger.warning("Error during program download.")
-            return
-        self.expected_checksum = -1
+        finally:
+            self.expected_checksum = -1
 
     async def run(self, py_path, wait=True, print_output=True):
 
@@ -681,31 +693,25 @@ class PybricksHub():
         # Compile the script to mpy format
         mpy = await compile_file(py_path)
 
-        # Get length of file and send it as bytes to hub
-        length = len(mpy).to_bytes(4, byteorder='little')
-        await self.send_block(length)
-
-        # Divide script in chunks of bytes
-        n = 100
-        chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
-
-        # Send the data chunk by chunk
-        print("Downloading {0} bytes in {1} steps.".format(len(mpy), len(chunks)))
-        for i, chunk in enumerate(chunks):
-            print("Progress: {0}%".format(
-                round((i + 1) / len(chunks) * 100))
-            )
-            await self.send_block(chunk)
-
-        # Wait for program to start.
         try:
-            await asyncio.wait_for(self.program_state_changed.wait(), timeout=0.5)
-            self.program_state_changed.clear()
-        except asyncio.TimeoutError:
-            self.logger.warning("Unable to start program.")
-            return
+            self.loading = True
+            self.user_program_stopped.clear()
+
+            # Get length of file and send it as bytes to hub
+            length = len(mpy).to_bytes(4, byteorder='little')
+            await self.send_block(length)
+
+            # Divide script in chunks of bytes
+            n = 100
+            chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
+
+            # Send the data chunk by chunk
+            print(f"Downloading {len(mpy)} bytes in {len(chunks)} steps.")
+            for i, chunk in enumerate(chunks):
+                print(f"Progress: {round((i + 1) / len(chunks) * 100)}%")
+                await self.send_block(chunk)
+        finally:
+            self.loading = False
 
         if wait:
-            # Wait for program to stop
-            await self.program_state_changed.wait()
-            self.program_state_changed.clear()
+            await self.user_program_stopped.wait()
