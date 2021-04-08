@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2021 The Pybricks Authors
+
 """Resource files.
 
 These resources are intended to be used with the standard ``importlib.resources``

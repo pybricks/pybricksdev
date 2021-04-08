@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2021 The Pybricks Authors
+
 from asyncio import run, sleep
 from zipfile import ZipFile
 

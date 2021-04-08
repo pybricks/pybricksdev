@@ -1,4 +1,6 @@
-#!/usr/bin/python
+# SPDX-License-Identifier: LGPL-3.0-only
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2021 The Pybricks Authors
 
 # Written by Antonio Galea - 2010/11/18
 # Distributed under Gnu LGPL 3.0
