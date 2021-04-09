@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2020 The Pybricks Authors
+# Copyright (c) 2019-2021 The Pybricks Authors
 
 import errno
 import os
@@ -93,6 +93,13 @@ def restore_dfu(file: BinaryIO) -> None:
     Args:
         file: the file that contains the firmware data
     """
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0, os.SEEK_SET)
+
+    if size < 512:
+        raise ValueError("File is too small to be a valid firmware file")
+
     try:
         # TODO: implement this using pydfu
         raise NoBackendError
