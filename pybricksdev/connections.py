@@ -749,8 +749,8 @@ class PybricksHub:
             # Send the data chunk by chunk
             print(f"Downloading {len(mpy)} bytes in {len(chunks)} steps.")
             for i, chunk in enumerate(chunks):
-                print(f"Progress: {round((i + 1) / len(chunks) * 100)}%")
                 await self.send_block(chunk)
+                print(f"Progress: {round((i + 1) / len(chunks) * 100)}%")
         finally:
             self.loading = False
 
