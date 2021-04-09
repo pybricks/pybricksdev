@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Print BLE download progress after chunk is complete instead of before.
+### Fixed
+- Fix occasional bad checksum warning when running program via BLE.
 
 ## [1.0.0-alpha.2] - 2021-04-08
 ### Added

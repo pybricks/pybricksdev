@@ -616,16 +616,17 @@ class PybricksHub:
             print(line.decode())
 
     def nus_handler(self, sender, data):
-        # If we are currently downloading a program, treat incoming data as checksum.
-        if self.loading:
-            if data[0] == self.expected_checksum:
-                self.checksum_ready.set()
-                self.logger.debug("Correct checksum: {0}".format(data[0]))
-            else:
-                self.logger.warning("Expected checksum {0} but got {1}".format(
-                    self.expected_checksum,
-                    data[0]
-                ))
+        # If we are currently expecting a checksum, validate it and notify the waiter
+        if self.expected_checksum != -1:
+            checksum = data[0]
+            if checksum != self.expected_checksum:
+                raise RuntimeError(
+                    f"Expected checksum {self.expected_checksum} but got {checksum}"
+                )
+
+            self.expected_checksum = -1
+            self.checksum_ready.set()
+            self.logger.debug(f"Correct checksum: {checksum}")
             return
 
         # Store incoming data
@@ -699,9 +700,9 @@ class PybricksHub:
             await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
             await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
             self.connected = True
-        except BaseException as ex:
+        except:
             self.disconnect()
-            raise ex
+            raise
 
     async def disconnect(self):
         if self.connected:
@@ -722,8 +723,11 @@ class PybricksHub:
         try:
             await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
             await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
-        finally:
+        except:
+            # normally self.expected_checksum = -1 will be called in nus_handler()
+            # but if we timeout or something like that, we need to reset it here
             self.expected_checksum = -1
+            raise
 
     async def run(self, py_path, wait=True, print_output=True):
 
