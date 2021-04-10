@@ -760,3 +760,4 @@ class PybricksHub:
 
         if wait:
             await self.user_program_stopped.wait()
+            await asyncio.sleep(0.3)
