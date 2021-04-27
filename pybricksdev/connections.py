@@ -626,10 +626,16 @@ class PybricksHub:
         if b'PB_OF' in line:
             if self.log_file is not None:
                 raise OSError("Log file is already open!")
-            name = line[6:].decode()
-            self.logger.info("Saving log to {0}.".format(name))
-            print(name)
-            self.log_file = open(name, 'w')
+
+            # Get path relative to running script, so log will go
+            # in the same folder unless specified otherwise.
+            full_path = os.path.join(self.script_dir, line[6:].decode())
+            dir_path, _ = os.path.split(full_path)
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            self.logger.info("Saving log to {0}.".format(full_path))
+            self.log_file = open(full_path, 'w')
             return
 
         # The line tells us to close a log file, so do it.
@@ -772,6 +778,7 @@ class PybricksHub:
         self.print_output = print_output
 
         # Compile the script to mpy format
+        self.script_dir, _ = os.path.split(py_path)
         mpy = await compile_file(py_path)
 
         try:
