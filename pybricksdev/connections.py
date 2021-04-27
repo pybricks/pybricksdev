@@ -610,7 +610,43 @@ class PybricksHub:
         # used to notify when the user program has ended
         self.user_program_stopped = asyncio.Event()
 
+        # File handle for logging
+        self.log_file = None
+
     def line_handler(self, line):
+        """Handles new incoming lines. Handle special actions if needed,
+        otherwise just print it as regular lines.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
+
+        # The line tells us to open a log file, so do it.
+        if b'PB_OF' in line:
+            if self.log_file is not None:
+                raise OSError("Log file is already open!")
+            name = line[6:].decode()
+            self.logger.info("Saving log to {0}.".format(name))
+            print(name)
+            self.log_file = open(name, 'w')
+            return
+
+        # The line tells us to close a log file, so do it.
+        if b'PB_EOF' in line:
+            if self.log_file is None:
+                raise OSError("No log file is currently open!")
+            self.logger.info("Done saving log.")
+            self.log_file.close()
+            self.log_file = None
+            return
+
+        # If we are processing datalog, save current line to the open file.
+        if self.log_file is not None:
+            print(line.decode(), file=self.log_file)
+            return
+
+        # If there is nothing special about this line, print it if requested.
         self.output.append(line)
         if self.print_output:
             print(line.decode())
