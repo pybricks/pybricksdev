@@ -7,6 +7,7 @@ from zipfile import ZipFile
 from pybricksdev.connections import CharacterGlue, USBConnection
 from pybricksdev.flash import crc32_checksum
 
+
 class USBREPLConnection(CharacterGlue, USBConnection):
     """Run commands in a MicroPython repl and print or eval the output."""
 
@@ -25,10 +26,23 @@ class USBREPLConnection(CharacterGlue, USBConnection):
 
     async def reset(self):
         """Resets into REPL mode even if something is running."""
-        self.stdout = []
+        self.char_buf = bytearray(b'')
+
+        # Cancel anything that is running
+        for i in range(3):
+            await self.write(b'\x03')
+            await sleep(0.1)
+
+        # Soft reboot
+        await self.write(b'\x04')
+        await sleep(0.05)
+
+        # Prevent runtime from coming up
         while not self.is_ready():
             await self.write(b'\x03')
             await sleep(0.1)
+
+        self.stdout = []
 
     async def reboot(self):
         """Soft reboots the board."""
@@ -48,7 +62,7 @@ class USBREPLConnection(CharacterGlue, USBConnection):
         while len(self.stdout) == start_index:
             await sleep(0.01)
         if self.stdout[start_index] != b'>>> ' + encoded:
-            raise ValueError(b"Failed to execute line: {0}.".format(line))
+            raise ValueError("Failed to execute line: {0}.".format(line))
         while not self.is_ready():
             await sleep(0.01)
         if len(self.stdout) > start_index + 1:
