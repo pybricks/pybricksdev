@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2021 The Pybricks Authors
 
+import os
 from asyncio import run, sleep
 from zipfile import ZipFile
 
@@ -35,7 +36,7 @@ class USBREPLConnection(CharacterGlue, USBConnection):
 
         # Soft reboot
         await self.write(b'\x04')
-        await sleep(0.05)
+        await sleep(0.2)
 
         # Prevent runtime from coming up
         while not self.is_ready():
@@ -71,6 +72,33 @@ class USBREPLConnection(CharacterGlue, USBConnection):
     async def exec_and_eval(self, line):
         """Executes one line of code and evaluates the output."""
         return eval(await self.exec_line(line))
+
+    async def upload_file(self, remote_path, bin_data):
+        """Uploads a file to a given destination on the hub."""
+
+        # Reset the hub to a clean state
+        await self.reset()
+
+        # Split file into chunks (max 1000)
+        packetsize = 1000
+        chunks = (bin_data[i:i + packetsize] for i in range(0, len(bin_data), packetsize))
+
+        # Create the folder on the hub
+        remote_folder, _ = os.path.split(remote_path)
+        await self.exec_line("import os; os.mkdir('{0}')".format(remote_folder))
+
+        # Initiate file transfer
+        await self.exec_line('import hub; hub.file_transfer("{0}", {1}, packetsize={2}, timeout=10000)'.format(remote_path, len(bin_data), packetsize))
+
+        # Give hub time to create file, then trigger the transfer
+        await sleep(0.2)
+        await self.write(b'\x06')
+        await sleep(0.5)
+
+        # Write all the chunks one by one
+        for i, chunk in enumerate(chunks):
+            await self.write(chunk)
+            await sleep(0.05)
 
 
 def get_combined_firmware(bin1, bin2):
@@ -308,6 +336,9 @@ class REPLDualBootInstaller(USBREPLConnection):
         # Read Pybricks dual boot build
         archive = ZipFile(firmware_archive_path)
         pybricks_blob = archive.open('firmware-dual-boot-base.bin').read()
+
+        # Upload firmware file. TODO: Actually do something with it.
+        await self.upload_file('install_pybricks/firmware.bin', pybricks_blob)
 
         # Create dual boot firmware
         combined_blob = get_combined_firmware(base_firmware_blob, pybricks_blob)
