@@ -9,16 +9,16 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 
-async def find_device(name: str, timeout: float = 5) -> BLEDevice:
-    """Quickly find BLE device address by friendly device name.
+async def find_device(device_or_address: str, timeout: float = 5) -> BLEDevice:
+    """Quickly find BLE device address by friendly device name or address.
 
     This is an alternative to bleak.discover. Instead of waiting a long time to
     scan everything, it returns as soon as it finds any device with the
     requested name.
 
     Arguments:
-        name (str):
-            Friendly device name.
+        device_or_address (str):
+            Friendly device name or address.
         timeout (float):
             When to give up searching.
 
@@ -29,14 +29,15 @@ async def find_device(name: str, timeout: float = 5) -> BLEDevice:
         asyncio.TimeoutError:
             Device was not found within the timeout.
     """
-    print("Searching for {0}".format(name))
+    print("Searching for {0}".format(device_or_address))
 
     queue = asyncio.Queue()
 
     def set_device_discovered(device: BLEDevice, _: AdvertisementData):
-        if device.name != name:
+        if device_or_address in [device.name, device.address]:
+            queue.put_nowait(device)
+        else:
             return
-        queue.put_nowait(device)
 
     async with BleakScanner(detection_callback=set_device_discovered):
         return await asyncio.wait_for(queue.get(), timeout=timeout)

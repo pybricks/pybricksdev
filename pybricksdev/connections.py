@@ -723,7 +723,7 @@ class PybricksHub:
             RuntimeError: if Pybricks Protocol version is not supported
         """
         self.logger.info(f"Connecting to {device.address}")
-        self.client = BleakClient(device)
+        self.client = BleakClient(device.address)
 
         def disconnected_handler(self, _: BleakClient):
             self.logger.info("Disconnected!")
