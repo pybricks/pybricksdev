@@ -12,18 +12,18 @@ import uhashlib
 import uos
 
 
+FLASH_START = 0x8000000
+FLASH_END = FLASH_START + 1024 * 1024
+
 FLASH_LEGO_START = 0x8008000
 FLASH_PYBRICKS_START = 0x80C0000
-FLASH_READ_OFFSET = FLASH_LEGO_START
-
-FLASH_SIZE = 0x8000000 + 1024 * 1024 - FLASH_LEGO_START
 
 FF = b'\xFF'
 
 
 def read_flash(address, length):
     """Read a given number of bytes from a given absolute address."""
-    return firmware.flash_read(address - FLASH_READ_OFFSET)[0:length]
+    return firmware.flash_read(address - FLASH_LEGO_START)[0:length]
 
 
 def read_flash_int(address):
@@ -31,17 +31,17 @@ def read_flash_int(address):
     return int.from_bytes(read_flash(address, 4), 'little')
 
 
-def get_base_firmware_reset_vector():
+def get_lego_reset_vector():
     """Gets the boot vector of the original firmware."""
 
-    # Read from base firmware location.
-    firmware_reset_vector = read_flash(FLASH_LEGO_START + 4, 4)
+    # Read from lego firmware location.
+    reset_vector = read_flash(FLASH_LEGO_START + 4, 4)
 
     # If it's not pointing at Pybricks, return as is.
-    if int.from_bytes(firmware_reset_vector, 'little') < FLASH_PYBRICKS_START:
-        return firmware_reset_vector
+    if int.from_bytes(reset_vector, 'little') < FLASH_PYBRICKS_START:
+        return reset_vector
 
-    # Otherwise read the boot vector in Pybricks.
+    # Otherwise read the reset vector in Pybricks.
     return read_flash(FLASH_PYBRICKS_START + 4, 4)
 
 
@@ -54,10 +54,10 @@ def install(pybricks_hash):
     pybricks_hash_calc = uhashlib.sha256()
     pybricks_size = 0
 
-    with open("_pybricks/firmware.bin") as fw:
+    with open("_pybricks/firmware.bin") as pybricks_bin_file:
         data = b'START'
         while len(data) > 0:
-            data = fw.read(128)
+            data = pybricks_bin_file.read(128)
             pybricks_size += len(data)
             pybricks_hash_calc.update(data)
 
@@ -70,12 +70,18 @@ def install(pybricks_hash):
 
     # Get firmware information.
     print("Getting firmware info.")
-    version_position = read_flash_int(FLASH_LEGO_START + 0x200)
-    checksum_position = read_flash_int(FLASH_LEGO_START + 0x204)
-    base_firmware_size = checksum_position + 4 - FLASH_READ_OFFSET
-    version = read_flash(version_position, 20)
+    lego_checksum_position = read_flash_int(FLASH_LEGO_START + 0x204)
+    lego_size = lego_checksum_position + 4 - FLASH_LEGO_START
 
-    # DEBUG
-    print(version)
-    print(base_firmware_size)
-    print(get_base_firmware_reset_vector())
+    lego_version_position = read_flash_int(FLASH_LEGO_START + 0x200)
+    lego_version = read_flash(lego_version_position, 20)
+    print("LEGO Firmware version:", lego_version)
+
+    # Verify firmware sizes
+    if FLASH_LEGO_START + lego_size >= FLASH_PYBRICKS_START:
+        print("LEGO firmware too big.")
+        return
+
+    if FLASH_PYBRICKS_START + pybricks_size >= FLASH_END:
+        print("Pybricks firmware too big.")
+        return
