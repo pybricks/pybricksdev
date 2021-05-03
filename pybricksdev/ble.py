@@ -103,7 +103,7 @@ class BLEConnection():
         """
 
         print("Connecting to", device)
-        self.client = BleakClient(device)
+        self.client = BleakClient(device.address)
         await self.client.connect(disconnected_callback=self.disconnected_handler)
         await self.client.start_notify(self.char_tx_UUID, self.data_handler)
         print("Connected successfully!")
