@@ -15,11 +15,14 @@ class USBREPLConnection(CharacterGlue, USBConnection):
     def __init__(self, **kwargs):
         """Initialize base class with appropriate EOL for this connection."""
         self.stdout = []
+        self.print_output = False
         super().__init__(EOL=b'\r\n', **kwargs)
 
     def line_handler(self, line):
         """Override base class to just store all incoming lines."""
         self.stdout.append(bytes(line))
+        if self.print_output:
+            print(line.decode())
 
     def is_ready(self):
         """Checks if REPL is ready for next command."""
@@ -127,8 +130,8 @@ class REPLDualBootInstaller(USBREPLConnection):
             await self.upload_file('_pybricks/install.py', install_script_file.read())
 
         # Run the installation script
-        result = await self.exec_and_eval("from _pybricks import install")
-        print(result)
+        self.print_output = True
+        await self.exec_line("from _pybricks import install")
 
 
 if __name__ == "__main__":
