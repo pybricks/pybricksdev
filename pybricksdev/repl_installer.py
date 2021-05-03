@@ -4,6 +4,7 @@
 import os
 from asyncio import run, sleep
 from zipfile import ZipFile
+from hashlib import sha256
 
 from pybricksdev.connections import CharacterGlue, USBConnection
 from pybricksdev.flash import crc32_checksum
@@ -118,6 +119,7 @@ class REPLDualBootInstaller(USBREPLConnection):
         # Read Pybricks dual boot build
         archive = ZipFile(firmware_archive_path)
         pybricks_blob = archive.open('firmware-dual-boot-base.bin').read()
+        pybricks_hash = sha256(pybricks_blob).digest()
 
         # Upload firmware file.
         await self.upload_file('_pybricks/firmware.bin', pybricks_blob)
@@ -132,7 +134,7 @@ class REPLDualBootInstaller(USBREPLConnection):
         # Run the installation script
         self.print_output = True
         await self.exec_line("from _pybricks.install import install")
-        await self.exec_line("install({0}, {1})".format(123, 456))
+        await self.exec_line("install({0})".format(repr(pybricks_hash)))
 
 
 if __name__ == "__main__":
