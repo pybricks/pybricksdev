@@ -35,16 +35,16 @@ class USBREPLConnection(CharacterGlue, USBConnection):
         # Cancel anything that is running
         for i in range(3):
             await self.write(b'\x03')
-            await sleep(0.1)
+            await sleep(0.05)
 
         # Soft reboot
         await self.write(b'\x04')
-        await sleep(0.2)
+        await sleep(0.1)
 
         # Prevent runtime from coming up
         while not self.is_ready():
             await self.write(b'\x03')
-            await sleep(0.1)
+            await sleep(0.05)
 
         self.stdout = []
 
@@ -99,9 +99,9 @@ class REPLDualBootInstaller(USBREPLConnection):
         print("Uploading data to:", remote_path)
 
         # Give hub time to create file, then trigger the transfer
-        await sleep(0.2)
+        await sleep(0.1)
         await self.write(b'\x06')
-        await sleep(0.5)
+        await sleep(0.2)
 
         # Write all the chunks one by one
         for i, chunk in enumerate(chunks):
@@ -126,8 +126,8 @@ class REPLDualBootInstaller(USBREPLConnection):
         await self.upload_file('_pybricks/__init__.py', b'# Intentionally left blank.')
 
         # Upload installation script.
-        with open('pybricksdev/resources/test_script.py', "rb") as install_script_file:
-            await self.upload_file('_pybricks/install.py', install_script_file.read())
+        with open('pybricksdev/resources/install_pybricks.py', "rb") as install_script:
+            await self.upload_file('_pybricks/install.py', install_script.read())
 
         # Run the installation script
         self.print_output = True
