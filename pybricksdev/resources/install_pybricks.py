@@ -31,7 +31,3 @@ def install(pybricks_firmware_hash):
         print("Bad firmware file. Stopping.")
         return
 
-    print("Removing installation files.")
-    uos.remove("_pybricks/__init__.py")
-    uos.remove("_pybricks/install.py")
-    uos.remove("_pybricks/firmware.bin")

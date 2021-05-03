@@ -136,6 +136,13 @@ class REPLDualBootInstaller(USBREPLConnection):
         await self.exec_line("from _pybricks.install import install")
         await self.exec_line("install({0})".format(repr(pybricks_hash)))
 
+        # Remove installation files
+        await self.exec_line("import uos")
+        await self.exec_line("uos.remove('_pybricks/__init__.py')")
+        await self.exec_line("uos.remove('_pybricks/install.py')")
+        await self.exec_line("uos.remove('_pybricks/firmware.bin')")
+
+
 
 if __name__ == "__main__":
 
