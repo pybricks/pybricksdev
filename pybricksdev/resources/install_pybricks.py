@@ -18,6 +18,9 @@ FLASH_END = FLASH_START + 1024 * 1024
 FLASH_LEGO_START = 0x8008000
 FLASH_PYBRICKS_START = 0x80C0000
 
+BLOCK_READ_SIZE = 32
+BLOCK_WRITE_SIZE = BLOCK_READ_SIZE * 4
+
 FF = b'\xFF'
 
 
@@ -31,6 +34,15 @@ def read_flash_int(address):
     return int.from_bytes(read_flash(address, 4), 'little')
 
 
+def get_pybricks_reset_vector():
+    """Gets the boot vector of the pybricks firmware."""
+
+    # Extract reset vector from dual boot firmware.
+    with open("_pybricks/firmware.bin") as pybricks_bin_file:
+        pybricks_bin_file.seek(4)
+        return pybricks_bin_file.read(4)
+
+
 def get_lego_reset_vector():
     """Gets the boot vector of the original firmware."""
 
@@ -41,8 +53,35 @@ def get_lego_reset_vector():
     if int.from_bytes(reset_vector, 'little') < FLASH_PYBRICKS_START:
         return reset_vector
 
-    # Otherwise read the reset vector in Pybricks.
+    # Otherwise read the reset vector in the dual-booted Pybricks that is
+    # already installed, which points to the LEGO firmware.
     return read_flash(FLASH_PYBRICKS_START + 4, 4)
+
+
+def get_lego_firmware(size, reset_vector):
+    """Gets the LEGO firmware with an updated reset vector."""
+
+    bytes_read = 0
+
+    # Yield new blocks until done.
+    while bytes_read < size:
+
+        # Read several chunks of 32 bytes into one block.
+        block = b''
+        for i in range(BLOCK_WRITE_SIZE // BLOCK_READ_SIZE):
+            block += firmware.flash_read(bytes_read)
+            bytes_read += BLOCK_READ_SIZE
+
+        # The first block is updated with the desired boot vector.
+        if bytes_read == BLOCK_WRITE_SIZE:
+            block = block[0:4] + reset_vector + block[8:]
+
+        # If we read past the end, cut off the extraneous bytes.
+        if bytes_read > size:
+            block = block[0: size % BLOCK_WRITE_SIZE]
+
+        # Yield the resulting block.
+        yield block
 
 
 def install(pybricks_hash):
@@ -85,3 +124,6 @@ def install(pybricks_hash):
     if FLASH_PYBRICKS_START + pybricks_size >= FLASH_END:
         print("Pybricks firmware too big.")
         return
+
+    for block in get_lego_firmware(lego_size, get_pybricks_reset_vector()):
+        pass
