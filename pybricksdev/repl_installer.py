@@ -119,7 +119,7 @@ class REPLDualBootInstaller(USBREPLConnection):
         # Read Pybricks dual boot build
         archive = ZipFile(firmware_archive_path)
         pybricks_blob = archive.open('firmware-dual-boot-base.bin').read()
-        pybricks_hash = sha256(pybricks_blob).digest()
+        pybricks_hash = sha256(pybricks_blob).hexdigest().encode('utf-8')
 
         # Upload firmware file.
         await self.upload_file('_pybricks/firmware.bin', pybricks_blob)
@@ -129,12 +129,16 @@ class REPLDualBootInstaller(USBREPLConnection):
 
         # Upload installation script.
         with open('pybricksdev/resources/install_pybricks.py', "rb") as install_script:
-            await self.upload_file('_pybricks/install.py', install_script.read())
+            install_blob = install_script.read()
+            install_hash = sha256(install_blob).hexdigest().encode('utf-8')
+            await self.upload_file('_pybricks/install.py', install_blob)
+
+        # Upload file with hashes to verify uploaded file integrity.
+        await self.upload_file('_pybricks/hash.txt', pybricks_hash + b"\n" + install_hash + b"\n")
 
         # Run the installation script
         self.print_output = True
-        await self.exec_line("from _pybricks.install import install")
-        await self.exec_line("install({0})".format(repr(pybricks_hash)))
+        await self.exec_line("from _pybricks.install import install; install()")
 
         # Remove installation files
         await self.exec_line("import uos")

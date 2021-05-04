@@ -112,27 +112,42 @@ def get_padding(padding_length):
     yield FF * (padding_length % BLOCK_WRITE_SIZE)
 
 
-def install(pybricks_hash):
-    """Main installation routine."""
+def get_file_size_and_hash(path):
+    """Gets file size and sha256 hash."""
 
-    # Start firmware binary verification.
-    print("Starting installation script.")
-    print("Checking uploaded firmware file.")
-    pybricks_hash_calc = uhashlib.sha256()
-    pybricks_size = 0
+    hash_calc = uhashlib.sha256()
+    size = 0
 
-    with open("_pybricks/firmware.bin", "rb") as pybricks_bin_file:
+    with open(path, "rb") as bin_file:
         data = b'START'
         while len(data) > 0:
-            data = pybricks_bin_file.read(128)
-            pybricks_size += len(data)
-            pybricks_hash_calc.update(data)
+            data = bin_file.read(128)
+            size += len(data)
+            hash_calc.update(data)
 
-    # Compare hash against given value.
-    if pybricks_hash_calc.digest() == pybricks_hash:
-        print("Firmware checksum is correct!")
+    return (size, ubinascii.hexlify(hash_calc.digest()).decode())
+
+
+def install():
+    """Main installation routine."""
+
+    print("Starting installation script.")
+
+    # Get hash of uploaded files.
+    print("Checking installation files.")
+    pybricks_size, pybricks_hash_calc = get_file_size_and_hash("_pybricks/firmware.bin")
+    script_size, script_hash_calc = get_file_size_and_hash("_pybricks/install.py")
+
+    # Read what the hashes should be.
+    with open("_pybricks/hash.txt") as hash_file:
+        pybricks_hash_read = hash_file.readline().strip()
+        script_hash_read = hash_file.readline().strip()
+
+    # Check if hashes match.
+    if pybricks_hash_read == pybricks_hash_calc and script_hash_read == script_hash_calc:
+        print("Files looking good!")
     else:
-        print("Bad firmware file. Stopping.")
+        print("The installation files are corrupt.")
         return
 
     # Get firmware information.
