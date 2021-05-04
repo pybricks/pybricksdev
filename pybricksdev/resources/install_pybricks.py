@@ -38,7 +38,7 @@ def get_pybricks_reset_vector():
     """Gets the boot vector of the pybricks firmware."""
 
     # Extract reset vector from dual boot firmware.
-    with open("_pybricks/firmware.bin") as pybricks_bin_file:
+    with open("_pybricks/firmware.bin", "rb") as pybricks_bin_file:
         pybricks_bin_file.seek(4)
         return pybricks_bin_file.read(4)
 
@@ -84,6 +84,34 @@ def get_lego_firmware(size, reset_vector):
         yield block
 
 
+def get_pybricks_firmware(reset_vector):
+    """Gets the Pybricks firmware with an updated reset vector."""
+
+    # Open the file and get it chunk by chunk
+    with open("_pybricks/firmware.bin", "rb") as pybricks_bin_file:
+
+        # Read first chunk and override boot vector
+        block = bytearray(pybricks_bin_file.read(BLOCK_WRITE_SIZE))
+        block[4:8] = reset_vector
+        yield bytes(block)
+
+        # Yield remaining blocks
+        while len(block) > 0:
+            block = pybricks_bin_file.read(BLOCK_WRITE_SIZE)
+            yield block
+
+
+def get_padding(padding_length):
+    """Gets empty padding blocks with extra information put in at the end."""
+
+    # Pad whole blocks as far as we can.
+    for _ in range(padding_length // BLOCK_WRITE_SIZE):
+        yield FF * BLOCK_WRITE_SIZE
+
+    # Pad remaining FF as a partial block.
+    yield FF * (padding_length % BLOCK_WRITE_SIZE)
+
+
 def install(pybricks_hash):
     """Main installation routine."""
 
@@ -93,7 +121,7 @@ def install(pybricks_hash):
     pybricks_hash_calc = uhashlib.sha256()
     pybricks_size = 0
 
-    with open("_pybricks/firmware.bin") as pybricks_bin_file:
+    with open("_pybricks/firmware.bin", "rb") as pybricks_bin_file:
         data = b'START'
         while len(data) > 0:
             data = pybricks_bin_file.read(128)
@@ -121,9 +149,36 @@ def install(pybricks_hash):
         print("LEGO firmware too big.")
         return
 
-    if FLASH_PYBRICKS_START + pybricks_size >= FLASH_END:
+    # Total size of combined firmwares, including checksum
+    total_size = FLASH_PYBRICKS_START - FLASH_LEGO_START + pybricks_size + 4
+    if total_size >= FLASH_END:
         print("Pybricks firmware too big.")
         return
 
+    # Initialize flash
+    print("Initializing flash for {0} bytes.".format(total_size))
+    if not firmware.appl_image_initialise(total_size):
+        print("Failed to initialize external flash.")
+        return
+
+    # Copy original firmware to external flash
+    print("Copying LEGO firmware.")
     for block in get_lego_firmware(lego_size, get_pybricks_reset_vector()):
-        pass
+        firmware.appl_image_store(block)
+
+    # Add padding to external flash
+    print("Copying padding.")
+    for block in get_padding(FLASH_PYBRICKS_START - FLASH_LEGO_START - lego_size):
+        firmware.appl_image_store(block)
+
+    # Copy pybricks firmware to external flash
+    print("Copying Pybricks firmware.")
+    for block in get_pybricks_firmware(get_lego_reset_vector()):
+        firmware.appl_image_store(block)
+
+    # Get the combined checksum and store it.
+    overall_checksum = firmware.info()['new_appl_image_calc_checksum']
+    firmware.appl_image_store(overall_checksum.to_bytes(4, 'little'))
+
+    # Check result
+    print(firmware.info())
