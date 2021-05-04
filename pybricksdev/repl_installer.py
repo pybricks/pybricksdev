@@ -5,9 +5,12 @@ import os
 from asyncio import run, sleep
 from zipfile import ZipFile
 from hashlib import sha256
+from importlib.resources import path
 
-from pybricksdev.connections import CharacterGlue, USBConnection
-from pybricksdev.flash import crc32_checksum
+from . import resources
+
+from .connections import CharacterGlue, USBConnection
+from .flash import crc32_checksum
 
 
 class USBREPLConnection(CharacterGlue, USBConnection):
@@ -128,10 +131,11 @@ class REPLDualBootInstaller(USBREPLConnection):
         await self.upload_file('_pybricks/__init__.py', b'# Intentionally left blank.')
 
         # Upload installation script.
-        with open('pybricksdev/resources/install_pybricks.py', "rb") as install_script:
-            install_blob = install_script.read()
-            install_hash = sha256(install_blob).hexdigest().encode('utf-8')
-            await self.upload_file('_pybricks/install.py', install_blob)
+        with path(resources, resources.INSTALL_PYBRICKS) as install_path:
+            with open(install_path, "rb") as install_script:
+                install_blob = install_script.read()
+                install_hash = sha256(install_blob).hexdigest().encode('utf-8')
+                await self.upload_file('_pybricks/install.py', install_blob)
 
         # Upload file with hashes to verify uploaded file integrity.
         await self.upload_file('_pybricks/hash.txt', pybricks_hash + b"\n" + install_hash + b"\n")
