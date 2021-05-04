@@ -271,6 +271,7 @@ class PybricksPUPProtocol(CharacterGlue):
         """
 
         # Reset output buffer
+        self.log_file = None
         self.output = []
         self.print_output = print_output
 
