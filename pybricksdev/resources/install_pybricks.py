@@ -10,6 +10,7 @@ import umachine
 import utime
 import uhashlib
 import uos
+import micropython
 
 
 FLASH_START = 0x8000000
@@ -196,4 +197,12 @@ def install():
     firmware.appl_image_store(overall_checksum.to_bytes(4, 'little'))
 
     # Check result
-    print(firmware.info())
+    if firmware.info()["valid"]:
+        print("Success! The firmware will be installed when it reboots.")
+    else:
+        print("Firmware image not accepted. It will not be installed.")
+
+    # Reboot soon, giving some time to softly disconnect.
+    print("Rebooting soon! Please wait.")
+    timer = umachine.Timer()
+    timer.init(period=1500, mode=umachine.Timer.ONE_SHOT, callback=lambda x: umachine.reset())
