@@ -775,6 +775,7 @@ class PybricksHub:
     async def run(self, py_path, wait=True, print_output=True):
 
         # Reset output buffer
+        self.log_file = None
         self.output = []
         self.print_output = print_output
 
