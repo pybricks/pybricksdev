@@ -219,7 +219,7 @@ class DualBoot(Tool):
     async def run(self, args: argparse.Namespace):
         from ..repl_installer import REPLDualBootInstaller
         installer = REPLDualBootInstaller()
-        await installer.install(args.firmware.name)
+        installer.install(args.firmware.name)
 
 
 class DFUBackup(Tool):
