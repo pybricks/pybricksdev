@@ -12,6 +12,3 @@ UDEV_RULES = "99-pybricksdev.rules"
 
 DFU_UTIL_EXE = "dfu-util.exe"
 """Windows version of dfu-util executable."""
-
-INSTALL_PYBRICKS = "install_pybricks.py"
-"""Dual boot installation script to run on official SPIKE Prime firmware."""

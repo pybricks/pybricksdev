@@ -202,26 +202,6 @@ class Flash(Tool):
             await updater.flash(firmware, metadata, args.delay/1000)
 
 
-class DualBoot(Tool):
-    def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
-            'dual-boot',
-            help='Install Pybricks on the SPIKE Prime Hub and Inventor Hub, alongside the stock firmware.'
-        )
-        parser.tool = self
-        parser.add_argument(
-            'firmware',
-            metavar='<firmware-file>',
-            type=argparse.FileType(mode='rb'),
-            help='the firmware .zip file',
-        ).completer = FilesCompleter(allowednames=('.zip',))
-
-    async def run(self, args: argparse.Namespace):
-        from ..repl_installer import REPLDualBootInstaller
-        installer = REPLDualBootInstaller()
-        installer.install(args.firmware.name)
-
-
 class DFUBackup(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
@@ -315,7 +295,7 @@ def main():
         help='the tool to use',
     )
 
-    for tool in Compile(), Run(), Flash(), DualBoot(), DFU(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
