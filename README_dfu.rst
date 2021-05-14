@@ -23,7 +23,7 @@ a good idea to back up your current firmware before erasing it.
 
 Make sure the hub in in DFU mode, then run this command::
 
-    poetry run pybricksdev dfu backup /path/to/original/firmware.bin
+    pybricksdev dfu backup /path/to/original/firmware.bin
 
 The path can be any file location and name you like as long as it is something
 you will remember.
@@ -32,7 +32,7 @@ you will remember.
 
  Make sure the hub in in DFU mode, then run this command::
 
-    poetry run pybricksdev flash ../pybricks-micropython/bricks/primehub/build/firmware.zip
+    pybricksdev flash ../pybricks-micropython/bricks/primehub/build/firmware.zip
 
 Replace the example path with the path to the firmware archive.
 
@@ -40,7 +40,7 @@ Replace the example path with the path to the firmware archive.
 
 Make sure the hub in in DFU mode, then run this command::
 
-    poetry run pybricksdev dfu restore /path/to/original/firmware.bin
+    pybricksdev dfu restore /path/to/original/firmware.bin
 
 The path should be the path the file backup file you created above.
 
