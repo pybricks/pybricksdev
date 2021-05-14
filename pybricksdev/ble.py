@@ -8,6 +8,8 @@ from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+logger = logging.getLogger(__name__)
+
 
 async def find_device(name: str, timeout: float = 5) -> BLEDevice:
     """Quickly find BLE device address by friendly device name.
@@ -42,10 +44,10 @@ async def find_device(name: str, timeout: float = 5) -> BLEDevice:
         return await asyncio.wait_for(queue.get(), timeout=timeout)
 
 
-class BLEConnection():
+class BLEConnection:
     """Configure BLE, connect, send data, and handle receive events."""
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, max_data_size, **kwargs):
+    def __init__(self, char_rx_UUID, char_tx_UUID, max_data_size):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -63,18 +65,6 @@ class BLEConnection():
         self.max_data_size = max_data_size
         self.connected = False
 
-        # Get a logger and set at given level
-        self.logger = logging.getLogger('BLERequestsConnection')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
-        super().__init__(**kwargs)
-
     def data_handler(self, sender, data):
         """Handles new incoming data.
 
@@ -86,11 +76,11 @@ class BLEConnection():
             data (bytes):
                 Bytes to process.
         """
-        self.logger.debug("DATA {0}".format(data))
+        logger.debug("DATA {0}".format(data))
 
     def disconnected_handler(self, client: BleakClient):
         """Handles disconnected event."""
-        self.logger.debug("Disconnected.")
+        logger.debug("Disconnected.")
         self.connected = False
 
     async def connect(self, device: BLEDevice):
@@ -112,7 +102,7 @@ class BLEConnection():
         """Disconnects the client from the server."""
         await self.client.stop_notify(self.char_tx_UUID)
         if self.connected:
-            self.logger.debug("Disconnecting...")
+            logger.debug("Disconnecting...")
             await self.client.disconnect()
 
     async def write(self, data, with_response=False):
@@ -127,7 +117,7 @@ class BLEConnection():
         # Send the chunks one by one
         for i in range(0, len(data), self.max_data_size):
             chunk = data[i: i + self.max_data_size]
-            self.logger.debug(
+            logger.debug(
                 "TX CHUNK: {0}, {1} response".format(
                     chunk, "with" if with_response else "without"
                 )
@@ -163,7 +153,7 @@ class BLERequestsConnection(BLEConnection):
             data (bytes):
                 Bytes to process.
         """
-        self.logger.debug("DATA {0}".format(data))
+        logger.debug("DATA {0}".format(data))
         self.reply = data
         self.reply_ready.set()
 

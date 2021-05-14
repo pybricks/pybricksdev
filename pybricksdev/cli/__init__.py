@@ -13,8 +13,7 @@ from abc import ABC, abstractmethod
 from os import path
 
 import argcomplete
-
-from argcomplete.completers import ChoicesCompleter, FilesCompleter
+from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
 from ..hubs import HubTypeId
@@ -130,7 +129,6 @@ class Run(Tool):
         elif args.conntype == 'ble':
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
-            hub.logger.setLevel(logging.WARNING)
             if validators.mac_address(args.device):
                 device_or_address = args.device
             else:
@@ -138,12 +136,10 @@ class Run(Tool):
         elif args.conntype == 'usb' and args.device == 'lego':
             # It's LEGO stock firmware Hub with USB.
             hub = USBRPCConnection()
-            hub.logger.setLevel(logging.INFO)
             device_or_address = 'LEGO Technic Large Hub in FS Mode'
         elif args.conntype == 'usb':
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
-            hub.logger.setLevel(logging.INFO)
             device_or_address = args.device
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
@@ -187,7 +183,6 @@ class Flash(Tool):
             device = await find_device('LEGO Bootloader', 15)
             print('Found:', device)
             updater = BootloaderConnection()
-            updater.logger.setLevel(logging.INFO)
             await updater.connect(device)
             print('Erasing flash and starting update')
             await updater.flash(firmware, metadata)
@@ -270,6 +265,8 @@ class Udev(Tool):
 
 def main():
     """Runs ``pybricksdev`` command line interface."""
+
+    logging.basicConfig(format='%(asctime)s: %(levelname)7s: %(message)s')
 
     # Provide main description and help.
     parser = argparse.ArgumentParser(

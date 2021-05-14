@@ -6,29 +6,19 @@ import asyncio
 import aioserial
 from serial.tools import list_ports
 
+logger = logging.getLogger(__name__)
+
 
 async def find_device():
     pass
 
 
-class USBConnection():
+class USBConnection:
     """Configure USB, connect, send data, and handle receive events."""
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         """Initializes and configures connection settings."""
         self.connected = False
-
-        # Get a logger and set at given level
-        self.logger = logging.getLogger('BLERequestsConnection')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
-        super().__init__(**kwargs)
 
     def data_handler(self, sender, data):
         """Handles new incoming data.
@@ -41,15 +31,15 @@ class USBConnection():
             data (bytes):
                 Bytes to process.
         """
-        self.logger.debug("DATA {0}".format(data))
+        logger.debug("DATA {0}".format(data))
 
     # def disconnected_handler(self, client, *args):
     #     """Handles disconnected event. Intended to be overridden."""
-    #     self.logger.info("Disconnected by server.")
+    #     logger.info("Disconnected by server.")
     #     self.connected = False
 
     async def _read_loop(self):
-        self.logger.debug("Started readloop")
+        logger.debug("Started readloop")
         while self.connected:
             data = await self.ser.read_async(self.ser.in_waiting)
             if data:
@@ -84,11 +74,11 @@ class USBConnection():
     async def disconnect(self):
         """Disconnects the client from the server."""
         if self.connected:
-            self.logger.debug("Disconnecting...")
+            logger.debug("Disconnecting...")
             self.connected = False
             self.ser.cancel_read()
             await self.task
-            self.logger.info("Disconnected by client.")
+            logger.info("Disconnected by client.")
 
     async def write(self, data):
         """Write bytes to the server.
@@ -97,5 +87,5 @@ class USBConnection():
             data (bytearray):
                 Data to be sent to the server.
         """
-        self.logger.debug("TX data: {0}".format(data))
+        logger.debug("TX data: {0}".format(data))
         await self.ser.write_async(data)

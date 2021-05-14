@@ -17,6 +17,8 @@ from .ble import BLEConnection
 from .compile import compile_file
 from .usbconnection import USBConnection
 
+logger = logging.getLogger(__name__)
+
 
 class CharacterGlue():
     """Glues incoming bytes into a buffer and splits it into lines."""
@@ -47,7 +49,7 @@ class CharacterGlue():
             int or None: Processed character.
 
         """
-        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
+        logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
         return char
 
     def line_handler(self, line):
@@ -70,7 +72,7 @@ class CharacterGlue():
             data (bytearray):
                 Incoming data.
         """
-        self.logger.debug("RX DATA: {0}".format(data))
+        logger.debug("RX DATA: {0}".format(data))
 
         # For each new character, call its handler and add to buffer if any
         for byte in data:
@@ -140,7 +142,7 @@ class PybricksPUPProtocol(CharacterGlue):
             # are ready to process it.
             self.checksum = char
             self.checksum_ready.set()
-            self.logger.debug("RX CHECKSUM: {0}".format(char))
+            logger.debug("RX CHECKSUM: {0}".format(char))
             return None
         else:
             # Otherwise, return it so it gets added to standard output buffer.
@@ -159,7 +161,7 @@ class PybricksPUPProtocol(CharacterGlue):
             if self.log_file is not None:
                 raise OSError("Log file is already open!")
             name = line[6:].decode()
-            self.logger.info("Saving log to {0}.".format(name))
+            logger.info("Saving log to {0}.".format(name))
             self.log_file = open(name, 'w')
             return
 
@@ -167,7 +169,7 @@ class PybricksPUPProtocol(CharacterGlue):
         if b'PB_EOF' in line:
             if self.log_file is None:
                 raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
+            logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
             return
@@ -191,7 +193,7 @@ class PybricksPUPProtocol(CharacterGlue):
                 New state
         """
         if new_state != self.state:
-            self.logger.debug("New State: {0}".format(new_state))
+            logger.debug("New State: {0}".format(new_state))
             self.state = new_state
 
     def prepare_checksum(self):
@@ -248,7 +250,7 @@ class PybricksPUPProtocol(CharacterGlue):
 
         # Await the reply
         reply = await self.wait_for_checksum()
-        self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
+        logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
         # Check the response
         if checksum != reply:
@@ -288,7 +290,7 @@ class PybricksPUPProtocol(CharacterGlue):
 
         # Send the data chunk by chunk
         for i, chunk in enumerate(chunks):
-            self.logger.info("Sending: {0}%".format(
+            logger.info("Sending: {0}%".format(
                 round((i+1)/len(chunks)*100))
             )
             await self.send_message(chunk)
@@ -333,14 +335,14 @@ class USBRPCConnection(CharacterGlue, USBConnection):
             if self.log_file is not None:
                 raise OSError("Log file is already open!")
             name = line[6:]
-            self.logger.info("Saving log to {0}.".format(name))
+            logger.info("Saving log to {0}.".format(name))
             self.log_file = open(name, 'w')
             return
 
         if 'PB_EOF' in line:
             if self.log_file is None:
                 raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
+            logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
             return
@@ -583,15 +585,6 @@ class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
-        self.logger = logging.getLogger('Pybricks Hub')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
@@ -635,7 +628,7 @@ class PybricksHub:
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
 
-            self.logger.info("Saving log to {0}.".format(full_path))
+            logger.info("Saving log to {0}.".format(full_path))
             self.log_file = open(full_path, 'w')
             return
 
@@ -643,7 +636,7 @@ class PybricksHub:
         if b'PB_EOF' in line:
             if self.log_file is None:
                 raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
+            logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
             return
@@ -669,12 +662,12 @@ class PybricksHub:
 
             self.expected_checksum = -1
             self.checksum_ready.set()
-            self.logger.debug(f"Correct checksum: {checksum}")
+            logger.debug(f"Correct checksum: {checksum}")
             return
 
         # Store incoming data
         self.stream_buf += data
-        self.logger.debug("NUS DATA: {0}".format(data))
+        logger.debug("NUS DATA: {0}".format(data))
 
         # Break up data into lines and take those out of the buffer
         lines = []
@@ -707,7 +700,7 @@ class PybricksHub:
             # algorithm
             if not self.loading:
                 if self.program_running != program_running_now:
-                    self.logger.info(f"Program running: {program_running_now}")
+                    logger.info(f"Program running: {program_running_now}")
                     self.program_running = program_running_now
                 if not program_running_now:
                     self.user_program_stopped.set()
@@ -723,16 +716,16 @@ class PybricksHub:
                 Information Service)
             RuntimeError: if Pybricks Protocol version is not supported
         """
-        self.logger.info(f"Connecting to {device.address}")
+        logger.info(f"Connecting to {device.address}")
         self.client = BleakClient(device)
 
         def disconnected_handler(self, _: BleakClient):
-            self.logger.info("Disconnected!")
+            logger.info("Disconnected!")
             self.connected = False
 
         await self.client.connect(disconnected_callback=disconnected_handler)
         try:
-            self.logger.info("Connected successfully!")
+            logger.info("Connected successfully!")
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
             if (
@@ -749,10 +742,10 @@ class PybricksHub:
 
     async def disconnect(self):
         if self.connected:
-            self.logger.info("Disconnecting...")
+            logger.info("Disconnecting...")
             await self.client.disconnect()
         else:
-            self.logger.debug("already disconnected")
+            logger.debug("already disconnected")
 
     def get_checksum(self, block):
         checksum = 0

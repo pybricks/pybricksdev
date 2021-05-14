@@ -5,6 +5,7 @@ import asyncio
 import io
 from collections import namedtuple
 import json
+import logging
 import os
 import struct
 import sys
@@ -16,6 +17,8 @@ import zipfile
 from .ble import BLERequestsConnection
 from .compile import save_script, compile_file
 from .hubs import HubTypeId
+
+logger = logging.getLogger(__name__)
 
 
 def sum_complement(fw, max_size):
@@ -276,17 +279,17 @@ class BootloaderConnection(BLERequestsConnection):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
-        self.logger.debug("Clear and prepare reply")
+        logger.debug("Clear and prepare reply")
         self.prepare_reply()
 
         # Write message
-        self.logger.debug("Make and write request")
+        logger.debug("Make and write request")
         data = request.make_request(payload)
         await self.write(data, request.write_with_response)
 
         # If we expect a reply, await for it
         if request.reply_len > 0:
-            self.logger.debug("Awaiting reply")
+            logger.debug("Awaiting reply")
             reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 
@@ -297,9 +300,9 @@ class BootloaderConnection(BLERequestsConnection):
         firmware_size = len(firmware)
 
         # Request hub information
-        self.logger.debug("Getting device info.")
+        logger.debug("Getting device info.")
         info = await self.bootloader_request(self.GET_INFO)
-        self.logger.debug(info)
+        logger.debug(info)
 
         # Hub specific settings
         hub_name, max_data_size = HUB_INFO[info.type_id]
@@ -314,7 +317,7 @@ class BootloaderConnection(BLERequestsConnection):
             )
 
         # Erase existing firmware
-        self.logger.debug("Erasing flash.")
+        logger.debug("Erasing flash.")
         try:
             response = await self.bootloader_request(
                 self.ERASE_FLASH_CITY_HUB
@@ -322,18 +325,18 @@ class BootloaderConnection(BLERequestsConnection):
                 else self.ERASE_FLASH,
                 timeout=5
             )
-            self.logger.debug(response)
+            logger.debug(response)
         except asyncio.TimeoutError:
-            self.logger.info("did not receive erase reply, continuing anyway")
+            logger.info("did not receive erase reply, continuing anyway")
 
         # Get the bootloader ready to accept the firmware
-        self.logger.debug('Request begin update.')
+        logger.debug('Request begin update.')
         response = await self.bootloader_request(
             request=self.INIT_LOADER,
             payload=struct.pack('<I', firmware_size)
         )
-        self.logger.debug(response)
-        self.logger.debug('Begin update.')
+        logger.debug(response)
+        logger.debug('Begin update.')
 
         # Maintain progress using tqdm
         with tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
@@ -358,7 +361,7 @@ class BootloaderConnection(BLERequestsConnection):
                     result = await self.bootloader_request(
                         self.GET_CHECKSUM, timeout=0.5
                     )
-                    self.logger.debug(result)
+                    logger.debug(result)
 
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
@@ -371,11 +374,11 @@ class BootloaderConnection(BLERequestsConnection):
                 # Pack the data in the expected format
                 data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
                 response = await self.bootloader_request(request, data)
-                self.logger.debug(response)
+                logger.debug(response)
                 pbar.update(len(payload))
                 address += len(payload)
 
         # Reboot the hub
-        self.logger.debug('Request reboot.')
+        logger.debug('Request reboot.')
         response = await self.bootloader_request(self.START_APP)
-        self.logger.debug(response)
+        logger.debug(response)
