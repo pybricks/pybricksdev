@@ -307,7 +307,7 @@ class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
         super().__init__(
             char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
             char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-            mtu=20
+            max_data_size=20
         )
 
 

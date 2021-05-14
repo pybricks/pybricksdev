@@ -45,7 +45,7 @@ async def find_device(name: str, timeout: float = 5) -> BLEDevice:
 class BLEConnection():
     """Configure BLE, connect, send data, and handle receive events."""
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, **kwargs):
+    def __init__(self, char_rx_UUID, char_tx_UUID, max_data_size, **kwargs):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -53,14 +53,14 @@ class BLEConnection():
                 UUID for RX.
             char_rx_UUID (str):
                 UUID for TX.
-            mtu (int):
+            max_data_size (int):
                 Maximum number of bytes per write operation.
 
         """
         # Save given settings
         self.char_rx_UUID = char_rx_UUID
         self.char_tx_UUID = char_tx_UUID
-        self.mtu = mtu
+        self.max_data_size = max_data_size
         self.connected = False
 
         # Get a logger and set at given level
@@ -116,7 +116,7 @@ class BLEConnection():
             await self.client.disconnect()
 
     async def write(self, data, with_response=False):
-        """Write bytes to the server, split to chunks of maximum mtu size.
+        """Write bytes to the server, split to chunks of maximum data size.
 
         Arguments:
             data (bytearray):
@@ -124,11 +124,9 @@ class BLEConnection():
             with_response (bool):
                 Write with or without response.
         """
-        # Chop data into chunks of maximum tranmission size
-        chunks = [data[i: i + self.mtu] for i in range(0, len(data), self.mtu)]
-
         # Send the chunks one by one
-        for chunk in chunks:
+        for i in range(0, len(data), self.max_data_size):
+            chunk = data[i: i + self.max_data_size]
             self.logger.debug(
                 "TX CHUNK: {0}, {1} response".format(
                     chunk, "with" if with_response else "without"

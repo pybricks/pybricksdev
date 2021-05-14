@@ -91,7 +91,7 @@ class USBConnection():
             self.logger.info("Disconnected by client.")
 
     async def write(self, data):
-        """Write bytes to the server, split to chunks of maximum mtu size.
+        """Write bytes to the server.
 
         Arguments:
             data (bytearray):
