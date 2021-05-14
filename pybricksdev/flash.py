@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2020 The Pybricks Authors
+# Copyright (c) 2019-2021 The Pybricks Authors
 
+import asyncio
 import io
 from collections import namedtuple
 import json
@@ -222,18 +223,35 @@ class BootloaderConnection(BLERequestsConnection):
     """Connect to Powered Up Hub Bootloader and update firmware."""
 
     # Static BootloaderRequest instances for particular messages
+
+    # We could probably do write with response for this command on all hubs, but
+    # the response is not received until after flashing is finished, which could
+    # cause a timeout, especially for hubs that take longer to erase.
     ERASE_FLASH = BootloaderRequest(
+        0x11, 'Erase', ['result'], '<B', write_with_response=False
+    )
+
+    # City hub bootloader always sends write response for most commands even
+    # when write without response is used which confuses Bluetooth stacks, so
+    # we always have to do write with response.
+    ERASE_FLASH_CITY_HUB = BootloaderRequest(
         0x11, 'Erase', ['result'], '<B'
     )
-    PROGRAM_FLASH_BARE = BootloaderRequest(
-        0x22, 'Flash', [], '', False, False
-    )
+
+    # Only the final flash message receives a reply.
     PROGRAM_FLASH = BootloaderRequest(
-        0x22, 'Flash', ['checksum', 'count'], '<BI', True, False
+        0x22, 'Flash', [], '', request_reply=False, write_with_response=False
     )
+    PROGRAM_FLASH_FINAL = BootloaderRequest(
+        0x22, 'Flash', ['checksum', 'count'], '<BI',  write_with_response=False
+    )
+
+    # This reboots the hub, so Bluetooth is disconnected and we don't receive
+    # a reply.
     START_APP = BootloaderRequest(
-        0x33, 'Start', [], '', False, False
+        0x33, 'Start', [], '', request_reply=False, write_with_response=False
     )
+
     INIT_LOADER = BootloaderRequest(
         0x44, 'Init', ['result'], '<B'
     )
@@ -247,7 +265,7 @@ class BootloaderConnection(BLERequestsConnection):
         0x77, 'State', ['level'], '<B'
     )
     DISCONNECT = BootloaderRequest(
-        0x88, 'Disconnect', [], '', False, False
+        0x88, 'Disconnect', [], '', request_reply=False, write_with_response=False
     )
 
     def __init__(self):
@@ -297,8 +315,16 @@ class BootloaderConnection(BLERequestsConnection):
 
         # Erase existing firmware
         self.logger.debug("Erasing flash.")
-        response = await self.bootloader_request(self.ERASE_FLASH)
-        self.logger.debug(response)
+        try:
+            response = await self.bootloader_request(
+                self.ERASE_FLASH_CITY_HUB
+                if info.type_id == HubTypeId.CITY_HUB
+                else self.ERASE_FLASH,
+                timeout=5
+            )
+            self.logger.debug(response)
+        except asyncio.TimeoutError:
+            self.logger.info("did not receive erase reply, continuing anyway")
 
         # Get the bootloader ready to accept the firmware
         self.logger.debug('Request begin update.')
@@ -337,10 +363,10 @@ class BootloaderConnection(BLERequestsConnection):
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
                     # If so, request flash with confirmation request.
-                    request = self.PROGRAM_FLASH
+                    request = self.PROGRAM_FLASH_FINAL
                 else:
                     # Otherwise, do not wait for confirmation.
-                    request = self.PROGRAM_FLASH_BARE
+                    request = self.PROGRAM_FLASH
 
                 # Pack the data in the expected format
                 data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
