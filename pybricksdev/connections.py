@@ -159,7 +159,7 @@ class PybricksPUPProtocol(CharacterGlue):
         # The line tells us to open a log file, so do it.
         if b'PB_OF' in line:
             if self.log_file is not None:
-                raise OSError("Log file is already open!")
+                raise RuntimeError("Log file is already open!")
             name = line[6:].decode()
             logger.info("Saving log to {0}.".format(name))
             self.log_file = open(name, 'w')
@@ -168,7 +168,7 @@ class PybricksPUPProtocol(CharacterGlue):
         # The line tells us to close a log file, so do it.
         if b'PB_EOF' in line:
             if self.log_file is None:
-                raise OSError("No log file is currently open!")
+                raise RuntimeError("No log file is currently open!")
             logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
@@ -333,7 +333,7 @@ class USBRPCConnection(CharacterGlue, USBConnection):
 
         if 'PB_OF' in line:
             if self.log_file is not None:
-                raise OSError("Log file is already open!")
+                raise RuntimeError("Log file is already open!")
             name = line[6:]
             logger.info("Saving log to {0}.".format(name))
             self.log_file = open(name, 'w')
@@ -341,7 +341,7 @@ class USBRPCConnection(CharacterGlue, USBConnection):
 
         if 'PB_EOF' in line:
             if self.log_file is None:
-                raise OSError("No log file is currently open!")
+                raise RuntimeError("No log file is currently open!")
             logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
@@ -619,7 +619,7 @@ class PybricksHub:
         # The line tells us to open a log file, so do it.
         if b'PB_OF' in line:
             if self.log_file is not None:
-                raise OSError("Log file is already open!")
+                raise RuntimeError("Log file is already open!")
 
             # Get path relative to running script, so log will go
             # in the same folder unless specified otherwise.
@@ -635,7 +635,7 @@ class PybricksHub:
         # The line tells us to close a log file, so do it.
         if b'PB_EOF' in line:
             if self.log_file is None:
-                raise OSError("No log file is currently open!")
+                raise RuntimeError("No log file is currently open!")
             logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None

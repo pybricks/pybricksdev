@@ -18,7 +18,7 @@ def make_build_dir():
 
     # Raise error if there happens to be a file by this name
     if os.path.isfile(BUILD_DIR):
-        raise OSError("A file named build already exists.")
+        raise FileExistsError("A file named build already exists.")
 
 
 async def run_mpy_cross(args):
@@ -32,7 +32,7 @@ async def run_mpy_cross(args):
         str: stdout.
 
     Raises:
-        OSError with stderr if mpy-cross fails.
+        RuntimeError with stderr if mpy-cross fails.
 
     """
 
@@ -45,7 +45,7 @@ async def run_mpy_cross(args):
     # Check the output for compile errors such as syntax errors
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
-        raise ValueError(stderr.decode())
+        raise RuntimeError(stderr.decode())
 
     # On success, return stdout
     return stdout.decode()
@@ -66,15 +66,15 @@ async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=None):
         bytes: compiled script in mpy format.
 
     Raises:
-        OSError with stderr if mpy-cross fails.
-        OSError if mpy-cross ABI version does not match packaged version.
+        RuntimeError with stderr if mpy-cross fails.
+        ValueError if mpy-cross ABI version does not match packaged version.
     """
 
     # Get version info
     out = await run_mpy_cross(["--version"])
     installed_mpy_version = int(out.strip()[-1])
     if mpy_version is not None and installed_mpy_version != mpy_version:
-        raise OSError(
+        raise ValueError(
             "Expected mpy-cross ABI v{0} but v{1} is installed.".format(
                 mpy_version, installed_mpy_version
             )

@@ -63,7 +63,7 @@ class USBConnection:
                 break
 
         if port is None:
-            raise OSError("Could not find hub.")
+            raise ValueError("Could not find hub.")
 
         print("Connecting to {0}".format(port))
         self.ser = aioserial.AioSerial(port)
