@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2020 The Pybricks Authors
+# Copyright (c) 2019-2021 The Pybricks Authors
 
 """Command line wrapper around pybricksdev library."""
 
@@ -266,8 +266,6 @@ class Udev(Tool):
 def main():
     """Runs ``pybricksdev`` command line interface."""
 
-    logging.basicConfig(format='%(asctime)s: %(levelname)7s: %(message)s')
-
     # Provide main description and help.
     parser = argparse.ArgumentParser(
         prog=PROG_NAME,
@@ -276,6 +274,7 @@ def main():
     )
 
     parser.add_argument('-v', '--version', action='version', version=f'{MODULE_NAME} v{MODULE_VERSION}')
+    parser.add_argument('-d', '--debug', action='store_true', help="enable debug logging")
 
     subparsers = parser.add_subparsers(
         metavar='<tool>',
@@ -288,6 +287,11 @@ def main():
 
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
+
+    logging.basicConfig(
+        format='%(asctime)s: %(levelname)s: %(name)s: %(message)s',
+        level=logging.DEBUG if args.debug else logging.WARNING
+    )
 
     if not args.tool:
         parser.error(f'Missing name of tool: {"|".join(subparsers.choices.keys())}')
