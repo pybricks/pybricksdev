@@ -254,7 +254,7 @@ class BootloaderConnection(BLERequestsConnection):
         """Initialize the BLE Connection for Bootloader service."""
         super().__init__('00001626-1212-efde-1623-785feabcd123')
 
-    async def bootloader_request(self, request, payload=None, delay=0.05, timeout=None):
+    async def bootloader_request(self, request, payload=None, timeout=None):
         """Sends a message to the bootloader and awaits corresponding reply."""
 
         # Get message command and expected reply length
@@ -264,7 +264,7 @@ class BootloaderConnection(BLERequestsConnection):
         # Write message
         self.logger.debug("Make and write request")
         data = request.make_request(payload)
-        await self.write(data, delay, request.write_with_response)
+        await self.write(data, request.write_with_response)
 
         # If we expect a reply, await for it
         if request.reply_len > 0:
@@ -272,7 +272,7 @@ class BootloaderConnection(BLERequestsConnection):
             reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 
-    async def flash(self, firmware, metadata, delay):
+    async def flash(self, firmware, metadata):
 
         # Firmware information
         firmware_io = io.BytesIO(firmware)
@@ -309,36 +309,30 @@ class BootloaderConnection(BLERequestsConnection):
         self.logger.debug(response)
         self.logger.debug('Begin update.')
 
-        # Percentage after which we'll check progress
-        verify_progress = 5
-
         # Maintain progress using tqdm
         with tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
 
+            def reader():
+                while True:
+                    payload = firmware_io.read(max_data_size)
+                    if not payload:
+                        return
+                    yield payload
+
+            address = info.start_addr
+
             # Repeat until the whole firmware has been processed
-            while firmware_io.tell() != firmware_size:
-
-                # Progress percentage
-                progress = firmware_io.tell() / firmware_size * 100
-
-                # If progressed beyond next checkpoint, check connection.
-                if progress > verify_progress:
-                    # Get checksum. This tells us the hub is still operating
-                    # normally. If we don't get it, we stop
+            for i, payload in enumerate(reader()):
+                # Since there is no feedback from the hub when writing the
+                # firmware data, we need to periodically do something to get
+                # a response back from the hub. We use the checksum command
+                # for this as a hack. This throttles the speed of sending data
+                # to a rate that can be handled by both the sender and the hub.
+                if i % 10 == 9:
                     result = await self.bootloader_request(
-                        self.GET_CHECKSUM, timeout=2
+                        self.GET_CHECKSUM, timeout=0.5
                     )
                     self.logger.debug(result)
-
-                    # Check again after 20% more progress
-                    verify_progress += 20
-
-                # The write address is the starting address plus
-                # how much has been written already
-                address = info.start_addr + firmware_io.tell()
-
-                # Read the firmware chunk to be sent
-                payload = firmware_io.read(max_data_size)
 
                 # Check if this is the last chunk to be sent
                 if firmware_io.tell() == firmware_size:
@@ -350,9 +344,10 @@ class BootloaderConnection(BLERequestsConnection):
 
                 # Pack the data in the expected format
                 data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
-                response = await self.bootloader_request(request, data, delay)
+                response = await self.bootloader_request(request, data)
                 self.logger.debug(response)
                 pbar.update(len(payload))
+                address += len(payload)
 
         # Reboot the hub
         self.logger.debug('Request reboot.')

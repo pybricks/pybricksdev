@@ -90,14 +90,12 @@ class USBConnection():
             await self.task
             self.logger.info("Disconnected by client.")
 
-    async def write(self, data, pause=0.05):
+    async def write(self, data):
         """Write bytes to the server, split to chunks of maximum mtu size.
 
         Arguments:
             data (bytearray):
                 Data to be sent to the server.
-            pause (float):
-                Time between chunks of data.
         """
         self.logger.debug("TX data: {0}".format(data))
         await self.ser.write_async(data)

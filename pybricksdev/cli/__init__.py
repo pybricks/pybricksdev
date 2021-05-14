@@ -169,15 +169,6 @@ class Flash(Tool):
             type=argparse.FileType(mode='rb'),
             help='the firmware .zip file',
         ).completer = FilesCompleter(allowednames=('.zip',))
-        parser.add_argument(
-            '-d',
-            '--delay',
-            dest='delay',
-            metavar='<milliseconds>',
-            type=int,
-            default=10,
-            help='delay between Bluetooth packets (default: %(default)i)',
-        ).completer = ChoicesCompleter([5, 10, 15, 20])
 
     async def run(self, args: argparse.Namespace):
         from ..flash import create_firmware
@@ -199,7 +190,7 @@ class Flash(Tool):
             updater.logger.setLevel(logging.INFO)
             await updater.connect(device)
             print('Erasing flash and starting update')
-            await updater.flash(firmware, metadata, args.delay/1000)
+            await updater.flash(firmware, metadata)
 
 
 class DFUBackup(Tool):
