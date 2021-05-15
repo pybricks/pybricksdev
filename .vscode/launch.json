@@ -51,8 +51,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/technichub/build/firmware.zip"
             ]
         },
@@ -64,8 +62,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/cityhub/build/firmware.zip"
             ]
         },
@@ -77,8 +73,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/movehub/build/firmware.zip"
             ]
         },
