@@ -7,6 +7,7 @@ from collections import namedtuple
 import json
 import logging
 import os
+import platform
 import struct
 import sys
 from typing import Dict, Tuple
@@ -275,6 +276,7 @@ class BootloaderConnection(BLERequestsConnection):
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
         super().__init__('00001626-1212-efde-1623-785feabcd123')
+        self.ignore_erase_reply = False
 
     async def bootloader_request(self, request, payload=None, timeout=None):
         """Sends a message to the bootloader and awaits corresponding reply."""
@@ -292,6 +294,9 @@ class BootloaderConnection(BLERequestsConnection):
         if request.reply_len > 0:
             logger.debug("Awaiting reply")
             reply = await self.wait_for_reply(timeout)
+            # Windows may receive reply from erase command at the wrong time
+            if self.ignore_erase_reply and reply[0] == 0x11:
+                reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 
     async def flash(self, firmware, metadata):
@@ -320,14 +325,19 @@ class BootloaderConnection(BLERequestsConnection):
         # Erase existing firmware
         logger.debug("Erasing flash.")
         try:
+            # Windows sometimes doesn't receive the reply to this command at all
+            # or until another command is sent (buggy Bluetooth drivers?) so we
+            # have a few hacks to special case this. City hub further complicates
+            # things by having a buggy Bluetooth implementation in its bootloader.
             response = await self.bootloader_request(
                 self.ERASE_FLASH_CITY_HUB
-                if info.type_id == HubTypeId.CITY_HUB
+                if info.type_id == HubTypeId.CITY_HUB and not platform.system() == "Windows"
                 else self.ERASE_FLASH,
                 timeout=5
             )
             logger.debug(response)
         except asyncio.TimeoutError:
+            self.ignore_erase_reply = True
             logger.info("did not receive erase reply, continuing anyway")
 
         # Get the bootloader ready to accept the firmware
