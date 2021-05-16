@@ -18,6 +18,11 @@ include = [
     "AUTHORS.md"
 ]
 
+[tool.poetry.urls]
+"Changelog" = "https://github.com/pybricks/pybricksdev/blob/master/CHANGELOG.md"
+"Support" = "https://github.com/pybricks/support/discussions"
+"Issues" = "https://github.com/pybricks/support/issues"
+
 [tool.poetry.scripts]
 pybricksdev = 'pybricksdev.cli:main'
 
