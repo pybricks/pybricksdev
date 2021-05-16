@@ -12,6 +12,8 @@ import asyncssh
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient
 import semver
+from tqdm.auto import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
 from .compile import compile_file
@@ -289,11 +291,10 @@ class PybricksPUPProtocol(CharacterGlue):
         chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
 
         # Send the data chunk by chunk
-        for i, chunk in enumerate(chunks):
-            logger.info("Sending: {0}%".format(
-                round((i+1)/len(chunks)*100))
-            )
-            await self.send_message(chunk)
+        with logging_redirect_tqdm(), tqdm(total=len(mpy), unit='B', unit_scale=True) as pbar:
+            for chunk in chunks:
+                await self.send_message(chunk)
+                pbar.update(len(chunk))
 
         # Optionally wait for the program to finish
         if wait:
@@ -434,12 +435,15 @@ class USBRPCConnection(CharacterGlue, USBConnection):
                         "slotid": 0
                     })
         transferid = response['transferid']
-        for i, chunk in enumerate(chunks):
-            response = await self.send_command_and_get_response("write_package", {
-                        "data": base64.b64encode(chunk).decode('ascii'),
-                        "transferid": transferid
-                    })
-            print("Sending: {0}%".format(int((i+1)/len(chunks) * 100)))
+
+        with logging_redirect_tqdm(), tqdm(total=len(program), unit='B', unit_scale=True) as pbar:
+            for chunk in chunks:
+                response = await self.send_command_and_get_response("write_package", {
+                            "data": base64.b64encode(chunk).decode('ascii'),
+                            "transferid": transferid
+                        })
+                pbar.update(len(chunk))
+
         await asyncio.sleep(0.5)
         response = await self.send_command_and_get_response("program_execute", {
                     "slotid": 0
@@ -789,10 +793,10 @@ class PybricksHub:
             chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
 
             # Send the data chunk by chunk
-            print(f"Downloading {len(mpy)} bytes in {len(chunks)} steps.")
-            for i, chunk in enumerate(chunks):
-                await self.send_block(chunk)
-                print(f"Progress: {round((i + 1) / len(chunks) * 100)}%")
+            with logging_redirect_tqdm(), tqdm(total=len(mpy), unit='B', unit_scale=True) as pbar:
+                for chunk in chunks:
+                    await self.send_block(chunk)
+                    pbar.update(len(chunk))
         finally:
             self.loading = False
 

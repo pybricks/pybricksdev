@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug option to CLI interface.
 ## Changed
 - Use standard Python logging for modules instead of per-object.
+- Use progress bars when downloading program to hub.
 ## Removed
 - Delay option in CLI `flash` command.
 ## Fixed
