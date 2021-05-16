@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delay option in CLI `flash` command.
 ## Fixed
 - Flashing firmware using BLE under conditions on Windows.
+- `NotImplementedError` when compiling to .mpy in ipython kernel on Windows.
 
 ## [1.0.0-alpha.5] - 2021-05-04
 ### Added

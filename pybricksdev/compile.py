@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2019-2020 The Pybricks Authors
 
+import asyncio
+import logging
 import os
 from pathlib import Path
+from subprocess import Popen, PIPE
+
 import mpy_cross
-import asyncio
+
+logger = logging.getLogger(__name__)
 
 BUILD_DIR = "build"
 TMP_PY_SCRIPT = "_tmp.py"
@@ -37,13 +42,28 @@ async def run_mpy_cross(args):
     """
 
     # Run the process asynchronously
-    proc = await asyncio.create_subprocess_exec(
-        mpy_cross.mpy_cross, *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            mpy_cross.mpy_cross, *args,
+            stdout=PIPE,
+            stderr=PIPE)
 
-    # Check the output for compile errors such as syntax errors
-    stdout, stderr = await proc.communicate()
+        # Check the output for compile errors such as syntax errors
+        stdout, stderr = await proc.communicate()
+    except NotImplementedError:
+        # This error happens when running on Windows with WindowsSelectorEventLoopPolicy()
+        # which is the required policy for ipython kernels due to a requirement
+        # by the tornado package. So in that case, we call the subprocess synchronously
+        # which shouldn't be a big deal for running in notebooks. Python versions
+        # before 3.8 also used WindowsSelectorEventLoopPolicy() by default, but
+        # pybricksdev requires at least Python 3.8, so that shouldn't be a problem.
+        logger.debug("calling mpy-cross synchronously")
+        proc = Popen(
+            [mpy_cross.mpy_cross, *args],
+            stdout=PIPE,
+            stderr=PIPE)
+        stdout, stderr = proc.communicate()
+
     if proc.returncode != 0:
         raise RuntimeError(stderr.decode())
 
