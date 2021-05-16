@@ -10,7 +10,8 @@ import os
 import struct
 import sys
 from typing import Dict, Tuple
-from tqdm import tqdm
+from tqdm.auto import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 import typing
 import zipfile
 
@@ -339,7 +340,7 @@ class BootloaderConnection(BLERequestsConnection):
         logger.debug('Begin update.')
 
         # Maintain progress using tqdm
-        with tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
+        with logging_redirect_tqdm(), tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
 
             def reader():
                 while True:
