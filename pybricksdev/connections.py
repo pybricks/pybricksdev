@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
+from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from .ble.pybricks import (
     Event,
     PYBRICKS_CONTROL_UUID,
@@ -576,12 +577,6 @@ class EV3Connection:
         if local_path is None:
             local_path = remote_path
         await self.client.sftp.get(self.abs_path(remote_path), localpath=local_path)
-
-
-# Nordic UART hub Rx, pybricksdev Tx characteristic
-NUS_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-# Nordic UART hub Tx, pybricksdev Rx characteristic
-NUS_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 
 class PybricksHub:
