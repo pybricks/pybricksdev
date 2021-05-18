@@ -137,10 +137,7 @@ class Run(Tool):
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
-            if validators.mac_address(args.device):
-                device_or_address = args.device
-            else:
-                device_or_address = await find_device(args.device, timeout=5)
+            device_or_address = await find_device(args.device)
         elif args.conntype == "usb" and args.device == "lego":
             # It's LEGO stock firmware Hub with USB.
             hub = USBRPCConnection()
@@ -187,7 +184,7 @@ class Flash(Tool):
             from ..ble import find_device
             from ..flash import BootloaderConnection
 
-            device = await find_device("LEGO Bootloader", 15)
+            device = await find_device("LEGO Bootloader")
             print("Found:", device)
             updater = BootloaderConnection()
             await updater.connect(device)
