@@ -3,23 +3,33 @@
 
 import asyncio
 import logging
+from typing import Optional
 
 from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+from .pybricks import PYBRICKS_SERVICE_UUID
+
 logger = logging.getLogger(__name__)
 
 
-async def find_device(name: str, timeout: float = 10) -> BLEDevice:
+async def find_device(
+    name: Optional[str] = None,
+    service: str = PYBRICKS_SERVICE_UUID,
+    timeout: float = 10,
+) -> BLEDevice:
     """Finds a BLE device that is currently advertising that matches the
     given parameters.
 
     Arguments:
-        name (str):
+        name:
             The device name. This can also be the Bluetooth address on non-Apple
-            platforms or a UUID on Apple platforms.
-        timeout (float):
+            platforms or a UUID on Apple platforms. If ``name`` is ``None`` then
+            it is not used as part of the matching criteria.
+        service:
+            The service UUID that is advertized.
+        timeout:
             How long to search before giving up.
 
     Returns:
@@ -29,12 +39,18 @@ async def find_device(name: str, timeout: float = 10) -> BLEDevice:
         asyncio.TimeoutError:
             Device was not found within the timeout.
     """
-    print("Searching for {0}".format(name))
+    print(f"Searching for {name or service}")
 
     queue = asyncio.Queue()
 
     def handle_detection(device: BLEDevice, adv: AdvertisementData):
-        if adv.local_name != name and device.address.upper() != name.upper():
+        if service not in adv.service_uuids:
+            return
+        if (
+            name is not None
+            and adv.local_name != name
+            and device.address.upper() != name.upper()
+        ):
             return
         queue.put_nowait(device)
 

@@ -16,7 +16,7 @@ import argcomplete
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..ble.lwp3 import HubTypeId
+from ..ble.lwp3 import HubTypeId, LWP3_BOOTLOADER_SERVICE_UUID
 
 
 PROG_NAME = (
@@ -184,7 +184,7 @@ class Flash(Tool):
             from ..ble import find_device
             from ..flash import BootloaderConnection
 
-            device = await find_device("LEGO Bootloader")
+            device = await find_device(service=LWP3_BOOTLOADER_SERVICE_UUID)
             print("Found:", device)
             updater = BootloaderConnection()
             await updater.connect(device)
