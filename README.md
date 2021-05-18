@@ -93,11 +93,9 @@ For additional info, run `pybricksdev --help`.
 
 Make sure the hub is off. Press and keep holding the hub button, and run:
 
-    pybricksdev flash ../pybricks-micropython/bricks/technichub/build/firmware.zip
+    pybricksdev flash <firmware.zip>
 
-Replace the example path with the path to the firmware archive. Decrease the
-delay `d` between data packages for faster transfer. Increase the delay if it
-fails.
+Replace `<firmware.zip>` with the actual path to the firmware archive.
 
 You may release the button once the progress bar first appears. 
 

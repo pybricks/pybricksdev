@@ -146,7 +146,10 @@ def init():
         status = get_status()
         if status == __DFU_STATE_DFU_IDLE:
             break
-        elif status == __DFU_STATE_DFU_DOWNLOAD_IDLE or status == __DFU_STATE_DFU_UPLOAD_IDLE:
+        elif (
+            status == __DFU_STATE_DFU_DOWNLOAD_IDLE
+            or status == __DFU_STATE_DFU_UPLOAD_IDLE
+        ):
             abort_request()
         else:
             clr_status()
@@ -178,7 +181,9 @@ def get_status():
 def check_status(stage, expected):
     status = get_status()
     if status != expected:
-        raise SystemExit("DFU: %s failed (%s)" % (stage, __DFU_STATUS_STR.get(status, status)))
+        raise SystemExit(
+            "DFU: %s failed (%s)" % (stage, __DFU_STATUS_STR.get(status, status))
+        )
 
 
 def mass_erase():
@@ -239,7 +244,9 @@ def write_memory(addr, buf, progress=None, progress_addr=0, progress_size=0):
                 % (xfer_base + xfer_bytes, xfer_bytes // 1024, xfer_total // 1024)
             )
         if progress and xfer_count % 2 == 0:
-            progress(progress_addr, xfer_base + xfer_bytes - progress_addr, progress_size)
+            progress(
+                progress_addr, xfer_base + xfer_bytes - progress_addr, progress_size
+            )
 
         # Set mem write address
         set_address(xfer_base + xfer_bytes)
@@ -247,7 +254,12 @@ def write_memory(addr, buf, progress=None, progress_addr=0, progress_size=0):
         # Send DNLOAD with fw data
         chunk = min(__cfg_descr.wTransferSize, xfer_total - xfer_bytes)
         __dev.ctrl_transfer(
-            0x21, __DFU_DNLOAD, 2, __DFU_INTERFACE, buf[xfer_bytes : xfer_bytes + chunk], __TIMEOUT
+            0x21,
+            __DFU_DNLOAD,
+            2,
+            __DFU_INTERFACE,
+            buf[xfer_bytes : xfer_bytes + chunk],
+            __TIMEOUT,
         )
 
         # Execute last command
@@ -298,7 +310,7 @@ def exit_dfu():
 
         # Release device
         usb.util.dispose_resources(__dev)
-    except:
+    except OSError:
         pass
 
 
@@ -574,19 +586,37 @@ def main():
     # Parse CMD args
     parser = argparse.ArgumentParser(description="DFU Python Util")
     parser.add_argument(
-        "-l", "--list", help="list available DFU devices", action="store_true", default=False
+        "-l",
+        "--list",
+        help="list available DFU devices",
+        action="store_true",
+        default=False,
     )
-    parser.add_argument("--vid", help="USB Vendor ID", type=lambda x: int(x, 0), default=__VID)
-    parser.add_argument("--pid", help="USB Product ID", type=lambda x: int(x, 0), default=__PID)
     parser.add_argument(
-        "-m", "--mass-erase", help="mass erase device", action="store_true", default=False
+        "--vid", help="USB Vendor ID", type=lambda x: int(x, 0), default=__VID
+    )
+    parser.add_argument(
+        "--pid", help="USB Product ID", type=lambda x: int(x, 0), default=__PID
+    )
+    parser.add_argument(
+        "-m",
+        "--mass-erase",
+        help="mass erase device",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "-u", "--upload", help="read file from DFU device", dest="path", default=False
     )
-    parser.add_argument("-x", "--exit", help="Exit DFU", action="store_true", default=False)
     parser.add_argument(
-        "-v", "--verbose", help="increase output verbosity", action="store_true", default=False
+        "-x", "--exit", help="Exit DFU", action="store_true", default=False
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="increase output verbosity",
+        action="store_true",
+        default=False,
     )
     args = parser.parse_args()
 

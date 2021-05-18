@@ -12,13 +12,17 @@ import asyncssh
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient
 import semver
+from tqdm.auto import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
 from .compile import compile_file
 from .usbconnection import USBConnection
 
+logger = logging.getLogger(__name__)
 
-class CharacterGlue():
+
+class CharacterGlue:
     """Glues incoming bytes into a buffer and splits it into lines."""
 
     def __init__(self, EOL, **kwargs):
@@ -32,7 +36,7 @@ class CharacterGlue():
         self.EOL = EOL
 
         # Create empty rx buffer
-        self.char_buf = bytearray(b'')
+        self.char_buf = bytearray(b"")
 
         super().__init__(**kwargs)
 
@@ -47,7 +51,7 @@ class CharacterGlue():
             int or None: Processed character.
 
         """
-        self.logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
+        logger.debug("RX CHAR: {0} ({1})".format(chr(char), char))
         return char
 
     def line_handler(self, line):
@@ -70,7 +74,7 @@ class CharacterGlue():
             data (bytearray):
                 Incoming data.
         """
-        self.logger.debug("RX DATA: {0}".format(data))
+        logger.debug("RX DATA: {0}".format(data))
 
         # For each new character, call its handler and add to buffer if any
         for byte in data:
@@ -92,7 +96,7 @@ class CharacterGlue():
                 break
             # If we found a line, save it, and take it from the buffer
             lines.append(self.char_buf[0:index])
-            del self.char_buf[0:index+len(self.EOL)]
+            del self.char_buf[0 : index + len(self.EOL)]
 
         # Call handler for each line that we found
         for line in lines:
@@ -115,7 +119,7 @@ class PybricksPUPProtocol(CharacterGlue):
         self.checksum_ready = asyncio.Event()
         self.log_file = None
         self.output = []
-        super().__init__(EOL=b'\r\n', **kwargs)
+        super().__init__(EOL=b"\r\n", **kwargs)
 
     def char_handler(self, char):
         """Handles new incoming characters.
@@ -140,7 +144,7 @@ class PybricksPUPProtocol(CharacterGlue):
             # are ready to process it.
             self.checksum = char
             self.checksum_ready.set()
-            self.logger.debug("RX CHECKSUM: {0}".format(char))
+            logger.debug("RX CHECKSUM: {0}".format(char))
             return None
         else:
             # Otherwise, return it so it gets added to standard output buffer.
@@ -155,19 +159,19 @@ class PybricksPUPProtocol(CharacterGlue):
                 Line to process.
         """
         # The line tells us to open a log file, so do it.
-        if b'PB_OF' in line:
+        if b"PB_OF" in line:
             if self.log_file is not None:
-                raise OSError("Log file is already open!")
+                raise RuntimeError("Log file is already open!")
             name = line[6:].decode()
-            self.logger.info("Saving log to {0}.".format(name))
-            self.log_file = open(name, 'w')
+            logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, "w")
             return
 
         # The line tells us to close a log file, so do it.
-        if b'PB_EOF' in line:
+        if b"PB_EOF" in line:
             if self.log_file is None:
-                raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
+                raise RuntimeError("No log file is currently open!")
+            logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
             return
@@ -191,7 +195,7 @@ class PybricksPUPProtocol(CharacterGlue):
                 New state
         """
         if new_state != self.state:
-            self.logger.debug("New State: {0}".format(new_state))
+            logger.debug("New State: {0}".format(new_state))
             self.state = new_state
 
     def prepare_checksum(self):
@@ -248,14 +252,12 @@ class PybricksPUPProtocol(CharacterGlue):
 
         # Await the reply
         reply = await self.wait_for_checksum()
-        self.logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
+        logger.debug("expected: {0}, reply: {1}".format(checksum, reply))
 
         # Check the response
         if checksum != reply:
             raise ValueError(
-                "Expected checksum {0} but received {1}.".format(
-                    checksum, reply
-                )
+                "Expected checksum {0} but received {1}.".format(checksum, reply)
             )
 
     async def run(self, py_path, wait=True, print_output=True):
@@ -271,6 +273,7 @@ class PybricksPUPProtocol(CharacterGlue):
         """
 
         # Reset output buffer
+        self.log_file = None
         self.output = []
         self.print_output = print_output
 
@@ -278,19 +281,20 @@ class PybricksPUPProtocol(CharacterGlue):
         mpy = await compile_file(py_path)
 
         # Get length of file and send it as bytes to hub
-        length = len(mpy).to_bytes(4, byteorder='little')
+        length = len(mpy).to_bytes(4, byteorder="little")
         await self.send_message(length)
 
         # Divide script in chunks of bytes
         n = 100
-        chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
+        chunks = [mpy[i : i + n] for i in range(0, len(mpy), n)]
 
         # Send the data chunk by chunk
-        for i, chunk in enumerate(chunks):
-            self.logger.info("Sending: {0}%".format(
-                round((i+1)/len(chunks)*100))
-            )
-            await self.send_message(chunk)
+        with logging_redirect_tqdm(), tqdm(
+            total=len(mpy), unit="B", unit_scale=True
+        ) as pbar:
+            for chunk in chunks:
+                await self.send_message(chunk)
+                pbar.update(len(chunk))
 
         # Optionally wait for the program to finish
         if wait:
@@ -299,19 +303,17 @@ class PybricksPUPProtocol(CharacterGlue):
 
 
 class BLEPUPConnection(PybricksPUPProtocol, BLEConnection):
-
     def __init__(self):
         """Initialize the BLE Connection with settings for Pybricks service."""
 
         super().__init__(
-            char_rx_UUID='6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-            char_tx_UUID='6e400003-b5a3-f393-e0a9-e50e24dcca9e',
-            mtu=20
+            char_rx_UUID="6e400002-b5a3-f393-e0a9-e50e24dcca9e",
+            char_tx_UUID="6e400003-b5a3-f393-e0a9-e50e24dcca9e",
+            max_data_size=20,
         )
 
 
 class USBPUPConnection(PybricksPUPProtocol, USBConnection):
-
     def __init__(self):
         """Initialize."""
 
@@ -319,27 +321,26 @@ class USBPUPConnection(PybricksPUPProtocol, USBConnection):
 
 
 class USBRPCConnection(CharacterGlue, USBConnection):
-
     def __init__(self, **kwargs):
         self.m_data = [{}] * 20
         self.i_data = []
         self.log_file = None
-        super().__init__(EOL=b'\r', **kwargs)
+        super().__init__(EOL=b"\r", **kwargs)
 
     def user_line_handler(self, line):
 
-        if 'PB_OF' in line:
+        if "PB_OF" in line:
             if self.log_file is not None:
-                raise OSError("Log file is already open!")
+                raise RuntimeError("Log file is already open!")
             name = line[6:]
-            self.logger.info("Saving log to {0}.".format(name))
-            self.log_file = open(name, 'w')
+            logger.info("Saving log to {0}.".format(name))
+            self.log_file = open(name, "w")
             return
 
-        if 'PB_EOF' in line:
+        if "PB_EOF" in line:
             if self.log_file is None:
-                raise OSError("No log file is currently open!")
-            self.logger.info("Done saving log.")
+                raise RuntimeError("No log file is currently open!")
+            logger.info("Done saving log.")
             self.log_file.close()
             self.log_file = None
             return
@@ -353,15 +354,17 @@ class USBRPCConnection(CharacterGlue, USBConnection):
     def line_handler(self, line):
         try:
             data = json.loads(line)
-            if 'e' in data:
-                print(base64.b64decode(data['e']))
-            elif 'm' in data:
-                if type(data['m']) == int:
-                    self.m_data[data['m']] = data
-                elif data['m'] == 'runtime_error':
-                    print(base64.b64decode(data['p'][3]))
-                elif data['m'] == 'userProgram.print':
-                    self.user_line_handler(base64.b64decode(data['p']['value']).decode('ascii').strip())
+            if "e" in data:
+                print(base64.b64decode(data["e"]))
+            elif "m" in data:
+                if type(data["m"]) == int:
+                    self.m_data[data["m"]] = data
+                elif data["m"] == "runtime_error":
+                    print(base64.b64decode(data["p"][3]))
+                elif data["m"] == "userProgram.print":
+                    self.user_line_handler(
+                        base64.b64decode(data["p"]["value"]).decode("ascii").strip()
+                    )
                 else:
                     print("unknown", data)
             else:
@@ -370,20 +373,16 @@ class USBRPCConnection(CharacterGlue, USBConnection):
             pass
 
     async def send_dict(self, command):
-        await self.write(json.dumps(command).encode('ascii') + b'\r')
+        await self.write(json.dumps(command).encode("ascii") + b"\r")
 
     async def send_command(self, message, payload):
 
-        data_id = ''
+        data_id = ""
         for i in range(4):
-            c = chr(random.randint(ord('A'), ord('Z')))
+            c = chr(random.randint(ord("A"), ord("Z")))
             data_id += c
 
-        data = {
-            'i': data_id,
-            'm': message,
-            'p': payload
-        }
+        data = {"i": data_id, "m": message, "p": payload}
 
         await self.send_dict(data)
         return data_id
@@ -397,62 +396,75 @@ class USBRPCConnection(CharacterGlue, USBConnection):
 
             while len(self.i_data) > 0:
                 data = self.i_data.pop(0)
-                if data['i'] == data_id:
+                if data["i"] == data_id:
                     response = data
                     break
 
             if response is not None:
-                return response['r']
+                return response["r"]
             else:
                 await asyncio.sleep(0.1)
 
     async def run(self, py_path, wait=False):
-        response = await self.send_command_and_get_response("program_modechange", {
-                "mode": "download"
-            })
+        response = await self.send_command_and_get_response(
+            "program_modechange", {"mode": "download"}
+        )
 
-        with open(py_path, 'rb') as demo:
+        with open(py_path, "rb") as demo:
             program = demo.read()
 
         chunk_size = 512
-        chunks = [program[i:i+chunk_size] for i in range(0, len(program), chunk_size)]
+        chunks = [
+            program[i : i + chunk_size] for i in range(0, len(program), chunk_size)
+        ]
 
-        while response is None or 'transferid' not in response:
-            response = await self.send_command_and_get_response("start_write_program", {
-                        "meta": {
-                            "created": 0,
-                            "modified": 0,
-                            "project_id": "Pybricksdev_",
-                            "project_id": "Pybricksdev_",
-                            "name": "Pybricksdev_____",
-                            "type": "python"
-                        },
-                        "size": len(program),
-                        "slotid": 0
-                    })
-        transferid = response['transferid']
-        for i, chunk in enumerate(chunks):
-            response = await self.send_command_and_get_response("write_package", {
-                        "data": base64.b64encode(chunk).decode('ascii'),
-                        "transferid": transferid
-                    })
-            print("Sending: {0}%".format(int((i+1)/len(chunks) * 100)))
+        while response is None or "transferid" not in response:
+            response = await self.send_command_and_get_response(
+                "start_write_program",
+                {
+                    "meta": {
+                        "created": 0,
+                        "modified": 0,
+                        "project_id": "Pybricksdev_",
+                        "project_id": "Pybricksdev_",
+                        "name": "Pybricksdev_____",
+                        "type": "python",
+                    },
+                    "size": len(program),
+                    "slotid": 0,
+                },
+            )
+        transferid = response["transferid"]
+
+        with logging_redirect_tqdm(), tqdm(
+            total=len(program), unit="B", unit_scale=True
+        ) as pbar:
+            for chunk in chunks:
+                response = await self.send_command_and_get_response(
+                    "write_package",
+                    {
+                        "data": base64.b64encode(chunk).decode("ascii"),
+                        "transferid": transferid,
+                    },
+                )
+                pbar.update(len(chunk))
+
         await asyncio.sleep(0.5)
-        response = await self.send_command_and_get_response("program_execute", {
-                    "slotid": 0
-                })
+        response = await self.send_command_and_get_response(
+            "program_execute", {"slotid": 0}
+        )
         print(response)
 
 
-class EV3Connection():
+class EV3Connection:
     """ev3dev SSH connection for running pybricks-micropython scripts.
 
     This wraps convenience functions around the asyncssh client.
     """
 
-    _HOME = '/home/robot'
-    _USER = 'robot'
-    _PASSWORD = 'maker'
+    _HOME = "/home/robot"
+    _USER = "robot"
+    _PASSWORD = "maker"
 
     def abs_path(self, path):
         return os.path.join(self._HOME, path)
@@ -480,7 +492,7 @@ class EV3Connection():
 
     async def beep(self):
         """Makes the EV3 beep."""
-        await self.client.run('beep')
+        await self.client.run("beep")
 
     async def disconnect(self):
         """Closes the connection."""
@@ -502,7 +514,7 @@ class EV3Connection():
         # Make sure same directory structure exists on EV3
         if not await self.client.sftp.exists(self.abs_path(dirs)):
             # If not, make the folders one by one
-            total = ''
+            total = ""
             for name in dirs.split(os.sep):
                 total = os.path.join(total, name)
                 if not await self.client.sftp.exists(self.abs_path(total)):
@@ -530,7 +542,7 @@ class EV3Connection():
 
         # Run it and return stderr to get Pybricks MicroPython output
         print("Now starting:", remote_path)
-        prog = 'brickrun -r -- pybricks-micropython {0}'.format(remote_path)
+        prog = "brickrun -r -- pybricks-micropython {0}".format(remote_path)
 
         # Run process asynchronously and print output as it comes in
         async with self.client.create_process(prog) as process:
@@ -555,42 +567,31 @@ class EV3Connection():
         """
         if local_path is None:
             local_path = remote_path
-        await self.client.sftp.get(
-            self.abs_path(remote_path), localpath=local_path
-        )
+        await self.client.sftp.get(self.abs_path(remote_path), localpath=local_path)
 
 
 # Pybricks control characteristic UUID
-PYBRICKS_UUID = 'c5f50002-8280-46da-89f4-6d8051e4aeef'
+PYBRICKS_UUID = "c5f50002-8280-46da-89f4-6d8051e4aeef"
 # The minimum required Pybricks protocol version
 PYBRICKS_PROTOCOL_VERSION = semver.VersionInfo(1)
 
 # Standard Device Information Service UUID
-DI_SERVICE_UUID = '0000180a-0000-1000-8000-00805f9b34fb'
+DI_SERVICE_UUID = "0000180a-0000-1000-8000-00805f9b34fb"
 # Standard Firmware Revision String characteristic UUID
-FW_REV_UUID = '00002a26-0000-1000-8000-00805f9b34fb'
+FW_REV_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
 # Standard Software Revision String UUID (Pybricks protocol version)
-SW_REV_UUID = '00002a28-0000-1000-8000-00805f9b34fb'
+SW_REV_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
 
 # Nordic UART hub Rx, pybricksdev Tx characteristic
-NUS_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'
+NUS_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 # Nordic UART hub Tx, pybricksdev Rx characteristic
-NUS_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'
+NUS_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
-        self.logger = logging.getLogger('Pybricks Hub')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
@@ -610,7 +611,49 @@ class PybricksHub:
         # used to notify when the user program has ended
         self.user_program_stopped = asyncio.Event()
 
+        # File handle for logging
+        self.log_file = None
+
     def line_handler(self, line):
+        """Handles new incoming lines. Handle special actions if needed,
+        otherwise just print it as regular lines.
+
+        Arguments:
+            line (bytearray):
+                Line to process.
+        """
+
+        # The line tells us to open a log file, so do it.
+        if b"PB_OF" in line:
+            if self.log_file is not None:
+                raise RuntimeError("Log file is already open!")
+
+            # Get path relative to running script, so log will go
+            # in the same folder unless specified otherwise.
+            full_path = os.path.join(self.script_dir, line[6:].decode())
+            dir_path, _ = os.path.split(full_path)
+            if not os.path.exists(dir_path):
+                os.makedirs(dir_path)
+
+            logger.info("Saving log to {0}.".format(full_path))
+            self.log_file = open(full_path, "w")
+            return
+
+        # The line tells us to close a log file, so do it.
+        if b"PB_EOF" in line:
+            if self.log_file is None:
+                raise RuntimeError("No log file is currently open!")
+            logger.info("Done saving log.")
+            self.log_file.close()
+            self.log_file = None
+            return
+
+        # If we are processing datalog, save current line to the open file.
+        if self.log_file is not None:
+            print(line.decode(), file=self.log_file)
+            return
+
+        # If there is nothing special about this line, print it if requested.
         self.output.append(line)
         if self.print_output:
             print(line.decode())
@@ -626,12 +669,12 @@ class PybricksHub:
 
             self.expected_checksum = -1
             self.checksum_ready.set()
-            self.logger.debug(f"Correct checksum: {checksum}")
+            logger.debug(f"Correct checksum: {checksum}")
             return
 
         # Store incoming data
         self.stream_buf += data
-        self.logger.debug("NUS DATA: {0}".format(data))
+        logger.debug("NUS DATA: {0}".format(data))
 
         # Break up data into lines and take those out of the buffer
         lines = []
@@ -643,7 +686,7 @@ class PybricksHub:
                 break
             # If we found a line, save it, and take it from the buffer
             lines.append(self.stream_buf[0:index])
-            del self.stream_buf[0:index+len(self.EOL)]
+            del self.stream_buf[0 : index + len(self.EOL)]
 
         # Call handler for each line that we found
         for line in lines:
@@ -664,7 +707,7 @@ class PybricksHub:
             # algorithm
             if not self.loading:
                 if self.program_running != program_running_now:
-                    self.logger.info(f"Program running: {program_running_now}")
+                    logger.info(f"Program running: {program_running_now}")
                     self.program_running = program_running_now
                 if not program_running_now:
                     self.user_program_stopped.set()
@@ -680,36 +723,38 @@ class PybricksHub:
                 Information Service)
             RuntimeError: if Pybricks Protocol version is not supported
         """
-        self.logger.info(f"Connecting to {device.address}")
+        logger.info(f"Connecting to {device.address}")
         self.client = BleakClient(device)
 
         def disconnected_handler(self, _: BleakClient):
-            self.logger.info("Disconnected!")
+            logger.info("Disconnected!")
             self.connected = False
 
         await self.client.connect(disconnected_callback=disconnected_handler)
         try:
-            self.logger.info("Connected successfully!")
+            logger.info("Connected successfully!")
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
             if (
-                protocol_version < PYBRICKS_PROTOCOL_VERSION or
-                protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
+                protocol_version < PYBRICKS_PROTOCOL_VERSION
+                or protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
             ):
-                raise RuntimeError(f"Unsupported Pybricks protocol version: {protocol_version}")
+                raise RuntimeError(
+                    f"Unsupported Pybricks protocol version: {protocol_version}"
+                )
             await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
             await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
             self.connected = True
-        except:
+        except:  # noqa: E722
             self.disconnect()
             raise
 
     async def disconnect(self):
         if self.connected:
-            self.logger.info("Disconnecting...")
+            logger.info("Disconnecting...")
             await self.client.disconnect()
         else:
-            self.logger.debug("already disconnected")
+            logger.debug("already disconnected")
 
     def get_checksum(self, block):
         checksum = 0
@@ -723,7 +768,7 @@ class PybricksHub:
         try:
             await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
             await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
-        except:
+        except:  # noqa: E722
             # normally self.expected_checksum = -1 will be called in nus_handler()
             # but if we timeout or something like that, we need to reset it here
             self.expected_checksum = -1
@@ -732,10 +777,12 @@ class PybricksHub:
     async def run(self, py_path, wait=True, print_output=True):
 
         # Reset output buffer
+        self.log_file = None
         self.output = []
         self.print_output = print_output
 
         # Compile the script to mpy format
+        self.script_dir, _ = os.path.split(py_path)
         mpy = await compile_file(py_path)
 
         try:
@@ -743,18 +790,20 @@ class PybricksHub:
             self.user_program_stopped.clear()
 
             # Get length of file and send it as bytes to hub
-            length = len(mpy).to_bytes(4, byteorder='little')
+            length = len(mpy).to_bytes(4, byteorder="little")
             await self.send_block(length)
 
             # Divide script in chunks of bytes
             n = 100
-            chunks = [mpy[i: i + n] for i in range(0, len(mpy), n)]
+            chunks = [mpy[i : i + n] for i in range(0, len(mpy), n)]
 
             # Send the data chunk by chunk
-            print(f"Downloading {len(mpy)} bytes in {len(chunks)} steps.")
-            for i, chunk in enumerate(chunks):
-                await self.send_block(chunk)
-                print(f"Progress: {round((i + 1) / len(chunks) * 100)}%")
+            with logging_redirect_tqdm(), tqdm(
+                total=len(mpy), unit="B", unit_scale=True
+            ) as pbar:
+                for chunk in chunks:
+                    await self.send_block(chunk)
+                    pbar.update(len(chunk))
         finally:
             self.loading = False
 

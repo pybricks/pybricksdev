@@ -5,4 +5,4 @@ sleep(5)
 print("World!")
 
 # Exit
-1/0
+1 / 0

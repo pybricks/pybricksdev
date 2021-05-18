@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2019-2020 The Pybricks Authors
 
+import asyncio
+import logging
 import os
 from pathlib import Path
+from subprocess import Popen, PIPE
+
 import mpy_cross
-import asyncio
+
+logger = logging.getLogger(__name__)
 
 BUILD_DIR = "build"
 TMP_PY_SCRIPT = "_tmp.py"
@@ -18,7 +23,7 @@ def make_build_dir():
 
     # Raise error if there happens to be a file by this name
     if os.path.isfile(BUILD_DIR):
-        raise OSError("A file named build already exists.")
+        raise FileExistsError("A file named build already exists.")
 
 
 async def run_mpy_cross(args):
@@ -32,20 +37,31 @@ async def run_mpy_cross(args):
         str: stdout.
 
     Raises:
-        OSError with stderr if mpy-cross fails.
+        RuntimeError with stderr if mpy-cross fails.
 
     """
 
     # Run the process asynchronously
-    proc = await asyncio.create_subprocess_exec(
-        mpy_cross.mpy_cross, *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            mpy_cross.mpy_cross, *args, stdout=PIPE, stderr=PIPE
+        )
 
-    # Check the output for compile errors such as syntax errors
-    stdout, stderr = await proc.communicate()
+        # Check the output for compile errors such as syntax errors
+        stdout, stderr = await proc.communicate()
+    except NotImplementedError:
+        # This error happens when running on Windows with WindowsSelectorEventLoopPolicy()
+        # which is the required policy for ipython kernels due to a requirement
+        # by the tornado package. So in that case, we call the subprocess synchronously
+        # which shouldn't be a big deal for running in notebooks. Python versions
+        # before 3.8 also used WindowsSelectorEventLoopPolicy() by default, but
+        # pybricksdev requires at least Python 3.8, so that shouldn't be a problem.
+        logger.debug("calling mpy-cross synchronously")
+        proc = Popen([mpy_cross.mpy_cross, *args], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+
     if proc.returncode != 0:
-        raise ValueError(stderr.decode())
+        raise RuntimeError(stderr.decode())
 
     # On success, return stdout
     return stdout.decode()
@@ -66,15 +82,15 @@ async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=None):
         bytes: compiled script in mpy format.
 
     Raises:
-        OSError with stderr if mpy-cross fails.
-        OSError if mpy-cross ABI version does not match packaged version.
+        RuntimeError with stderr if mpy-cross fails.
+        ValueError if mpy-cross ABI version does not match packaged version.
     """
 
     # Get version info
     out = await run_mpy_cross(["--version"])
     installed_mpy_version = int(out.strip()[-1])
     if mpy_version is not None and installed_mpy_version != mpy_version:
-        raise OSError(
+        raise ValueError(
             "Expected mpy-cross ABI v{0} but v{1} is installed.".format(
                 mpy_version, installed_mpy_version
             )
@@ -121,7 +137,7 @@ def print_mpy(data):
         + "\nconst uint8_t script[] = "
     )
     for i in range(0, len(data), WIDTH):
-        chunk = data[i:i + WIDTH]
+        chunk = data[i : i + WIDTH]
         hex_repr = ["0x{0}".format(hex(i)[2:].zfill(2).upper()) for i in chunk]
         print("    " + ", ".join(hex_repr) + ",")
     print("};")

@@ -8,6 +8,8 @@ from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+logger = logging.getLogger(__name__)
+
 
 async def find_device(name: str, timeout: float = 5) -> BLEDevice:
     """Quickly find BLE device address by friendly device name.
@@ -42,10 +44,10 @@ async def find_device(name: str, timeout: float = 5) -> BLEDevice:
         return await asyncio.wait_for(queue.get(), timeout=timeout)
 
 
-class BLEConnection():
+class BLEConnection:
     """Configure BLE, connect, send data, and handle receive events."""
 
-    def __init__(self, char_rx_UUID, char_tx_UUID, mtu, **kwargs):
+    def __init__(self, char_rx_UUID, char_tx_UUID, max_data_size):
         """Initializes and configures connection settings.
 
         Arguments:
@@ -53,27 +55,15 @@ class BLEConnection():
                 UUID for RX.
             char_rx_UUID (str):
                 UUID for TX.
-            mtu (int):
+            max_data_size (int):
                 Maximum number of bytes per write operation.
 
         """
         # Save given settings
         self.char_rx_UUID = char_rx_UUID
         self.char_tx_UUID = char_tx_UUID
-        self.mtu = mtu
+        self.max_data_size = max_data_size
         self.connected = False
-
-        # Get a logger and set at given level
-        self.logger = logging.getLogger('BLERequestsConnection')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s: %(levelname)7s: %(message)s'
-        )
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
-        self.logger.setLevel(logging.WARNING)
-
-        super().__init__(**kwargs)
 
     def data_handler(self, sender, data):
         """Handles new incoming data.
@@ -86,11 +76,11 @@ class BLEConnection():
             data (bytes):
                 Bytes to process.
         """
-        self.logger.debug("DATA {0}".format(data))
+        logger.debug("DATA {0}".format(data))
 
     def disconnected_handler(self, client: BleakClient):
         """Handles disconnected event."""
-        self.logger.debug("Disconnected.")
+        logger.debug("Disconnected.")
         self.connected = False
 
     async def connect(self, device: BLEDevice):
@@ -112,38 +102,30 @@ class BLEConnection():
         """Disconnects the client from the server."""
         await self.client.stop_notify(self.char_tx_UUID)
         if self.connected:
-            self.logger.debug("Disconnecting...")
+            logger.debug("Disconnecting...")
             await self.client.disconnect()
 
-    async def write(self, data, pause=0.05, with_response=False):
-        """Write bytes to the server, split to chunks of maximum mtu size.
+    async def write(self, data, with_response=False):
+        """Write bytes to the server, split to chunks of maximum data size.
 
         Arguments:
             data (bytearray):
                 Data to be sent to the server.
-            pause (float):
-                Time between chunks of data.
             with_response (bool):
-                Write with or without reponse.
+                Write with or without response.
         """
-        # Chop data into chunks of maximum tranmission size
-        chunks = [data[i: i + self.mtu] for i in range(0, len(data), self.mtu)]
-
         # Send the chunks one by one
-        for chunk in chunks:
-            self.logger.debug(
+        for i in range(0, len(data), self.max_data_size):
+            chunk = data[i : i + self.max_data_size]
+            logger.debug(
                 "TX CHUNK: {0}, {1} response".format(
                     chunk, "with" if with_response else "without"
                 )
             )
             # Send one chunk
             await self.client.write_gatt_char(
-                self.char_rx_UUID,
-                bytearray(chunk),
-                with_response
+                self.char_rx_UUID, bytearray(chunk), with_response
             )
-            # Give server some time to process chunk
-            await asyncio.sleep(pause)
 
 
 class BLERequestsConnection(BLEConnection):
@@ -169,7 +151,7 @@ class BLERequestsConnection(BLEConnection):
             data (bytes):
                 Bytes to process.
         """
-        self.logger.debug("DATA {0}".format(data))
+        logger.debug("DATA {0}".format(data))
         self.reply = data
         self.reply_ready.set()
 

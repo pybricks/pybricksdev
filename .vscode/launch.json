@@ -44,17 +44,6 @@
             ]
         },
         {
-            "name": "Prime/Inventor Hub Dual Boot",
-            "type": "python",
-            "request": "launch",
-            "module": "pybricksdev",
-            "console": "integratedTerminal",
-            "args": [
-                "dual-boot",
-                "../pybricks-micropython/bricks/primehub/build/firmware.zip"
-            ]
-        },
-        {
             "name": "Flash Technic Hub",
             "type": "python",
             "request": "launch",
@@ -62,8 +51,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/technichub/build/firmware.zip"
             ]
         },
@@ -75,8 +62,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/cityhub/build/firmware.zip"
             ]
         },
@@ -88,8 +73,6 @@
             "console": "integratedTerminal",
             "args": [
                 "flash",
-                "-d",
-                "10",
                 "../pybricks-micropython/bricks/movehub/build/firmware.zip"
             ]
         },
