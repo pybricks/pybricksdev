@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import random
+import struct
 
 import asyncssh
 from bleak.backends.device import BLEDevice
@@ -16,6 +17,13 @@ from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
+from .ble.pybricks import (
+    Event,
+    PYBRICKS_CONTROL_UUID,
+    PYBRICKS_PROTOCOL_VERSION,
+    SW_REV_UUID,
+    Status,
+)
 from .compile import compile_file
 from .usbconnection import USBConnection
 
@@ -570,18 +578,6 @@ class EV3Connection:
         await self.client.sftp.get(self.abs_path(remote_path), localpath=local_path)
 
 
-# Pybricks control characteristic UUID
-PYBRICKS_UUID = "c5f50002-8280-46da-89f4-6d8051e4aeef"
-# The minimum required Pybricks protocol version
-PYBRICKS_PROTOCOL_VERSION = semver.VersionInfo(1)
-
-# Standard Device Information Service UUID
-DI_SERVICE_UUID = "0000180a-0000-1000-8000-00805f9b34fb"
-# Standard Firmware Revision String characteristic UUID
-FW_REV_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
-# Standard Software Revision String UUID (Pybricks protocol version)
-SW_REV_UUID = "00002a28-0000-1000-8000-00805f9b34fb"
-
 # Nordic UART hub Rx, pybricksdev Tx characteristic
 NUS_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 # Nordic UART hub Tx, pybricksdev Rx characteristic
@@ -692,14 +688,11 @@ class PybricksHub:
         for line in lines:
             self.line_handler(line)
 
-    def pybricks_service_handler(self, _: int, data: bytearray):
-        if data[0] == 0:
-
-            # Get new state
-            msg = data[1]
-
-            # Get new program state
-            program_running_now = bool(msg & (1 << 6))
+    def pybricks_service_handler(self, _: int, data: bytes) -> None:
+        if data[0] == Event.STATUS_REPORT:
+            # decode the payload
+            (flags,) = struct.unpack("<I", data[1:])
+            program_running_now = bool(flags & Status.USER_PROGRAM_RUNNING.flag)
 
             # If we are currently downloading a program, we must ignore user
             # program running state changes, otherwise the checksum will be
@@ -743,7 +736,9 @@ class PybricksHub:
                     f"Unsupported Pybricks protocol version: {protocol_version}"
                 )
             await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
-            await self.client.start_notify(PYBRICKS_UUID, self.pybricks_service_handler)
+            await self.client.start_notify(
+                PYBRICKS_CONTROL_UUID, self.pybricks_service_handler
+            )
             self.connected = True
         except:  # noqa: E722
             self.disconnect()
