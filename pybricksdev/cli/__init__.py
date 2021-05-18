@@ -16,7 +16,7 @@ import argcomplete
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..hubs import HubTypeId
+from ..ble.lwp3 import HubTypeId
 
 
 PROG_NAME = (

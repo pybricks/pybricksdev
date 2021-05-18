@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ## Added
+- `pybricksdev.ble.lwp3` module.
 - `pybricksdev.ble.nus` module.
 - `pybricksdev.ble.pybricks` module.
 

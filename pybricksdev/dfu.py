@@ -15,7 +15,7 @@ from typing import BinaryIO, ContextManager
 from usb.core import NoBackendError, USBError
 
 from . import _dfu_upload, _dfu_create, resources
-from .hubs import HubTypeId
+from .ble.lwp3 import HubTypeId
 
 FIRMWARE_ADDRESS = 0x08008000
 FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB
