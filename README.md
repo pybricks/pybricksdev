@@ -120,23 +120,23 @@ firmware.
     #
 
     # Run a one-liner on a Pybricks hub
-    pybricksdev run ble "Pybricks Hub" "print('Hello!'); print('world!');"
+    pybricksdev run ble "print('Hello!'); print('world!');"
 
     # Run script on the first device we find called Pybricks hub
-    pybricksdev run ble "Pybricks Hub" demo/shortdemo.py
+    pybricksdev run ble --name "Pybricks Hub" demo/shortdemo.py
 
     # Run script on device with address 90:84:2B:4A:2B:75 (doesn't work on Mac)
-    pybricksdev run ble 90:84:2B:4A:2B:75 demo/shortdemo.py
+    pybricksdev run ble --name 90:84:2B:4A:2B:75 demo/shortdemo.py
 
     #
     # Other connection examples:
     #
 
     # Run script on ev3dev at 192.168.0.102
-    pybricksdev run ssh 192.168.0.102 demo/shortdemo.py
+    pybricksdev run ssh --name 192.168.0.102 demo/shortdemo.py
 
     # Run script on primehub at
-    pybricksdev run usb "Pybricks Hub" demo/shortdemo.py
+    pybricksdev run usb --name "Pybricks Hub" demo/shortdemo.py
 
 
 ### Compiling Pybricks MicroPython programs without running

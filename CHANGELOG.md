@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pybricksdev.ble.lwp3` module.
 - `pybricksdev.ble.nus` module.
 - `pybricksdev.ble.pybricks` module.
+## Changed
+- Name parameter to `pybricksdev run ble` command is now optional.
 ## Fixed
 - Connecting to BLE devices based on Bluetooth address.
 
