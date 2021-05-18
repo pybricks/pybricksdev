@@ -45,7 +45,7 @@ ipykernel = "^5.3.1"
 ipywidgets = "^7.6.3"
 nbstripout = "^0.3.8"
 notebook = "^6.0.3"
-pybricks = { git = "https://github.com/pybricks/pybricks-api.git", branch = "master" }
+pybricks = {version = "3.0.0rc1", allow-prereleases = true}
 pytest = "^5.2"
 
 [build-system]

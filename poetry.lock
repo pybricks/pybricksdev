@@ -712,18 +712,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pybricks"
-version = "3.0.0-rc.1"
+version = "3.0.0rc1"
 description = "Documentation and user-API stubs for Pybricks MicroPython"
 category = "dev"
 optional = false
-python-versions = "^3.8"
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/pybricks/pybricks-api.git"
-reference = "master"
-resolved_reference = "73cc441edb625a7d86565e77d178551968d574e1"
+python-versions = ">=3.8,<4.0"
 
 [[package]]
 name = "pycodestyle"
@@ -1053,7 +1046,7 @@ notebook = ">=4.4.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "883692ebc873986658cce5229c64daaadfc449a2dbf8430f411cba989ab1ea3f"
+content-hash = "e2ff5c1d425324b37b76052c67f36874a412d19f4dd43036838b40590b4d63e8"
 
 [metadata.files]
 aioserial = [
@@ -1401,7 +1394,10 @@ py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
     {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
 ]
-pybricks = []
+pybricks = [
+    {file = "pybricks-3.0.0rc1-py3-none-any.whl", hash = "sha256:2cefbcf817f6c36910c00199f343b308c3b1fd99fa3b5ea5d9b4dd83b277a695"},
+    {file = "pybricks-3.0.0rc1.tar.gz", hash = "sha256:f9858c474388cf99fd43d3b9291e36b1c2913ceeb400626139dad31d78b45441"},
+]
 pycodestyle = [
     {file = "pycodestyle-2.7.0-py2.py3-none-any.whl", hash = "sha256:514f76d918fcc0b55c6680472f0a37970994e07bbb80725808c17089be302068"},
     {file = "pycodestyle-2.7.0.tar.gz", hash = "sha256:c389c1d06bf7904078ca03399a4816f974a1d590090fecea0c63ec26ebaf1cef"},
