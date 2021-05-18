@@ -18,7 +18,7 @@ from . import _dfu_upload, _dfu_create, resources
 from .hubs import HubTypeId
 
 FIRMWARE_ADDRESS = 0x08008000
-FIRMWARE_SIZE = 1*1024*1024 - 32*1024  # 1MiB - 32KiB
+FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB
 LEGO_VID = 0x0694
 SPIKE_PRIME_PID = 0x0008
 MINDSTORMS_INVENTOR_PID = 0x0011
@@ -35,7 +35,7 @@ def _get_dfu_util() -> ContextManager[os.PathLike]:
         valid after the context manager exits.
     """
     # Use embedded .exe for Windows
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         return path(resources, resources.DFU_UTIL_EXE)
 
     # otherwise use system provided dfu-util
@@ -74,17 +74,21 @@ def backup_dfu(file: BinaryIO) -> None:
             # dfu-util won't overwrite existing files so we have to do that first
             os.remove(file.name)
 
-            exit(call([
-                dfu_util,
-                "--device",
-                f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-                "--alt",
-                "0",
-                "--dfuse-address",
-                f"{FIRMWARE_ADDRESS}:{FIRMWARE_SIZE}",
-                "--upload",
-                file.name
-            ]))
+            exit(
+                call(
+                    [
+                        dfu_util,
+                        "--device",
+                        f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                        "--alt",
+                        "0",
+                        "--dfuse-address",
+                        f"{FIRMWARE_ADDRESS}:{FIRMWARE_SIZE}",
+                        "--upload",
+                        file.name,
+                    ]
+                )
+            )
 
 
 def restore_dfu(file: BinaryIO) -> None:
@@ -110,29 +114,33 @@ def restore_dfu(file: BinaryIO) -> None:
 
             file.close()
 
-            exit(call([
-                dfu_util,
-                "--device",
-                f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-                "--alt",
-                "0",
-                "--dfuse-address",
-                f"{FIRMWARE_ADDRESS}",
-                "--download",
-                file.name
-            ]))
+            exit(
+                call(
+                    [
+                        dfu_util,
+                        "--device",
+                        f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                        "--alt",
+                        "0",
+                        "--dfuse-address",
+                        f"{FIRMWARE_ADDRESS}",
+                        "--download",
+                        file.name,
+                    ]
+                )
+            )
 
 
 def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
     """Flashes a firmware file using DFU."""
 
     if metadata["device-id"] != HubTypeId.PRIME_HUB:
-        print('Unknown hub type:', metadata["device-id"], file=sys.stderr)
+        print("Unknown hub type:", metadata["device-id"], file=sys.stderr)
         exit(1)
 
     with TemporaryDirectory() as out_dir:
-        outfile = os.path.join(out_dir, 'firmware.dfu')
-        target = {'address': FIRMWARE_ADDRESS, 'data': firmware_bin}
+        outfile = os.path.join(out_dir, "firmware.dfu")
+        target = {"address": FIRMWARE_ADDRESS, "data": firmware_bin}
 
         try:
             # Determine correct product ID
@@ -147,8 +155,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
                 exit(1)
 
             product_id = devices[0].idProduct
-            if (product_id != SPIKE_PRIME_PID and
-                    product_id != MINDSTORMS_INVENTOR_PID):
+            if product_id != SPIKE_PRIME_PID and product_id != MINDSTORMS_INVENTOR_PID:
                 print(f"Unknown USB product ID: {product_id:04X}", file=sys.stderr)
                 exit(1)
 
@@ -172,7 +179,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
             _dfu_upload.exit_dfu()
             print("Done.")
         except USBError as e:
-            if e.errno != errno.EACCES or platform.system() != 'Linux':
+            if e.errno != errno.EACCES or platform.system() != "Linux":
                 # not expecting other errors
                 raise
 
@@ -194,12 +201,16 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
                 # the --device command line option below.
                 _dfu_create.build(outfile, [[target]], SPIKE_PRIME_DEVICE)
 
-                exit(call([
-                    dfu_util,
-                    "--device",
-                    f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
-                    "--alt",
-                    "0",
-                    "--download",
-                    outfile
-                ]))
+                exit(
+                    call(
+                        [
+                            dfu_util,
+                            "--device",
+                            f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                            "--alt",
+                            "0",
+                            "--download",
+                            outfile,
+                        ]
+                    )
+                )

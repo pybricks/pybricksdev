@@ -19,8 +19,11 @@ from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
 from ..hubs import HubTypeId
 
 
-PROG_NAME = (f'{path.basename(sys.executable)} -m {MODULE_NAME}'
-             if sys.argv[0].endswith('__main__.py') else path.basename(sys.argv[0]))
+PROG_NAME = (
+    f"{path.basename(sys.executable)} -m {MODULE_NAME}"
+    if sys.argv[0].endswith("__main__.py")
+    else path.basename(sys.argv[0])
+)
 
 
 class Tool(ABC):
@@ -58,15 +61,15 @@ def _parse_script_arg(script_arg):
 class Compile(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'compile',
-            help='compile a Pybricks program without running it',
+            "compile",
+            help="compile a Pybricks program without running it",
         )
         parser.tool = self
         # The argument is a filename or a Python one-liner.
         parser.add_argument(
-            'script',
-            metavar='<script>',
-            help='path to a MicroPython script or inline script',
+            "script",
+            metavar="<script>",
+            help="path to a MicroPython script or inline script",
         )
 
     async def run(self, args: argparse.Namespace):
@@ -82,62 +85,67 @@ class Compile(Tool):
 class Run(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'run',
-            help='run a Pybricks program',
+            "run",
+            help="run a Pybricks program",
         )
         parser.tool = self
         parser.add_argument(
-            'conntype',
-            metavar='<connection type>',
-            help='connection type: %(choices)s',
-            choices=['ble', 'usb', 'ssh']
+            "conntype",
+            metavar="<connection type>",
+            help="connection type: %(choices)s",
+            choices=["ble", "usb", "ssh"],
         )
         parser.add_argument(
-            'device',
-            metavar='<device>',
-            help='hostname or IP address for SSH connection; '
-                 'Bluetooth device name or Bluetooth address for BLE connection; '
-                 'serial port name for USB connection',
+            "device",
+            metavar="<device>",
+            help="hostname or IP address for SSH connection; "
+            "Bluetooth device name or Bluetooth address for BLE connection; "
+            "serial port name for USB connection",
         )
         parser.add_argument(
-            'script',
-            metavar='<script>',
-            help='path to a MicroPython script or inline script',
+            "script",
+            metavar="<script>",
+            help="path to a MicroPython script or inline script",
         )
         parser.add_argument(
-            '--wait',
-            help='Await program completion (True) or disconnect immediately (False)',
+            "--wait",
+            help="Await program completion (True) or disconnect immediately (False)",
             required=False,
-            default='True',
-            choices=['True', 'False']
+            default="True",
+            choices=["True", "False"],
         )
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import PybricksHub, EV3Connection, USBPUPConnection, USBRPCConnection
+        from ..connections import (
+            PybricksHub,
+            EV3Connection,
+            USBPUPConnection,
+            USBRPCConnection,
+        )
 
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
 
         # Pick the right connection
-        if args.conntype == 'ssh':
+        if args.conntype == "ssh":
             # So it's an ev3dev
             if not validators.ip_address.ipv4(args.device):
                 raise ValueError("Device must be IP address.")
             hub = EV3Connection()
             device_or_address = args.device
-        elif args.conntype == 'ble':
+        elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
             if validators.mac_address(args.device):
                 device_or_address = args.device
             else:
                 device_or_address = await find_device(args.device, timeout=5)
-        elif args.conntype == 'usb' and args.device == 'lego':
+        elif args.conntype == "usb" and args.device == "lego":
             # It's LEGO stock firmware Hub with USB.
             hub = USBRPCConnection()
-            device_or_address = 'LEGO Technic Large Hub in FS Mode'
-        elif args.conntype == 'usb':
+            device_or_address = "LEGO Technic Large Hub in FS Mode"
+        elif args.conntype == "usb":
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
             device_or_address = args.device
@@ -147,7 +155,7 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect(device_or_address)
         try:
-            await hub.run(script_path, args.wait == 'True')
+            await hub.run(script_path, args.wait == "True")
         finally:
             await hub.disconnect()
 
@@ -155,21 +163,20 @@ class Run(Tool):
 class Flash(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'flash',
-            help='flash firmware on a LEGO Powered Up device'
+            "flash", help="flash firmware on a LEGO Powered Up device"
         )
         parser.tool = self
         parser.add_argument(
-            'firmware',
-            metavar='<firmware-file>',
-            type=argparse.FileType(mode='rb'),
-            help='the firmware .zip file',
-        ).completer = FilesCompleter(allowednames=('.zip',))
+            "firmware",
+            metavar="<firmware-file>",
+            type=argparse.FileType(mode="rb"),
+            help="the firmware .zip file",
+        ).completer = FilesCompleter(allowednames=(".zip",))
 
     async def run(self, args: argparse.Namespace):
         from ..flash import create_firmware
 
-        print('Creating firmware')
+        print("Creating firmware")
         firmware, metadata = await create_firmware(args.firmware)
 
         if metadata["device-id"] == HubTypeId.PRIME_HUB:
@@ -180,27 +187,24 @@ class Flash(Tool):
             from ..ble import find_device
             from ..flash import BootloaderConnection
 
-            device = await find_device('LEGO Bootloader', 15)
-            print('Found:', device)
+            device = await find_device("LEGO Bootloader", 15)
+            print("Found:", device)
             updater = BootloaderConnection()
             await updater.connect(device)
-            print('Erasing flash and starting update')
+            print("Erasing flash and starting update")
             await updater.flash(firmware, metadata)
 
 
 class DFUBackup(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
-            'backup',
-            help='backup firmware using DFU'
-        )
+        parser = subparsers.add_parser("backup", help="backup firmware using DFU")
         parser.tool = self
         parser.add_argument(
-            'firmware',
-            metavar='<firmware-file>',
-            type=argparse.FileType(mode='wb'),
-            help='the firmware .bin file',
-        ).completer = FilesCompleter(allowednames=('.bin',))
+            "firmware",
+            metavar="<firmware-file>",
+            type=argparse.FileType(mode="wb"),
+            help="the firmware .bin file",
+        ).completer = FilesCompleter(allowednames=(".bin",))
 
     async def run(self, args: argparse.Namespace):
         from ..dfu import backup_dfu
@@ -211,16 +215,16 @@ class DFUBackup(Tool):
 class DFURestore(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            'restore',
-            help='restore firmware using DFU',
+            "restore",
+            help="restore firmware using DFU",
         )
         parser.tool = self
         parser.add_argument(
-            'firmware',
-            metavar='<firmware-file>',
-            type=argparse.FileType(mode='rb'),
-            help='the firmware .bin file',
-        ).completer = FilesCompleter(allowednames=('.bin',))
+            "firmware",
+            metavar="<firmware-file>",
+            type=argparse.FileType(mode="rb"),
+            help="the firmware .bin file",
+        ).completer = FilesCompleter(allowednames=(".bin",))
 
     async def run(self, args: argparse.Namespace):
         from ..dfu import restore_dfu
@@ -236,9 +240,7 @@ class DFU(Tool):
         )
         parser.tool = self
         self.subparsers = parser.add_subparsers(
-            metavar="<action>",
-            dest="action",
-            help="the action to perform"
+            metavar="<action>", dest="action", help="the action to perform"
         )
 
         for tool in DFUBackup(), DFURestore():
@@ -250,10 +252,7 @@ class DFU(Tool):
 
 class Udev(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
-            "udev",
-            help="print udev rules to stdout"
-        )
+        parser = subparsers.add_parser("udev", help="print udev rules to stdout")
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
@@ -269,17 +268,21 @@ def main():
     # Provide main description and help.
     parser = argparse.ArgumentParser(
         prog=PROG_NAME,
-        description='Utilities for Pybricks developers.',
-        epilog='Run `%(prog)s <tool> --help` for tool-specific arguments.',
+        description="Utilities for Pybricks developers.",
+        epilog="Run `%(prog)s <tool> --help` for tool-specific arguments.",
     )
 
-    parser.add_argument('-v', '--version', action='version', version=f'{MODULE_NAME} v{MODULE_VERSION}')
-    parser.add_argument('-d', '--debug', action='store_true', help="enable debug logging")
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"{MODULE_NAME} v{MODULE_VERSION}"
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true", help="enable debug logging"
+    )
 
     subparsers = parser.add_subparsers(
-        metavar='<tool>',
-        dest='tool',
-        help='the tool to use',
+        metavar="<tool>",
+        dest="tool",
+        help="the tool to use",
     )
 
     for tool in Compile(), Run(), Flash(), DFU(), Udev():
@@ -289,8 +292,8 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(
-        format='%(asctime)s: %(levelname)s: %(name)s: %(message)s',
-        level=logging.DEBUG if args.debug else logging.WARNING
+        format="%(asctime)s: %(levelname)s: %(name)s: %(message)s",
+        level=logging.DEBUG if args.debug else logging.WARNING,
     )
 
     if not args.tool:

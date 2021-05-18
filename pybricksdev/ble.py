@@ -116,7 +116,7 @@ class BLEConnection:
         """
         # Send the chunks one by one
         for i in range(0, len(data), self.max_data_size):
-            chunk = data[i: i + self.max_data_size]
+            chunk = data[i : i + self.max_data_size]
             logger.debug(
                 "TX CHUNK: {0}, {1} response".format(
                     chunk, "with" if with_response else "without"
@@ -124,9 +124,7 @@ class BLEConnection:
             )
             # Send one chunk
             await self.client.write_gatt_char(
-                self.char_rx_UUID,
-                bytearray(chunk),
-                with_response
+                self.char_rx_UUID, bytearray(chunk), with_response
             )
 
 

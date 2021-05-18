@@ -44,7 +44,7 @@ def sum_complement(fw, max_size):
         word = fw.read(4)
         if not word:
             break
-        checksum += struct.unpack('I', word)[0]
+        checksum += struct.unpack("I", word)[0]
         size += 4
 
     if size > max_size:
@@ -52,9 +52,9 @@ def sum_complement(fw, max_size):
         exit(1)
 
     for _ in range(size, max_size, 4):
-        checksum += 0xffffffff
+        checksum += 0xFFFFFFFF
 
-    checksum &= 0xffffffff
+    checksum &= 0xFFFFFFFF
     correction = checksum and (1 << 32) - checksum or 0
 
     return correction
@@ -130,12 +130,14 @@ def crc32_checksum(fw, max_size):
 
     crc = 0xFFFFFFFF
     for index in range(0, len(fw), 4):
-        data = int.from_bytes(fw[index:index + 4], "little")
+        data = int.from_bytes(fw[index : index + 4], "little")
         crc = _crc32_fast(crc, data)
     return crc
 
 
-async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]) -> Tuple[bytes, dict]:
+async def create_firmware(
+    firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]
+) -> Tuple[bytes, dict]:
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
@@ -148,44 +150,44 @@ async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.Bi
     """
 
     archive = zipfile.ZipFile(firmware_zip)
-    base = archive.open('firmware-base.bin').read()
-    main_py = io.TextIOWrapper(archive.open('main.py'))
-    metadata = json.load(archive.open('firmware.metadata.json'))
+    base = archive.open("firmware-base.bin").read()
+    main_py = io.TextIOWrapper(archive.open("main.py"))
+    metadata = json.load(archive.open("firmware.metadata.json"))
 
     mpy = await compile_file(
         save_script(main_py.read()),
-        metadata['mpy-cross-options'],
-        metadata['mpy-abi-version']
+        metadata["mpy-cross-options"],
+        metadata["mpy-abi-version"],
     )
 
     # start with base firmware binary blob
     firmware = bytearray(base)
     # pad with 0s until user-mpy-offset
-    firmware.extend(
-        0 for _ in range(metadata['user-mpy-offset'] - len(firmware)))
+    firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
     # append 32-bit little-endian main.mpy file size
-    firmware.extend(struct.pack('<I', len(mpy)))
+    firmware.extend(struct.pack("<I", len(mpy)))
     # append main.mpy file
     firmware.extend(mpy)
     # pad with 0s to align to 4-byte boundary
     firmware.extend(0 for _ in range(-len(firmware) % 4))
 
     # append 32-bit little-endian checksum
-    if metadata['checksum-type'] == "sum":
+    if metadata["checksum-type"] == "sum":
         firmware.extend(
             struct.pack(
-                '<I',
-                sum_complement(io.BytesIO(firmware),
-                               metadata['max-firmware-size'] - 4)))
-    elif metadata['checksum-type'] == "crc32":
+                "<I",
+                sum_complement(io.BytesIO(firmware), metadata["max-firmware-size"] - 4),
+            )
+        )
+    elif metadata["checksum-type"] == "crc32":
         firmware.extend(
             struct.pack(
-                '<I',
-                crc32_checksum(io.BytesIO(firmware),
-                               metadata['max-firmware-size'] - 4)))
+                "<I",
+                crc32_checksum(io.BytesIO(firmware), metadata["max-firmware-size"] - 4),
+            )
+        )
     else:
-        print(f'Unknown checksum type "{metadata["checksum-type"]}"',
-              file=sys.stderr)
+        print(f'Unknown checksum type "{metadata["checksum-type"]}"', file=sys.stderr)
         exit(1)
 
     return firmware, metadata
@@ -193,16 +195,24 @@ async def create_firmware(firmware_zip: typing.Union[str, os.PathLike, typing.Bi
 
 # NAME, PAYLOAD_SIZE requirement
 HUB_INFO: Dict[HubTypeId, Tuple[str, int]] = {
-    HubTypeId.MOVE_HUB: ('Move Hub', 14),
-    HubTypeId.CITY_HUB: ('City Hub', 32),
-    HubTypeId.TECHNIC_HUB: ('Technic Hub', 32),
+    HubTypeId.MOVE_HUB: ("Move Hub", 14),
+    HubTypeId.CITY_HUB: ("City Hub", 32),
+    HubTypeId.TECHNIC_HUB: ("Technic Hub", 32),
 }
 
 
-class BootloaderRequest():
+class BootloaderRequest:
     """Bootloader request structure."""
 
-    def __init__(self, command, name, request_format, data_format, request_reply=True, write_with_response=True):
+    def __init__(
+        self,
+        command,
+        name,
+        request_format,
+        data_format,
+        request_reply=True,
+        write_with_response=True,
+    ):
         self.command = command
         self.ReplyClass = namedtuple(name, request_format)
         self.data_format = data_format
@@ -233,49 +243,41 @@ class BootloaderConnection(BLERequestsConnection):
     # the response is not received until after flashing is finished, which could
     # cause a timeout, especially for hubs that take longer to erase.
     ERASE_FLASH = BootloaderRequest(
-        0x11, 'Erase', ['result'], '<B', write_with_response=False
+        0x11, "Erase", ["result"], "<B", write_with_response=False
     )
 
     # City hub bootloader always sends write response for most commands even
     # when write without response is used which confuses Bluetooth stacks, so
     # we always have to do write with response.
-    ERASE_FLASH_CITY_HUB = BootloaderRequest(
-        0x11, 'Erase', ['result'], '<B'
-    )
+    ERASE_FLASH_CITY_HUB = BootloaderRequest(0x11, "Erase", ["result"], "<B")
 
     # Only the final flash message receives a reply.
     PROGRAM_FLASH = BootloaderRequest(
-        0x22, 'Flash', [], '', request_reply=False, write_with_response=False
+        0x22, "Flash", [], "", request_reply=False, write_with_response=False
     )
     PROGRAM_FLASH_FINAL = BootloaderRequest(
-        0x22, 'Flash', ['checksum', 'count'], '<BI',  write_with_response=False
+        0x22, "Flash", ["checksum", "count"], "<BI", write_with_response=False
     )
 
     # This reboots the hub, so Bluetooth is disconnected and we don't receive
     # a reply.
     START_APP = BootloaderRequest(
-        0x33, 'Start', [], '', request_reply=False, write_with_response=False
+        0x33, "Start", [], "", request_reply=False, write_with_response=False
     )
 
-    INIT_LOADER = BootloaderRequest(
-        0x44, 'Init', ['result'], '<B'
-    )
+    INIT_LOADER = BootloaderRequest(0x44, "Init", ["result"], "<B")
     GET_INFO = BootloaderRequest(
-        0x55, 'Info', ['version', 'start_addr', 'end_addr', 'type_id'], '<iIIB'
+        0x55, "Info", ["version", "start_addr", "end_addr", "type_id"], "<iIIB"
     )
-    GET_CHECKSUM = BootloaderRequest(
-        0x66, 'Checksum', ['checksum'], '<B'
-    )
-    GET_FLASH_STATE = BootloaderRequest(
-        0x77, 'State', ['level'], '<B'
-    )
+    GET_CHECKSUM = BootloaderRequest(0x66, "Checksum", ["checksum"], "<B")
+    GET_FLASH_STATE = BootloaderRequest(0x77, "State", ["level"], "<B")
     DISCONNECT = BootloaderRequest(
-        0x88, 'Disconnect', [], '', request_reply=False, write_with_response=False
+        0x88, "Disconnect", [], "", request_reply=False, write_with_response=False
     )
 
     def __init__(self):
         """Initialize the BLE Connection for Bootloader service."""
-        super().__init__('00001626-1212-efde-1623-785feabcd123')
+        super().__init__("00001626-1212-efde-1623-785feabcd123")
         self.ignore_erase_reply = False
 
     async def bootloader_request(self, request, payload=None, timeout=None):
@@ -314,11 +316,11 @@ class BootloaderConnection(BLERequestsConnection):
         hub_name, max_data_size = HUB_INFO[info.type_id]
 
         # Verify hub ID against ID in firmware package
-        if info.type_id != metadata['device-id']:
+        if info.type_id != metadata["device-id"]:
             await self.disconnect()
             raise RuntimeError(
                 "This firmware {0}, but we are connected to {1}.".format(
-                    HUB_INFO[metadata['device-id']][0], hub_name
+                    HUB_INFO[metadata["device-id"]][0], hub_name
                 )
             )
 
@@ -331,9 +333,10 @@ class BootloaderConnection(BLERequestsConnection):
             # things by having a buggy Bluetooth implementation in its bootloader.
             response = await self.bootloader_request(
                 self.ERASE_FLASH_CITY_HUB
-                if info.type_id == HubTypeId.CITY_HUB and not platform.system() == "Windows"
+                if info.type_id == HubTypeId.CITY_HUB
+                and not platform.system() == "Windows"
                 else self.ERASE_FLASH,
-                timeout=5
+                timeout=5,
             )
             logger.debug(response)
         except asyncio.TimeoutError:
@@ -341,16 +344,17 @@ class BootloaderConnection(BLERequestsConnection):
             logger.info("did not receive erase reply, continuing anyway")
 
         # Get the bootloader ready to accept the firmware
-        logger.debug('Request begin update.')
+        logger.debug("Request begin update.")
         response = await self.bootloader_request(
-            request=self.INIT_LOADER,
-            payload=struct.pack('<I', firmware_size)
+            request=self.INIT_LOADER, payload=struct.pack("<I", firmware_size)
         )
         logger.debug(response)
-        logger.debug('Begin update.')
+        logger.debug("Begin update.")
 
         # Maintain progress using tqdm
-        with logging_redirect_tqdm(), tqdm(total=firmware_size, unit='B', unit_scale=True) as pbar:
+        with logging_redirect_tqdm(), tqdm(
+            total=firmware_size, unit="B", unit_scale=True
+        ) as pbar:
 
             def reader():
                 while True:
@@ -383,13 +387,15 @@ class BootloaderConnection(BLERequestsConnection):
                     request = self.PROGRAM_FLASH
 
                 # Pack the data in the expected format
-                data = struct.pack('<BI' + 'B' * len(payload), len(payload) + 4, address, *payload)
+                data = struct.pack(
+                    "<BI" + "B" * len(payload), len(payload) + 4, address, *payload
+                )
                 response = await self.bootloader_request(request, data)
                 logger.debug(response)
                 pbar.update(len(payload))
                 address += len(payload)
 
         # Reboot the hub
-        logger.debug('Request reboot.')
+        logger.debug("Request reboot.")
         response = await self.bootloader_request(self.START_APP)
         logger.debug(response)

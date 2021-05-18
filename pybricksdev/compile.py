@@ -44,9 +44,8 @@ async def run_mpy_cross(args):
     # Run the process asynchronously
     try:
         proc = await asyncio.create_subprocess_exec(
-            mpy_cross.mpy_cross, *args,
-            stdout=PIPE,
-            stderr=PIPE)
+            mpy_cross.mpy_cross, *args, stdout=PIPE, stderr=PIPE
+        )
 
         # Check the output for compile errors such as syntax errors
         stdout, stderr = await proc.communicate()
@@ -58,10 +57,7 @@ async def run_mpy_cross(args):
         # before 3.8 also used WindowsSelectorEventLoopPolicy() by default, but
         # pybricksdev requires at least Python 3.8, so that shouldn't be a problem.
         logger.debug("calling mpy-cross synchronously")
-        proc = Popen(
-            [mpy_cross.mpy_cross, *args],
-            stdout=PIPE,
-            stderr=PIPE)
+        proc = Popen([mpy_cross.mpy_cross, *args], stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
 
     if proc.returncode != 0:
@@ -141,7 +137,7 @@ def print_mpy(data):
         + "\nconst uint8_t script[] = "
     )
     for i in range(0, len(data), WIDTH):
-        chunk = data[i:i + WIDTH]
+        chunk = data[i : i + WIDTH]
         hex_repr = ["0x{0}".format(hex(i)[2:].zfill(2).upper()) for i in chunk]
         print("    " + ", ".join(hex_repr) + ",")
     print("};")

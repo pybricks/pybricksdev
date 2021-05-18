@@ -8,8 +8,11 @@
 
 # This file was originally copied from micropython/tools/dfu.py
 
-import sys, struct, zlib, os
 from optparse import OptionParser
+import os
+import struct
+import sys
+import zlib
 
 DEFAULT_DEVICE = "0x0483:0xdf11"
 
@@ -36,7 +39,10 @@ def parse(file, dump_images=False):
     data = open(file, "rb").read()
     crc = compute_crc(data[:-4])
     prefix, data = consume("<5sBIB", data, "signature version size targets")
-    print("%(signature)s v%(version)d, image size: %(size)d, targets: %(targets)d" % prefix)
+    print(
+        "%(signature)s v%(version)d, image size: %(size)d, targets: %(targets)d"
+        % prefix
+    )
     for t in range(prefix["targets"]):
         tprefix, data = consume(
             "<6sBI255s2I", data, "signature altsetting named name size elements"
@@ -64,7 +70,9 @@ def parse(file, dump_images=False):
                 print('    DUMPED IMAGE TO "%s"' % out)
         if len(target):
             print("target %d: PARSE ERROR" % t)
-    suffix = named(struct.unpack("<4H3sBI", data[:16]), "device product vendor dfu ufd len crc")
+    suffix = named(
+        struct.unpack("<4H3sBI", data[:16]), "device product vendor dfu ufd len crc"
+    )
     print(
         "usb: %(vendor)04x:%(product)04x, device: 0x%(device)04x, dfu: 0x%(dfu)04x, %(ufd)s, %(len)d, 0x%(crc)08x"
         % suffix
@@ -85,9 +93,14 @@ def build(file, targets, device=DEFAULT_DEVICE):
             pad = (8 - len(image["data"]) % 8) % 8
             image["data"] = image["data"] + bytes(bytearray(8)[0:pad])
             #
-            tdata += struct.pack("<2I", image["address"], len(image["data"])) + image["data"]
+            tdata += (
+                struct.pack("<2I", image["address"], len(image["data"])) + image["data"]
+            )
         tdata = (
-            struct.pack("<6sBI255s2I", b"Target", 0, 1, b"ST...", len(tdata), len(target)) + tdata
+            struct.pack(
+                "<6sBI255s2I", b"Target", 0, 1, b"ST...", len(tdata), len(target)
+            )
+            + tdata
         )
         data += tdata
     data = struct.pack("<5sBIB", b"DfuSe", 1, len(data) + 11, len(targets)) + data
@@ -152,7 +165,7 @@ if __name__ == "__main__":
             device = options.device
         try:
             v, d = map(lambda x: int(x, 0) & 0xFFFF, device.split(":", 1))
-        except:
+        except Exception:
             print("Invalid device '%s'." % device)
             sys.exit(1)
         build(outfile, [target], device)
