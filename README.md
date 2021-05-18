@@ -28,26 +28,27 @@ for technical reasons.)
 
 ### Command Line Tool
 
-We recommend using [pipx][pipx] to install `pybricksdev` as a command line tool.
+We recommend using [pipx] to install `pybricksdev` as a command line tool.
 
-[pipx]: https://pipxproject.github.io/pipx/
+We also highly recommend installing `pipx` using a package manager such as `apt`,
+`brew`, etc. as suggested in the official [pipx installation] instructions.
 
-Be sure to install `pipx` in the Python 3.8 runtime:
-
-    python3.8 -m pip install --upgrade pip # ensure pip is up to date first
-    python3.8 -m pip install pipx
-
-If this is the first time you have installed `pipx`, run this command:
-
-    python3.8 -m pipx ensurepath
-
+And don't forget to run `pipx ensurepath` after the initial installation.
 This will make it so that tools installed with `pipx` are in your `PATH`.
 You will need to restart any terminal windows for this to take effect. If that
 doesn't work, try logging out and logging back in.
 
 Then use `pipx` to install `pybricksdev`:
 
-    python3.8 -m pipx install pybricksdev
+    # POSIX shell (Linux, macOS, Cygwin, etc)
+    PIPX_DEFAULT_PYTHON=python3.8 pipx install pybricksdev
+
+Setting the `PIPX_DEFAULT_PYTHON` environment variable is only needed when
+`pipx` uses a different Python runtime other that Python 3.8. This may be the
+case if your package manager uses a different Python runtime.
+
+[pipx]: https://pipxproject.github.io/pipx/
+[pipx installation]: https://pipxproject.github.io/pipx/installation/
 
 #### Windows users
 
