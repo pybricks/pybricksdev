@@ -71,11 +71,28 @@ class Compile(Tool):
             metavar="<script>",
             help="path to a MicroPython script or inline script",
         )
+        parser.add_argument(
+            '--inline',
+            help='Flatten source into one file before compiling',
+            required=False,
+            default='False',
+            choices=['True', 'False']
+        )
+        parser.add_argument(
+            '--importbase',
+            help='Additional base dir for inlined imports. Ignored unless --inline is True',
+            required=False,
+            default=None
+        )
 
     async def run(self, args: argparse.Namespace):
         from ..compile import compile_file, print_mpy
 
         script_path = _parse_script_arg(args.script)
+
+        if args.inline == 'True':
+            from ..inline import flatten
+            script_path = flatten(script_path, args.importbase)
 
         # Compile the script and print the result
         mpy = await compile_file(script_path)
@@ -114,6 +131,19 @@ class Run(Tool):
             default="True",
             choices=["True", "False"],
         )
+        parser.add_argument(
+            '--inline',
+            help='Flatten source into one file before downloading',
+            required=False,
+            default='False',
+            choices=['True', 'False']
+        )
+        parser.add_argument(
+            '--importbase',
+            help='Additional base dir for inlined imports. Ignored unless --inline is True',
+            required=False,
+            default=None
+        )
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
@@ -126,6 +156,10 @@ class Run(Tool):
 
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
+
+        if args.inline == 'True':
+            from ..inline import flatten
+            script_path = flatten(script_path, args.importbase)
 
         # Pick the right connection
         if args.conntype == "ssh":
