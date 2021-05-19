@@ -118,7 +118,8 @@ def save_script(py_string):
 
     # Write Python command to a file.
     with open(py_path, "w") as f:
-        f.write(py_string + "\n")
+        f.write(py_string)
+        f.write("\n")
 
     # Return path to file
     return py_path
@@ -126,18 +127,20 @@ def save_script(py_string):
 
 def print_mpy(data):
     # Print as string as a sanity check.
-    print("\nBytes:")
+    print()
+    print("Bytes:")
     print(data)
 
     # Print the bytes as a C byte array for development of new MicroPython
     # ports without usable I/O, REPL or otherwise.
     WIDTH = 8
-    print(
-        "\n// MPY file. Version: {0}. Size: {1}".format(data[1], len(data))
-        + "\nconst uint8_t script[] = "
-    )
+    print()
+    print(f"// MPY file. Version: {data[1]}. Size: {len(data)} bytes")
+    print("const uint8_t script[] = {")
+
     for i in range(0, len(data), WIDTH):
         chunk = data[i : i + WIDTH]
-        hex_repr = ["0x{0}".format(hex(i)[2:].zfill(2).upper()) for i in chunk]
-        print("    " + ", ".join(hex_repr) + ",")
+        hex_repr = [f"0x{i:02X}" for i in chunk]
+        print(f"    {', '.join(hex_repr)},")
+
     print("};")
