@@ -57,9 +57,13 @@ genrst/
 # Virtual environment
 ######################
 .venv/
+/venv/
 
 # Temporary files
-demo/_*.py
+_*.py
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Pycharm IDE files
+/.idea/
