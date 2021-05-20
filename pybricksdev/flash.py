@@ -17,8 +17,8 @@ import typing
 import zipfile
 
 from .ble import BLERequestsConnection
+from .ble.lwp3 import BootloaderCommand, HubTypeId
 from .compile import save_script, compile_file
-from .hubs import HubTypeId
 
 logger = logging.getLogger(__name__)
 
@@ -243,36 +243,75 @@ class BootloaderConnection(BLERequestsConnection):
     # the response is not received until after flashing is finished, which could
     # cause a timeout, especially for hubs that take longer to erase.
     ERASE_FLASH = BootloaderRequest(
-        0x11, "Erase", ["result"], "<B", write_with_response=False
+        BootloaderCommand.ERASE_FLASH,
+        "Erase",
+        ["result"],
+        "<B",
+        write_with_response=False,
     )
 
     # City hub bootloader always sends write response for most commands even
     # when write without response is used which confuses Bluetooth stacks, so
     # we always have to do write with response.
-    ERASE_FLASH_CITY_HUB = BootloaderRequest(0x11, "Erase", ["result"], "<B")
+    ERASE_FLASH_CITY_HUB = BootloaderRequest(
+        BootloaderCommand.ERASE_FLASH, "Erase", ["result"], "<B"
+    )
 
     # Only the final flash message receives a reply.
     PROGRAM_FLASH = BootloaderRequest(
-        0x22, "Flash", [], "", request_reply=False, write_with_response=False
+        BootloaderCommand.PROGRAM_FLASH,
+        "Flash",
+        [],
+        "",
+        request_reply=False,
+        write_with_response=False,
     )
+
     PROGRAM_FLASH_FINAL = BootloaderRequest(
-        0x22, "Flash", ["checksum", "count"], "<BI", write_with_response=False
+        BootloaderCommand.PROGRAM_FLASH,
+        "Flash",
+        ["checksum", "count"],
+        "<BI",
+        write_with_response=False,
     )
 
     # This reboots the hub, so Bluetooth is disconnected and we don't receive
     # a reply.
     START_APP = BootloaderRequest(
-        0x33, "Start", [], "", request_reply=False, write_with_response=False
+        BootloaderCommand.START_APP,
+        "Start",
+        [],
+        "",
+        request_reply=False,
+        write_with_response=False,
     )
 
-    INIT_LOADER = BootloaderRequest(0x44, "Init", ["result"], "<B")
-    GET_INFO = BootloaderRequest(
-        0x55, "Info", ["version", "start_addr", "end_addr", "type_id"], "<iIIB"
+    INIT_LOADER = BootloaderRequest(
+        BootloaderCommand.INIT_LOADER, "Init", ["result"], "<B"
     )
-    GET_CHECKSUM = BootloaderRequest(0x66, "Checksum", ["checksum"], "<B")
-    GET_FLASH_STATE = BootloaderRequest(0x77, "State", ["level"], "<B")
+
+    GET_INFO = BootloaderRequest(
+        BootloaderCommand.GET_INFO,
+        "Info",
+        ["version", "start_addr", "end_addr", "type_id"],
+        "<iIIB",
+    )
+
+    GET_CHECKSUM = BootloaderRequest(
+        BootloaderCommand.GET_CHECKSUM, "Checksum", ["checksum"], "<B"
+    )
+
+    GET_FLASH_STATE = BootloaderRequest(
+        BootloaderCommand.GET_FLASH_STATE, "State", ["level"], "<B"
+    )
+
     DISCONNECT = BootloaderRequest(
-        0x88, "Disconnect", [], "", request_reply=False, write_with_response=False
+        BootloaderCommand.DISCONNECT,
+        "Disconnect",
+        [],
+        "",
+        request_reply=False,
+        write_with_response=False,
     )
 
     def __init__(self):
@@ -297,7 +336,7 @@ class BootloaderConnection(BLERequestsConnection):
             logger.debug("Awaiting reply")
             reply = await self.wait_for_reply(timeout)
             # Windows may receive reply from erase command at the wrong time
-            if self.ignore_erase_reply and reply[0] == 0x11:
+            if self.ignore_erase_reply and reply[0] == BootloaderCommand.ERASE_FLASH:
                 reply = await self.wait_for_reply(timeout)
             return request.parse_reply(reply)
 

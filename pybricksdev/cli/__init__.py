@@ -16,7 +16,7 @@ import argcomplete
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..hubs import HubTypeId
+from ..ble.lwp3 import HubTypeId, LWP3_BOOTLOADER_SERVICE_UUID
 
 
 PROG_NAME = (
@@ -113,16 +113,17 @@ class Run(Tool):
             choices=["ble", "usb", "ssh"],
         )
         parser.add_argument(
-            "device",
-            metavar="<device>",
-            help="hostname or IP address for SSH connection; "
-            "Bluetooth device name or Bluetooth address for BLE connection; "
-            "serial port name for USB connection",
-        )
-        parser.add_argument(
             "script",
             metavar="<script>",
             help="path to a MicroPython script or inline script",
+        )
+        parser.add_argument(
+            "--name",
+            metavar="<name>",
+            required=False,
+            help="hostname or IP address for SSH connection; "
+            "Bluetooth device name or Bluetooth address for BLE connection; "
+            "serial port name for USB connection",
         )
         parser.add_argument(
             "--wait",
@@ -164,25 +165,31 @@ class Run(Tool):
         # Pick the right connection
         if args.conntype == "ssh":
             # So it's an ev3dev
-            if not validators.ip_address.ipv4(args.device):
+            if args.name is None:
+                print("--name is required for SSH connections", file=sys.stderr)
+                exit(1)
+
+            if not validators.ip_address.ipv4(args.name):
                 raise ValueError("Device must be IP address.")
+
             hub = EV3Connection()
-            device_or_address = args.device
+            device_or_address = args.name
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
-            if validators.mac_address(args.device):
-                device_or_address = args.device
-            else:
-                device_or_address = await find_device(args.device, timeout=5)
-        elif args.conntype == "usb" and args.device == "lego":
+            device_or_address = await find_device(args.name)
+        elif args.conntype == "usb" and args.name == "lego":
             # It's LEGO stock firmware Hub with USB.
             hub = USBRPCConnection()
             device_or_address = "LEGO Technic Large Hub in FS Mode"
         elif args.conntype == "usb":
+            if args.name is None:
+                print("--name is required for USB connections", file=sys.stderr)
+                exit(1)
+
             # It's a Pybricks Hub with USB. Port name is given.
             hub = USBPUPConnection()
-            device_or_address = args.device
+            device_or_address = args.name
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
@@ -221,7 +228,7 @@ class Flash(Tool):
             from ..ble import find_device
             from ..flash import BootloaderConnection
 
-            device = await find_device("LEGO Bootloader", 15)
+            device = await find_device(service=LWP3_BOOTLOADER_SERVICE_UUID)
             print("Found:", device)
             updater = BootloaderConnection()
             await updater.connect(device)

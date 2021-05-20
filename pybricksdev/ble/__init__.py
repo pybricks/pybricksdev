@@ -3,44 +3,58 @@
 
 import asyncio
 import logging
+from typing import Optional
 
 from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+from .pybricks import PYBRICKS_SERVICE_UUID
+
 logger = logging.getLogger(__name__)
 
 
-async def find_device(name: str, timeout: float = 5) -> BLEDevice:
-    """Quickly find BLE device address by friendly device name.
-
-    This is an alternative to bleak.discover. Instead of waiting a long time to
-    scan everything, it returns as soon as it finds any device with the
-    requested name.
+async def find_device(
+    name: Optional[str] = None,
+    service: str = PYBRICKS_SERVICE_UUID,
+    timeout: float = 10,
+) -> BLEDevice:
+    """Finds a BLE device that is currently advertising that matches the
+    given parameters.
 
     Arguments:
-        name (str):
-            Friendly device name.
-        timeout (float):
-            When to give up searching.
+        name:
+            The device name. This can also be the Bluetooth address on non-Apple
+            platforms or a UUID on Apple platforms. If ``name`` is ``None`` then
+            it is not used as part of the matching criteria.
+        service:
+            The service UUID that is advertized.
+        timeout:
+            How long to search before giving up.
 
     Returns:
-        BLEDevice: Matching device.
+        BLEDevice: The first detected matching device.
 
     Raises:
         asyncio.TimeoutError:
             Device was not found within the timeout.
     """
-    print("Searching for {0}".format(name))
+    print(f"Searching for {name or service}")
 
     queue = asyncio.Queue()
 
-    def set_device_discovered(device: BLEDevice, _: AdvertisementData):
-        if device.name != name:
+    def handle_detection(device: BLEDevice, adv: AdvertisementData):
+        if service not in adv.service_uuids:
+            return
+        if (
+            name is not None
+            and adv.local_name != name
+            and device.address.upper() != name.upper()
+        ):
             return
         queue.put_nowait(device)
 
-    async with BleakScanner(detection_callback=set_device_discovered):
+    async with BleakScanner(detection_callback=handle_detection):
         return await asyncio.wait_for(queue.get(), timeout=timeout)
 
 

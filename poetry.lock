@@ -473,7 +473,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "mpy-cross"
-version = "1.12"
+version = "1.14"
 description = "micropython mpy-cross distribution"
 category = "main"
 optional = false
@@ -712,18 +712,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pybricks"
-version = "3.0.0-rc.1"
+version = "3.0.0rc1"
 description = "Documentation and user-API stubs for Pybricks MicroPython"
 category = "dev"
 optional = false
-python-versions = "^3.8"
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/pybricks/pybricks-api.git"
-reference = "master"
-resolved_reference = "73cc441edb625a7d86565e77d178551968d574e1"
+python-versions = ">=3.8,<4.0"
 
 [[package]]
 name = "pycodestyle"
@@ -1053,7 +1046,7 @@ notebook = ">=4.4.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "883692ebc873986658cce5229c64daaadfc449a2dbf8430f411cba989ab1ea3f"
+content-hash = "dd274832078c802b03653f962989185b3ed46e9e7178231801f63e7f932bb40e"
 
 [metadata.files]
 aioserial = [
@@ -1324,11 +1317,13 @@ more-itertools = [
     {file = "more_itertools-8.7.0-py3-none-any.whl", hash = "sha256:5652a9ac72209ed7df8d9c15daf4e1aa0e3d2ccd3c87f8265a0673cd9cbc9ced"},
 ]
 mpy-cross = [
-    {file = "mpy_cross-1.12-py2.py3-none-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:14be23507f39516b2ec869faae00726c92f5dc8df753390407653e37ba6b0783"},
-    {file = "mpy_cross-1.12-py2.py3-none-manylinux1_i686.whl", hash = "sha256:b870014c6ba8974aab880747ff762eb8bef3550f18f66f5cfdae4a6443332cd3"},
-    {file = "mpy_cross-1.12-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:14d14fdb1afbd700a91da50a6c35b43467d97c30ee8003c3212938a494968927"},
-    {file = "mpy_cross-1.12-py2.py3-none-win32.whl", hash = "sha256:2ff19640c1320ea2c387b02e790043bbcb1f4b07e489d08aa73736e7f553a0cd"},
-    {file = "mpy_cross-1.12-py2.py3-none-win_amd64.whl", hash = "sha256:2199dfc4858ef60860c2a7d538eb50ea21c161620b5309e80af6e536bf474086"},
+    {file = "mpy_cross-1.14-py2.py3-none-macosx_10_6_intel.macosx_10_9_intel.macosx_10_9_x86_64.macosx_10_10_intel.macosx_10_10_x86_64.whl", hash = "sha256:30dd69e146f34715a2ff7c519d446e252ed59d7c2e82f6c429e5cf92065c7770"},
+    {file = "mpy_cross-1.14-py2.py3-none-manylinux1_i686.whl", hash = "sha256:7e5e3dfe49ee97f895cfeb55c4550e03c52dcd7a17ce124e340b6259c15f6021"},
+    {file = "mpy_cross-1.14-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:e46df5e1260aec23db7f3a13f03ddccf595493b8e300368aaedf7a2d1fdfe6b5"},
+    {file = "mpy_cross-1.14-py2.py3-none-manylinux2014_aarch64.whl", hash = "sha256:88ca4f0f4f1966d883aa7d50b3f07aad75be6f80c556705f2cf9906262e6fe34"},
+    {file = "mpy_cross-1.14-py2.py3-none-manylinux2014_armv7l.whl", hash = "sha256:4e4bbdd299ebf70212b83e65dad02f8aeb2849cdb90fad5a3716179308494878"},
+    {file = "mpy_cross-1.14-py2.py3-none-win32.whl", hash = "sha256:d6d94a7dae120e8c35e70bfd2f1881c6cf283164504179e152eaad73e352afd1"},
+    {file = "mpy_cross-1.14-py2.py3-none-win_amd64.whl", hash = "sha256:5fb19b4024b85818d25b72932f173d2c7b3f91bae165525f6bbd55dfba7b0b71"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
@@ -1401,7 +1396,10 @@ py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
     {file = "py-1.10.0.tar.gz", hash = "sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3"},
 ]
-pybricks = []
+pybricks = [
+    {file = "pybricks-3.0.0rc1-py3-none-any.whl", hash = "sha256:2cefbcf817f6c36910c00199f343b308c3b1fd99fa3b5ea5d9b4dd83b277a695"},
+    {file = "pybricks-3.0.0rc1.tar.gz", hash = "sha256:f9858c474388cf99fd43d3b9291e36b1c2913ceeb400626139dad31d78b45441"},
+]
 pycodestyle = [
     {file = "pycodestyle-2.7.0-py2.py3-none-any.whl", hash = "sha256:514f76d918fcc0b55c6680472f0a37970994e07bbb80725808c17089be302068"},
     {file = "pycodestyle-2.7.0.tar.gz", hash = "sha256:c389c1d06bf7904078ca03399a4816f974a1d590090fecea0c63ec26ebaf1cef"},
