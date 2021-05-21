@@ -1,11 +1,11 @@
-import os # importB#0
+import os # importB#1
 
-importB_bar = 'bar2' # importB#2
-importB_flab = 'float' # importB#3
-importB_exported = os.curdir # importB#4
+importB__bar = 'bar2' # importB#3
+importB__flab = 'float' # importB#4
+importB__exported = os.curdir # importB#5
 
-importA_foo = importB_bar # importA#2
+importA__foo = importB__bar # importA#3
 
-print(importA_foo) # script#2
-# expect the following line to be unchanged, because importB isn't imported here # script#3
-print(importB.flab) # script#4
+print(importA__foo) # script#3
+# expect the following line to be unchanged, because importB isn't imported here # script#4
+print(importB.flab) # script#5

@@ -1,10 +1,10 @@
-import os # imb#0
+import os # imb#1
 
-imb_bar = 'bar2' # imb#2
-imb_flab = 'float' # imb#3
-imb_exported = os.curdir # imb#4
+imb__bar = 'bar2' # imb#3
+imb__flab = 'float' # imb#4
+imb__exported = os.curdir # imb#5
 
-ima_foo = imb_bar # ima#2
+ima__foo = imb__bar # ima#3
 
-print(ima_foo) # script#3
-print(imb_flab) # script#4
+print(ima__foo) # script#4
+print(imb__flab) # script#5

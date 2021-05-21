@@ -60,7 +60,8 @@ genrst/
 /venv/
 
 # Temporary files
-_*.py
+demo/_*.py
+/tests/inline_test_resources/**/_*.py
 
 # Jupyter Notebook
 .ipynb_checkpoints

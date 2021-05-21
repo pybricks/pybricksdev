@@ -1,5 +1,5 @@
-sub_importA_foo = 'bar' # sub.importA#0
-sub_importA_foo2 = sub_importA_foo + 'x' # sub.importA#1
+sub__importA__foo = 'bar' # sub.importA#1
+sub__importA__foo2 = sub__importA__foo + 'x' # sub.importA#2
 
-my_local = 'ggg' # script#2
-print(sub_importA_foo) # script#3
+my_local = 'ggg' # script#3
+print(sub__importA__foo) # script#4

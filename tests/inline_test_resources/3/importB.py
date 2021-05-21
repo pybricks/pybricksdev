@@ -6,4 +6,3 @@ def func1(param):
 class Class1:
     def __init__(self):
         self.myvar = 'foo'
-        pass

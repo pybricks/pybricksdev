@@ -72,17 +72,19 @@ class Compile(Tool):
             help="path to a MicroPython script or inline script",
         )
         parser.add_argument(
-            '--inline',
-            help='Flatten source into one file before compiling',
+            "-i",
+            "--inline-imports",
+            dest="inline",
+            help="Flatten source into one file before compiling",
             required=False,
-            default='False',
-            choices=['True', 'False']
+            default="False",
+            choices=["True", "False"],
         )
         parser.add_argument(
-            '--importbase',
-            help='Additional base dir for inlined imports. Ignored unless --inline is True',
+            "--importbase",
+            help="Additional base dir for inlined imports. Ignored unless --inline is True",
             required=False,
-            default=None
+            default=None,
         )
 
     async def run(self, args: argparse.Namespace):
@@ -90,8 +92,9 @@ class Compile(Tool):
 
         script_path = _parse_script_arg(args.script)
 
-        if args.inline == 'True':
+        if args.inline == "True":
             from ..inline import flatten
+
             script_path = flatten(script_path, args.importbase)
 
         # Compile the script and print the result
@@ -133,17 +136,19 @@ class Run(Tool):
             choices=["True", "False"],
         )
         parser.add_argument(
-            '--inline',
-            help='Flatten source into one file before downloading',
+            "-i",
+            "--inline-imports",
+            dest="inline",
+            help="Flatten source into one file before downloading",
             required=False,
-            default='False',
-            choices=['True', 'False']
+            default="False",
+            choices=["True", "False"],
         )
         parser.add_argument(
-            '--importbase',
-            help='Additional base dir for inlined imports. Ignored unless --inline is True',
+            "--importbase",
+            help="Additional base dir for inlined imports. Ignored unless --inline-imports is True",
             required=False,
-            default=None
+            default=None,
         )
 
     async def run(self, args: argparse.Namespace):
@@ -158,8 +163,9 @@ class Run(Tool):
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
 
-        if args.inline == 'True':
+        if args.inline == "True":
             from ..inline import flatten
+
             script_path = flatten(script_path, args.importbase)
 
         # Pick the right connection

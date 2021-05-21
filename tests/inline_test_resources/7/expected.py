@@ -1,5 +1,5 @@
-importA_foo = 'fxxx' # importA#0
-importB_bar = 'bar2' # importB#0
+importA__foo = 'fxxx' # importA#1
+importB__bar = 'bar2' # importB#1
 
-print(importA_foo) # script#2
-print(importB_bar) # script#3
+print(importA__foo) # script#3
+print(importB__bar) # script#4
