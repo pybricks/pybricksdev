@@ -17,15 +17,15 @@ def flatten(script_path, import_base=None):
     """
     file_name = os.path.basename(script_path)
     file_dir = os.path.dirname(script_path)
-    output_path = file_dir + "/_flat_" + file_name
     if file_name.endswith(".py"):
-        file_name = file_name[: len(file_name) - 3]
+        file_name = file_name[: - 3]
+    output_path = file_dir + "/" + file_name + ".flat.py"
     with open(output_path, "w") as output:
-        _Script(script_path, file_name, import_base).flattenInto(output)
+        _Script(script_path, file_name, import_base).flatten_into(output)
     return output_path
 
 
-def _readFileContentsAsLines(path):
+def _read_file_contents_as_lines(path):
     with open(path, "r") as f:
         contents = f.readlines()
     return contents
@@ -40,11 +40,11 @@ class _Module:
         self.module_name = module_name
         self.imports_done = imports_done  # map of import path to its exported symbols
 
-    def isScript(self):
+    def is_script(self):
         return False
 
-    def flattenInto(self, output_file):
-        code_lines = _readFileContentsAsLines(self.script_path)
+    def flatten_into(self, output_file):
+        code_lines = _read_file_contents_as_lines(self.script_path)
         code = "".join(code_lines)
         tree = ast.parse(code, self.script_path)
         # insert a backward pointer in every node
@@ -80,7 +80,7 @@ class _Module:
                 names.append(
                     _Symbol(symbol, node.lineno - 1, node.col_offset, end_offset)
                 )
-            elif not self.isScript():
+            elif not self.is_script():
                 # only look for things to export if this is not the top level script
                 if isinstance(node, ast.ClassDef) or isinstance(node, ast.FunctionDef):
                     # don't record class/function definitions made inside other definitions
@@ -113,13 +113,7 @@ class _Module:
             else:
                 if previous_import.alias != an_import.alias:
                     raise ImportError(
-                        "Module '"
-                        + an_import.module_path
-                        + "' has already been inlined using alias '"
-                        + previous_import.alias
-                        + "' so cannot be inlined using alias '"
-                        + an_import.alias
-                        + "'",
+                        f"Module '{an_import.module_path}' has already been inlined using alias '{previous_import.alias}' so cannot be inlined using alias '{an_import.alias}'",
                         name=an_import.module_path,
                     )
             # always load the exported symbols into the current context, even if the import has already been done
@@ -129,13 +123,13 @@ class _Module:
 
         for a_definition in definitions:
             self.exported_symbol_mappings.update(
-                a_definition.getExportedSymbolMapping()
+                a_definition.get_exported_symbol_mapping()
             )
-            self.local_symbol_mappings.update(a_definition.getLocalSymbolMapping())
+            self.local_symbol_mappings.update(a_definition.get_local_symbol_mapping())
 
         for an_assign in assigns:
-            self.exported_symbol_mappings.update(an_assign.getExportedSymbolMapping())
-            self.local_symbol_mappings.update(an_assign.getLocalSymbolMapping())
+            self.exported_symbol_mappings.update(an_assign.get_exported_symbol_mapping())
+            self.local_symbol_mappings.update(an_assign.get_local_symbol_mapping())
 
         # sort the symbols by line number and then start column number
         names.sort(key=lambda x: (x.line_number * 10000) + x.start_col_offset)
@@ -145,7 +139,7 @@ class _Module:
         while len(names) > 0 and current_line_num < len(code_lines):
             while current_line_num < names[0].line_number:
                 if current_line_num not in import_lines:
-                    self.writeWithReference(
+                    self.write_with_reference(
                         output_file, code_lines[current_line_num], current_line_num
                     )
                 current_line_num += 1
@@ -170,28 +164,28 @@ class _Module:
             result += current_line[up_to:]
 
             # write the updated line
-            self.writeWithReference(output_file, result, current_line_num)
+            self.write_with_reference(output_file, result, current_line_num)
             current_line_num += 1
         # copy any remaining lines
         while current_line_num < len(code_lines):
-            self.writeWithReference(
+            self.write_with_reference(
                 output_file, code_lines[current_line_num], current_line_num
             )
             current_line_num += 1
         return self.exported_symbol_mappings
 
-    def writeWithReference(self, output_file, line, line_number):
+    def write_with_reference(self, output_file, line, line_number):
         stripped_line = line.rstrip()
         if len(stripped_line) == 0:
-            output_file.write(stripped_line + "\n")
+            print(stripped_line, file=output_file)
         else:
-            output_file.write(
+            print(
                 stripped_line
                 + " # "
                 + self.module_name
                 + "#"
-                + str(line_number + 1)
-                + "\n"
+                + str(line_number + 1),
+                file=output_file
             )
 
 
@@ -199,7 +193,7 @@ class _Script(_Module):
     def __init__(self, path, module_name, import_base):
         super().__init__(path, module_name, import_base, {})
 
-    def isScript(self):
+    def is_script(self):
         return True
 
 
@@ -222,16 +216,16 @@ class _ImportStatement:
 
     def flatten(self, into, imports_done):
         import_file_name = self.module_path.replace(".", "/") + ".py"
-        lookup_paths = (self.base_path,) + (
-            () if self.other_base_path is None else (self.other_base_path,)
-        )
+        lookup_paths = [self.base_path]
+        if self.other_base_path is not None:
+            lookup_paths.append(self.other_base_path)
         for base_path in lookup_paths:
             module_file_path = base_path + "/" + import_file_name
             as_name = self.module_path if self.alias is None else self.alias
             if os.path.exists(module_file_path):
                 self.exports = _Module(
                     module_file_path, as_name, self.other_base_path, imports_done
-                ).flattenInto(into)
+                ).flatten_into(into)
                 return
         self.exports = {}
         # make sure this object isn't found when removing imports
@@ -243,12 +237,12 @@ class _NameDefiningStatement:
         self.module = module
         self.name = name
 
-    def getExportedSymbolMapping(self):
+    def get_exported_symbol_mapping(self):
         existing_access_symbol = self.module + "." + self.name
         new_access_symbol = self.module.replace(".", "__") + "__" + self.name
         return {existing_access_symbol: new_access_symbol}
 
-    def getLocalSymbolMapping(self):
+    def get_local_symbol_mapping(self):
         existing_access_symbol = self.name
         new_access_symbol = self.module.replace(".", "__") + "__" + self.name
         return {existing_access_symbol: new_access_symbol}

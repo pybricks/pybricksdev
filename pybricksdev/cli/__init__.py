@@ -76,13 +76,12 @@ class Compile(Tool):
             "--inline-imports",
             dest="inline",
             help="Flatten source into one file before compiling",
-            required=False,
-            default="False",
-            choices=["True", "False"],
+            action="store_true",
         )
         parser.add_argument(
-            "--importbase",
-            help="Additional base dir for inlined imports. Ignored unless --inline is True",
+            "--import-path",
+            dest="importbase",
+            help="Additional base dir for inlined imports. Ignored unless --inline-imports is True",
             required=False,
             default=None,
         )
@@ -92,7 +91,7 @@ class Compile(Tool):
 
         script_path = _parse_script_arg(args.script)
 
-        if args.inline == "True":
+        if args.inline:
             from ..inline import flatten
 
             script_path = flatten(script_path, args.importbase)
@@ -140,12 +139,11 @@ class Run(Tool):
             "--inline-imports",
             dest="inline",
             help="Flatten source into one file before downloading",
-            required=False,
-            default="False",
-            choices=["True", "False"],
+            action="store_true",
         )
         parser.add_argument(
-            "--importbase",
+            "--import-path",
+            dest="importbase",
             help="Additional base dir for inlined imports. Ignored unless --inline-imports is True",
             required=False,
             default=None,
@@ -163,7 +161,7 @@ class Run(Tool):
         # Convert script argument to valid path
         script_path = _parse_script_arg(args.script)
 
-        if args.inline == "True":
+        if args.inline:
             from ..inline import flatten
 
             script_path = flatten(script_path, args.importbase)

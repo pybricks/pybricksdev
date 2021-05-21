@@ -61,7 +61,7 @@ genrst/
 
 # Temporary files
 demo/_*.py
-/tests/inline_test_resources/**/_*.py
+/tests/inline_test_resources/**/*.flat.py
 
 # Jupyter Notebook
 .ipynb_checkpoints
