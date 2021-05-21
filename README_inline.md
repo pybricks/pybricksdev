@@ -1,7 +1,7 @@
 # Inlining imports with pybricksdev
 Most PoweredUp hubs are too small to have file systems, so splitting your PyBricks code
 across several imported modules isn't possible - the entire program must 
-reside in the script file. However, the `--inline` option
+reside in the script file. However, the `--inline-imports` option
 for the 'run' and 'compile' functions in pybricksdev specifies that imports
 that refer to modules in the host file system should be flattened into the
 main script, so that the resulting program is still in one file. The intention is to
@@ -10,13 +10,15 @@ PyBricks libraries, be run on the desktop.
 
 ## Using the Command line
 
-### The --inline option
+### The --inline-imports option
 Here's an example command line:
 
-    pybricksdev run --inline True ble "Pybricks Hub" demo/shortdemo.py
+    pybricksdev run --inline-imports True ble "Pybricks Hub" demo/shortdemo.py
 
 With that option, any import statement that refers to a local module will cause
-that module to be flattened into the main script.
+that module to be flattened into the main script. The option can be shortened to just `-i`:
+
+    pybricksdev run -i True ble "Pybricks Hub" demo/shortdemo.py
 
 If you want to look at the flattened result you can find it in the same directory as the input script,
 with the name `_flat_<your-script>.py`
@@ -27,7 +29,7 @@ There are some limitations:
 - Only the import statement is supported, not the `from x import y` syntax
 - You can't mix local imports and imports of built-in packages on the same line
   (but you shouldn't do that anyway!)
-- Only import statements with no indentation are supported (so not imports inside definitions or
+- Only import statements with no indentation are supported (so no imports inside definitions or
   conditionals)
 - Relative imports are not supported
 - If you specify an alias for the import (`import x as y`) then the alias has to be the
@@ -69,7 +71,7 @@ If you have this file structure:
 
 then you might use this command:
 
-    pybricksdev run --inline True --importbase demo ble "Pybricks Hub" demo/scripts/shortdemo.py
+    pybricksdev run --inline True --importbase demo ble demo/scripts/shortdemo.py
 
 and your script might be:
 
@@ -98,10 +100,10 @@ and myutils.py, in the same directory, contains this:
 
 then the resulting flattened file will contain:
 
-    def myutils_square(val):
+    def myutils__square(val):
         return val*val
     
-    print(myutils_square(4))
+    print(myutils__square(4))
 
 ## Using pybricksdev as a library
 

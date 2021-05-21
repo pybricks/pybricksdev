@@ -1,31 +1,30 @@
-def importB_func1(param): # importB#0
-    print('hi') # importB#1
-    print('ho') # importB#2
+def importB__func1(param): # importB#1
+    print('hi') # importB#2
+    print('ho') # importB#3
 
 
-class importB_Class1: # importB#5
-    def __init__(self): # importB#6
-        self.myvar = 'foo' # importB#7
-        pass # importB#8
+class importB__Class1: # importB#6
+    def __init__(self): # importB#7
+        self.myvar = 'foo' # importB#8
 
-importB_func1('foo') # importA#2
-
-
-def importA_func2(param): # importA#5
-    print(importB_func1(param)) # importA#6
-    print('ho') # importA#7
-    importA_Class1().myfunc('y') # importA#8
+importB__func1('foo') # importA#3
 
 
-class importA_Class1: # importA#11
-    def __init__(self): # importA#12
-        self.myvar = importB_Class1().myvar # importA#13
+def importA__func2(param): # importA#6
+    print(importB__func1(param)) # importA#7
+    print('ho') # importA#8
+    importA__Class1().myfunc('y') # importA#9
 
-    def myfunc(self, p2): # importA#15
-        print(self.myvar) # importA#16
-        importA_func2('x') # importA#17
 
-print(importA_func2('x')) # script#2
-print(importA_Class1().myvar) # script#3
-# expect the following line to be unchanged, because importB isn't imported here # script#4
-print(importB.func1('x')) # script#5
+class importA__Class1: # importA#12
+    def __init__(self): # importA#13
+        self.myvar = importB__Class1().myvar # importA#14
+
+    def myfunc(self, p2): # importA#16
+        print(self.myvar) # importA#17
+        importA__func2('x') # importA#18
+
+print(importA__func2('x')) # script#3
+print(importA__Class1().myvar) # script#4
+# expect the following line to be unchanged, because importB isn't imported here # script#5
+print(importB.func1('x')) # script#6

@@ -7,7 +7,7 @@ import os
 import ast
 
 
-def flatten(script_path, import_base = None):
+def flatten(script_path, import_base=None):
     """
     Flatten imports into a single file
 
@@ -17,16 +17,16 @@ def flatten(script_path, import_base = None):
     """
     file_name = os.path.basename(script_path)
     file_dir = os.path.dirname(script_path)
-    output_path = os.path.join(file_dir, "_flat_" + file_name)
+    output_path = file_dir + "/_flat_" + file_name
     if file_name.endswith(".py"):
-        file_name = file_name[:len(file_name)-3]
-    with open(output_path, 'w') as output:
+        file_name = file_name[: len(file_name) - 3]
+    with open(output_path, "w") as output:
         _Script(script_path, file_name, import_base).flattenInto(output)
     return output_path
 
 
 def _readFileContentsAsLines(path):
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         contents = f.readlines()
     return contents
 
@@ -38,14 +38,14 @@ class _Module:
         self.exported_symbol_mappings = {}
         self.local_symbol_mappings = {}
         self.module_name = module_name
-        self.imports_done = imports_done # map of import path to its exported symbols
+        self.imports_done = imports_done  # map of import path to its exported symbols
 
     def isScript(self):
         return False
 
     def flattenInto(self, output_file):
         code_lines = _readFileContentsAsLines(self.script_path)
-        code = ''.join(code_lines)
+        code = "".join(code_lines)
         tree = ast.parse(code, self.script_path)
         # insert a backward pointer in every node
         for node in ast.walk(tree):
@@ -60,16 +60,26 @@ class _Module:
             if isinstance(node, ast.Import):
                 if node.col_offset == 0:
                     for name in node.names:
-                        imports.append(_ImportStatement(name.name, name.asname, node.lineno - 1, base_path, self.other_base_path))
+                        imports.append(
+                            _ImportStatement(
+                                name.name,
+                                name.asname,
+                                node.lineno - 1,
+                                base_path,
+                                self.other_base_path,
+                            )
+                        )
             elif isinstance(node, ast.Name):
                 symbol = node.id
                 parent = node.parent
                 end_offset = node.end_col_offset
                 while isinstance(parent, ast.Attribute):
-                    symbol = symbol + '.' + parent.attr
+                    symbol = symbol + "." + parent.attr
                     end_offset = parent.end_col_offset
                     parent = parent.parent
-                names.append(_Symbol(symbol, node.lineno - 1, node.col_offset, end_offset))
+                names.append(
+                    _Symbol(symbol, node.lineno - 1, node.col_offset, end_offset)
+                )
             elif not self.isScript():
                 # only look for things to export if this is not the top level script
                 if isinstance(node, ast.ClassDef) or isinstance(node, ast.FunctionDef):
@@ -79,10 +89,21 @@ class _Module:
                         definitions.append(_DefStatement(node.name, self.module_name))
                         # the name of the class/function is not an AST 'name' so it won't
                         # be added to the list to substitute automatically - add it here
-                        names.append(_Symbol(node.name, node.lineno - 1, name_offset, name_offset + len(node.name)))
+                        names.append(
+                            _Symbol(
+                                node.name,
+                                node.lineno - 1,
+                                name_offset,
+                                name_offset + len(node.name),
+                            )
+                        )
                 elif isinstance(node, ast.Assign):
                     if node.col_offset == 0:
-                        assigns.append(_AssignmentStatement(ast.get_source_segment(code, node), self.module_name))
+                        assigns.append(
+                            _AssignmentStatement(
+                                ast.get_source_segment(code, node), self.module_name
+                            )
+                        )
 
         for an_import in imports:
             previous_import = self.imports_done.get(an_import.module_path)
@@ -91,14 +112,25 @@ class _Module:
                 self.imports_done[an_import.module_path] = an_import
             else:
                 if previous_import.alias != an_import.alias:
-                    raise ImportError("Module '"+an_import.module_path+"' has already been inlined using alias '"+
-                                      previous_import.alias+"' so cannot be inlined using alias '" +an_import.alias+"'",
-                                      name=an_import.module_path)
+                    raise ImportError(
+                        "Module '"
+                        + an_import.module_path
+                        + "' has already been inlined using alias '"
+                        + previous_import.alias
+                        + "' so cannot be inlined using alias '"
+                        + an_import.alias
+                        + "'",
+                        name=an_import.module_path,
+                    )
             # always load the exported symbols into the current context, even if the import has already been done
-            self.local_symbol_mappings.update(self.imports_done[an_import.module_path].exports)
+            self.local_symbol_mappings.update(
+                self.imports_done[an_import.module_path].exports
+            )
 
         for a_definition in definitions:
-            self.exported_symbol_mappings.update(a_definition.getExportedSymbolMapping())
+            self.exported_symbol_mappings.update(
+                a_definition.getExportedSymbolMapping()
+            )
             self.local_symbol_mappings.update(a_definition.getLocalSymbolMapping())
 
         for an_assign in assigns:
@@ -113,16 +145,18 @@ class _Module:
         while len(names) > 0 and current_line_num < len(code_lines):
             while current_line_num < names[0].line_number:
                 if current_line_num not in import_lines:
-                    self.writeWithReference(output_file, code_lines[current_line_num], current_line_num)
+                    self.writeWithReference(
+                        output_file, code_lines[current_line_num], current_line_num
+                    )
                 current_line_num += 1
             # replace 'names' in the line
             up_to = 0
-            result = ''
+            result = ""
             current_line = code_lines[current_line_num]
             while len(names) > 0 and current_line_num == names[0].line_number:
                 next_symbol = names[0]
                 del names[0]
-                result += current_line[up_to:next_symbol.start_col_offset]
+                result += current_line[up_to : next_symbol.start_col_offset]
                 up_to = next_symbol.start_col_offset
                 if next_symbol.name in self.local_symbol_mappings:
                     result += self.local_symbol_mappings[next_symbol.name]
@@ -131,7 +165,7 @@ class _Module:
                     result += self.exported_symbol_mappings[next_symbol.name]
                     up_to = next_symbol.end_col_offset
                 else:
-                    result += current_line[up_to:next_symbol.end_col_offset]
+                    result += current_line[up_to : next_symbol.end_col_offset]
                     up_to = next_symbol.end_col_offset
             result += current_line[up_to:]
 
@@ -140,16 +174,26 @@ class _Module:
             current_line_num += 1
         # copy any remaining lines
         while current_line_num < len(code_lines):
-            self.writeWithReference(output_file, code_lines[current_line_num], current_line_num)
+            self.writeWithReference(
+                output_file, code_lines[current_line_num], current_line_num
+            )
             current_line_num += 1
         return self.exported_symbol_mappings
 
     def writeWithReference(self, output_file, line, line_number):
         stripped_line = line.rstrip()
         if len(stripped_line) == 0:
-            output_file.write(stripped_line + '\n')
+            output_file.write(stripped_line + "\n")
         else:
-            output_file.write(stripped_line + ' # ' + self.module_name + '#' + str(line_number) + '\n')
+            output_file.write(
+                stripped_line
+                + " # "
+                + self.module_name
+                + "#"
+                + str(line_number + 1)
+                + "\n"
+            )
+
 
 class _Script(_Module):
     def __init__(self, path, module_name, import_base):
@@ -177,13 +221,17 @@ class _ImportStatement:
         self.exports = None
 
     def flatten(self, into, imports_done):
-        import_file_name = self.module_path.replace('.', '/') + '.py'
-        lookup_paths = (self.base_path,) + (() if self.other_base_path is None else (self.other_base_path,))
+        import_file_name = self.module_path.replace(".", "/") + ".py"
+        lookup_paths = (self.base_path,) + (
+            () if self.other_base_path is None else (self.other_base_path,)
+        )
         for base_path in lookup_paths:
-            module_file_path = base_path + '/' + import_file_name
+            module_file_path = base_path + "/" + import_file_name
             as_name = self.module_path if self.alias is None else self.alias
             if os.path.exists(module_file_path):
-                self.exports = _Module(module_file_path, as_name, self.other_base_path, imports_done).flattenInto(into)
+                self.exports = _Module(
+                    module_file_path, as_name, self.other_base_path, imports_done
+                ).flattenInto(into)
                 return
         self.exports = {}
         # make sure this object isn't found when removing imports
@@ -196,13 +244,13 @@ class _NameDefiningStatement:
         self.name = name
 
     def getExportedSymbolMapping(self):
-        existing_access_symbol = self.module + '.' + self.name
-        new_access_symbol = self.module.replace('.', '_') + '_' + self.name
+        existing_access_symbol = self.module + "." + self.name
+        new_access_symbol = self.module.replace(".", "__") + "__" + self.name
         return {existing_access_symbol: new_access_symbol}
 
     def getLocalSymbolMapping(self):
         existing_access_symbol = self.name
-        new_access_symbol = self.module.replace('.', '_') + '_' + self.name
+        new_access_symbol = self.module.replace(".", "__") + "__" + self.name
         return {existing_access_symbol: new_access_symbol}
 
 
@@ -213,6 +261,6 @@ class _DefStatement(_NameDefiningStatement):
 
 class _AssignmentStatement(_NameDefiningStatement):
     def __init__(self, line, module):
-        chunks = line.split('=')
+        chunks = line.split("=")
         name = chunks[0].strip()
         super().__init__(name, module)
