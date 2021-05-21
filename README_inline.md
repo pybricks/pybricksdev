@@ -21,7 +21,10 @@ that module to be flattened into the main script. The option can be shortened to
     pybricksdev run -i True ble "Pybricks Hub" demo/shortdemo.py
 
 If you want to look at the flattened result you can find it in the same directory as the input script,
-with the name `_flat_<your-script>.py`
+with the name `<your-script>.flat.py`. If an error occurs when your script
+executes then the line numbers in the error message will refer to this file. 
+Each line in the 'flat' file has a comment appended to it that indicates the source
+file and line number that generated it.
 
 ### Limitations
 There are some limitations:
@@ -39,25 +42,27 @@ There are some limitations:
 ### Module lookup
 The base directory for module lookup is the directory containing the
 specified script file. So in the above example that is the `demo` directory.
-
-    import myutils
-
+```python
+import myutils
+```
 will flatten the file `demo/myutils.py`, and the contents of the import can be
 referenced in the normal way:
-
-    print(myutils.pi)
-
+```python
+print(myutils.pi)
+```
 The import:
-
-    import allutils.myutils
+```python
+import allutils.myutils
+```
 
 will flatten the file `demo/allutils/myutils.py`, and a reference would look like this:
+```python
+print(allutils.myutils.pi)
+```
 
-    print(allutils.myutils.pi)
-
-### The --importbase option
+### The --import-path option
 You can specify an additional base directory for import lookups using the
-`--importbase` option. This additional base directory is only used if the
+`--import-path` option. This additional base directory is only used if the
 imported file is not found in the normal base directory.
 If you have this file structure:
 
@@ -71,43 +76,43 @@ If you have this file structure:
 
 then you might use this command:
 
-    pybricksdev run --inline True --importbase demo ble demo/scripts/shortdemo.py
+    pybricksdev run -i --import-path demo ble demo/scripts/shortdemo.py
 
 and your script might be:
-
-    import resources.myutils
-    import myimport.py        # imports the file found in scripts, not the one in demo
-    print(resources.utils.pi)
-    print(myimport.x)
-
+```python
+import resources.myutils
+import myimport.py        # imports the file found in scripts, not the one in demo
+print(resources.utils.pi)
+print(myimport.x)
+```
 ### Aliases
 Aliases work as normal:
-
-    import resources.myutils as theutils
-    print(theutils.pi)
-
+```python
+import resources.myutils as theutils
+print(theutils.pi)
+```
 ###Example
 If your script contains this:
-
-    import myutils
+```python
+import myutils
     
-    print(myutils.square(4))
-
+print(myutils.square(4))
+```
 and myutils.py, in the same directory, contains this:
-
-    def square(val):
-        return val*val
-
+```python
+def square(val):
+    return val*val
+```
 then the resulting flattened file will contain:
-
-    def myutils__square(val):
-        return val*val
+```python
+def myutils__square(val):
+    return val*val
     
-    print(myutils__square(4))
-
+print(myutils__square(4))
+```
 ## Using pybricksdev as a library
+```python
+from pybricksdev import inline
 
-    from pybricksdev import inline
-
-    output_path = inline.flatten(script_path)
-
+output_path = inline.flatten(script_path)
+```
