@@ -17,7 +17,8 @@ import typing
 import zipfile
 
 from .ble import BLERequestsConnection
-from .ble.lwp3 import BootloaderCommand, HubTypeId
+from .ble.lwp3 import BootloaderCommand
+from .ble.lwp3.bytecodes import HubKind
 from .compile import save_script, compile_file
 
 logger = logging.getLogger(__name__)
@@ -194,10 +195,10 @@ async def create_firmware(
 
 
 # NAME, PAYLOAD_SIZE requirement
-HUB_INFO: Dict[HubTypeId, Tuple[str, int]] = {
-    HubTypeId.MOVE_HUB: ("Move Hub", 14),
-    HubTypeId.CITY_HUB: ("City Hub", 32),
-    HubTypeId.TECHNIC_HUB: ("Technic Hub", 32),
+HUB_INFO: Dict[HubKind, Tuple[str, int]] = {
+    HubKind.BOOST: ("Move Hub", 14),
+    HubKind.CITY: ("City Hub", 32),
+    HubKind.TECHNIC: ("Technic Hub", 32),
 }
 
 
@@ -372,8 +373,7 @@ class BootloaderConnection(BLERequestsConnection):
             # things by having a buggy Bluetooth implementation in its bootloader.
             response = await self.bootloader_request(
                 self.ERASE_FLASH_CITY_HUB
-                if info.type_id == HubTypeId.CITY_HUB
-                and not platform.system() == "Windows"
+                if info.type_id == HubKind.CITY and not platform.system() == "Windows"
                 else self.ERASE_FLASH,
                 timeout=5,
             )
@@ -427,7 +427,7 @@ class BootloaderConnection(BLERequestsConnection):
 
                 # Pack the data in the expected format
                 data = struct.pack(
-                    "<BI" + "B" * len(payload), len(payload) + 4, address, *payload
+                    f"<BI{len(payload)}B", len(payload) + 4, address, *payload
                 )
                 response = await self.bootloader_request(request, data)
                 logger.debug(response)

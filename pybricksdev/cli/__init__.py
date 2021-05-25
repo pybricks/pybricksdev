@@ -16,7 +16,8 @@ import argcomplete
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..ble.lwp3 import HubTypeId, LWP3_BOOTLOADER_SERVICE_UUID
+from ..ble.lwp3 import LWP3_BOOTLOADER_SERVICE_UUID
+from ..ble.lwp3.bytecodes import HubKind
 
 
 PROG_NAME = (
@@ -186,7 +187,7 @@ class Flash(Tool):
         print("Creating firmware")
         firmware, metadata = await create_firmware(args.firmware)
 
-        if metadata["device-id"] == HubTypeId.PRIME_HUB:
+        if metadata["device-id"] == HubKind.PRIME:
             from ..dfu import flash_dfu
 
             flash_dfu(firmware, metadata)

@@ -15,7 +15,7 @@ from typing import BinaryIO, ContextManager
 from usb.core import NoBackendError, USBError
 
 from . import _dfu_upload, _dfu_create, resources
-from .ble.lwp3 import HubTypeId
+from .ble.lwp3.bytecodes import HubKind
 
 FIRMWARE_ADDRESS = 0x08008000
 FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB
@@ -134,7 +134,7 @@ def restore_dfu(file: BinaryIO) -> None:
 def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
     """Flashes a firmware file using DFU."""
 
-    if metadata["device-id"] != HubTypeId.PRIME_HUB:
+    if metadata["device-id"] != HubKind.PRIME:
         print("Unknown hub type:", metadata["device-id"], file=sys.stderr)
         exit(1)
 

@@ -1,14 +1,23 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2021 The Pybricks Authors
 
-"""This module is used for Bluetooth Low Energy communications with devices
-that provide the LEGO Wireless Protocol v3.
+"""This module and its submodules are used for Bluetooth Low Energy
+communications with devices that provide the LEGO Wireless Protocol v3.
 """
 
 from enum import IntEnum
 
 # LEGO Wireless Protocol v3 is defined at:
 # https://lego.github.io/lego-ble-wireless-protocol-docs/
+
+
+LEGO_CID = 0x0397
+"""LEGO System A/S company identifier.
+
+This number is assigned by the Bluetooth SIG.
+
+https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers/
+"""
 
 
 def _lwp3_uuid(short: int) -> str:
@@ -34,25 +43,6 @@ LWP3_BOOTLOADER_SERVICE_UUID = _lwp3_uuid(0x1625)
 
 LWP3_BOOTLOADER_CHARACTERISTIC_UUID = _lwp3_uuid(0x1626)
 """LEGO wireless protocol v3 bootloader characteristic UUID."""
-
-
-class HubTypeId(IntEnum):
-    """Hub type identifiers.
-
-    These are used in both advertising data and in bytecodes.
-    """
-
-    MOVE_HUB = 0x40
-    """BOOST Move hub."""
-
-    CITY_HUB = 0x41
-    """City/train/Batmobile hub."""
-
-    TECHNIC_HUB = 0x80
-    """Technic medium (Control+) hub."""
-
-    PRIME_HUB = 0x84
-    """Technic large (SPIKE Prime, MINDSTORMS Inventor) hub."""
 
 
 # Bootloader characteristic bytecodes
@@ -89,7 +79,7 @@ class BootloaderCommand(IntEnum):
     """Causes the remote device to disconnect from Bluetooth."""
 
 
-class BootloaderMessageType(IntEnum):
+class BootloaderMessageKind(IntEnum):
     """Type for messages received from bootlaoder GATT characteristic notifications.
 
     Messages that are a response to a command will have the same value as
