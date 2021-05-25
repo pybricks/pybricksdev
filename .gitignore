@@ -63,3 +63,7 @@ demo/_*.py
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Coveage
+.coverage
+htmlcov/

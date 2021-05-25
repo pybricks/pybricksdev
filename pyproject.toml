@@ -40,6 +40,7 @@ semver = "^2.13.0"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.5b1", allow-prereleases = true}
+coverage = {extras = ["toml"], version = "^5.5"}
 flake8 = "^3.8.3"
 ipykernel = "^5.3.1"
 ipywidgets = "^7.6.3"
@@ -54,3 +55,8 @@ build-backend = "poetry.masonry.api"
 
 [tool.black]
 target-version = ['py38']
+
+[tool.coverage.run]
+branch = true
+command_line = "-m pytest"
+source = ["pybricksdev"]
