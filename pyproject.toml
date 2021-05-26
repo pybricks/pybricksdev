@@ -48,6 +48,8 @@ nbstripout = "^0.3.8"
 notebook = "^6.0.3"
 pybricks = {version = "3.0.0rc1", allow-prereleases = true}
 pytest = "^5.2"
+Sphinx = "^4.0.2"
+sphinx-rtd-theme = "^0.5.2"
 
 [build-system]
 requires = ["poetry>=0.12"]

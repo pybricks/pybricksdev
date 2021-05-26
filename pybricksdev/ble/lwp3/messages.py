@@ -4,7 +4,7 @@
 # Copyright (c) 2018 LEGO System A/S
 
 """
-The LWP3 :mod:`messages` module contains classes for encoding and decoding
+The LWP3 :mod:`.messages` module contains classes for encoding and decoding
 messages used in the `LWP3 protocol`_.
 
 .. _LWP3 protocol: https://lego.github.io/lego-ble-wireless-protocol-docs/
@@ -88,8 +88,8 @@ class AbstractHubPropertyMessage(AbstractMessage):
 
         Raises:
             TypeError:
-                ``prop`` is not a :class:`HubProperty` or ``op`` is not a
-                :class:`HubPropertyOperation`.
+                ``prop`` is not a :class:`.bytecodes.HubProperty` or ``op`` is
+                not a :class:`.bytecodes.HubPropertyOperation`.
             ValueError:
                 ``op`` cannot be applied to ``prop``
         """

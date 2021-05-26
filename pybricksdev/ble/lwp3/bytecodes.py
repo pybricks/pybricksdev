@@ -4,7 +4,7 @@
 # Copyright (c) 2018 LEGO System A/S
 
 """
-The LWP3 :mod:`bytecodes` module contains enums for interperting binary values
+The LWP3 :mod:`.bytecodes` module contains enums for interperting binary values
 used in the `LWP3 protocol`_.
 
 .. _LWP3 protocol: https://lego.github.io/lego-ble-wireless-protocol-docs/
