@@ -1,0 +1,30 @@
+name: CI tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    env:
+      READTHEDOCS: "True"  # work around bleak import error
+    steps:
+      - uses: actions/checkout@v2
+      - run: pipx install poetry
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - run: poetry install
+      - run: poetry run pytest
+      - run: poetry run flake8 --show-source
+        if: ${{ success() || failure() }}
+      - run: poetry run black --check --diff
+        if: ${{ success() || failure() }}
+      - run: poetry run make -C docs/ html
+        if: ${{ success() || failure() }}
+      - run: poetry run coverage run
+      - run: |
+          pipx install coveralls
+          pipx inject coveralls toml
+      - run: coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
