@@ -242,12 +242,12 @@ class DFURestore(Tool):
 
 class DFU(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
+        self.parser = subparsers.add_parser(
             "dfu",
             help="use DFU to backup or restore firmware",
         )
-        parser.tool = self
-        self.subparsers = parser.add_subparsers(
+        self.parser.tool = self
+        self.subparsers = self.parser.add_subparsers(
             metavar="<action>", dest="action", help="the action to perform"
         )
 
@@ -255,6 +255,11 @@ class DFU(Tool):
             tool.add_parser(self.subparsers)
 
     def run(self, args: argparse.Namespace):
+        if args.action not in self.subparsers.choices:
+            self.parser.error(
+                f'Missing name of action: {"|".join(self.subparsers.choices.keys())}'
+            )
+
         return self.subparsers.choices[args.action].tool.run(args)
 
 
