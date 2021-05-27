@@ -9,10 +9,9 @@ import os
 import platform
 import struct
 import sys
-import typing
 import zipfile
 from collections import namedtuple
-from typing import Dict, Tuple
+from typing import BinaryIO, Dict, Tuple, Union
 
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 async def create_firmware(
-    firmware_zip: typing.Union[str, os.PathLike, typing.BinaryIO]
+    firmware_zip: Union[str, os.PathLike, BinaryIO]
 ) -> Tuple[bytes, dict]:
     """Creates a firmware blob from base firmware and main.mpy file.
 
