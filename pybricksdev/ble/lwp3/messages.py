@@ -13,7 +13,7 @@ messages used in the `LWP3 protocol`_.
 import abc
 from enum import IntEnum
 import struct
-from typing import Any, Dict, NamedTuple, Optional, Type, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union
 
 from .bytecodes import (
     AlertKind,
@@ -21,6 +21,7 @@ from .bytecodes import (
     AlertStatus,
     BatteryKind,
     BluetoothAddress,
+    DataFormat,
     ErrorCode,
     HubAction,
     HubKind,
@@ -30,13 +31,19 @@ from .bytecodes import (
     HwNetExtFamily,
     HwNetFamily,
     HwNetSubfamily,
+    IODeviceCapabilities,
     IODeviceKind,
+    IODeviceMapping,
     IOEvent,
+    InfoKind,
     LWPVersion,
     LastNetwork,
     MAX_NAME_SIZE,
     MessageKind,
+    ModeCapabilities,
+    ModeInfoKind,
     PortID,
+    PortInfoFormatSetupCommand,
     Version,
 )
 
@@ -44,6 +51,7 @@ from .bytecodes import (
 class AbstractMessage(abc.ABC):
     """Common base class for all messages."""
 
+    @abc.abstractmethod
     def __init__(self, length: int, kind: MessageKind) -> None:
         super().__init__()
 
@@ -74,9 +82,15 @@ class AbstractMessage(abc.ABC):
         return f"{self.__class__.__name__}()"
 
 
+###############################################################################
+# Hub property messages
+###############################################################################
+
+
 class AbstractHubPropertyMessage(AbstractMessage):
     """Common base class for hub property messages."""
 
+    @abc.abstractmethod
     def __init__(
         self, length: int, prop: HubProperty, op: HubPropertyOperation
     ) -> None:
@@ -197,6 +211,7 @@ class AbstractHubPropertyValueMessage(AbstractHubPropertyMessage):
 
     _MAX_VALUE_SIZE = 15  # largest known value size
 
+    @abc.abstractmethod
     def __init__(self, prop: HubProperty, op: HubPropertyOperation, value: Any) -> None:
         """
         Args:
@@ -250,7 +265,7 @@ class AbstractHubPropertyValueMessage(AbstractHubPropertyMessage):
         (result,) = struct.unpack_from(fmt, self._data, 5)
 
         if meta.type == str:
-            return result.decode()
+            return result.decode().strip("\0")
 
         return meta.type(result)
 
@@ -342,6 +357,11 @@ class HubPropertyUpdate(AbstractHubPropertyValueMessage):
         super().__init__(prop, HubPropertyOperation.UPDATE, value)
 
 
+###############################################################################
+# Hub action messages
+###############################################################################
+
+
 class HubActionMessage(AbstractMessage):
     """
     This message allows for performing control actions on the connected Hub.
@@ -365,9 +385,15 @@ class HubActionMessage(AbstractMessage):
         return f"{self.__class__.__name__}({repr(self.action)})"
 
 
+###############################################################################
+# Hub alert messages
+###############################################################################
+
+
 class AbstractHubAlertMessage(AbstractMessage):
     """Common base type for all hub alert messages."""
 
+    @abc.abstractmethod
     def __init__(self, length: int, alert: AlertKind, op: AlertOperation) -> None:
         super().__init__(length, MessageKind.HUB_ALERT)
 
@@ -434,7 +460,13 @@ class HubAlertUpdateMessage(AbstractHubAlertMessage):
         return f"{self.__class__.__name__}({repr(self.alert)}, {repr(self.status)})"
 
 
+###############################################################################
+# Hub attached I/O messages
+###############################################################################
+
+
 class AbstractHubAttachedIOMessage(AbstractMessage):
+    @abc.abstractmethod
     def __init__(self, length: int, port: PortID, event: IOEvent) -> None:
         super().__init__(length, MessageKind.HUB_ATTACHED_IO)
 
@@ -518,6 +550,11 @@ class HubIOAttachedVirtualMessage(AbstractHubAttachedIOMessage):
         return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.device)}, {repr(self.port_a)}, {repr(self.port_b)})"
 
 
+###############################################################################
+# Generic error messages
+###############################################################################
+
+
 class ErrorMessage(AbstractMessage):
     """Generic error message."""
 
@@ -546,7 +583,13 @@ class ErrorMessage(AbstractMessage):
         return f"{self.__class__.__name__}({repr(self.command)}, {repr(self.code)})"
 
 
+###############################################################################
+# Hardware network command messages
+###############################################################################
+
+
 class AbstractHwNetCmdMessage(AbstractMessage):
+    @abc.abstractmethod
     def __init__(self, length: int, cmd: HwNetCmd) -> None:
         super().__init__(length, MessageKind.HW_NET_CMD)
 
@@ -685,6 +728,11 @@ class HwNetCmdResetLongPressMessage(AbstractHwNetCmdMessage):
         super().__init__(4, HwNetCmd.RESET_LONG_PRESS)
 
 
+###############################################################################
+# Firmware/bootloader messages
+###############################################################################
+
+
 class FirmwareUpdateMessage(AbstractMessage):
     """
     Instructs the hub to reboot in firmware update mode.
@@ -699,6 +747,571 @@ class FirmwareUpdateMessage(AbstractMessage):
     def key(self) -> bytes:
         """Safety string."""
         return self._data[3:]
+
+
+###############################################################################
+# Port info messages
+###############################################################################
+
+
+class PortInfoRequestMessage(AbstractMessage):
+    def __init__(self, port: PortID, info_kind: InfoKind) -> None:
+        super().__init__(5, MessageKind.PORT_INFO_REQ)
+
+        self._data[3] = port
+        self._data[4] = info_kind
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def info_kind(self) -> InfoKind:
+        return InfoKind(self._data[4])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.info_kind)})"
+
+
+class PortModeInfoRequestMessage(AbstractMessage):
+    def __init__(self, port: PortID, mode: int, info_kind: ModeInfoKind) -> None:
+        super().__init__(6, MessageKind.PORT_MODE_INFO_REQ)
+
+        self._data[3] = port
+        self._data[4] = mode
+        self._data[5] = info_kind
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def mode(self) -> int:
+        return self._data[4]
+
+    @property
+    def info_kind(self) -> InfoKind:
+        return ModeInfoKind(self._data[5])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.info_kind)})"
+
+
+class PortInputFormatSetupMessage(AbstractMessage):
+    def __init__(self, port: PortID, mode: int, delta: int, notify: bool) -> None:
+        super().__init__(10, MessageKind.PORT_INPUT_FMT_SETUP)
+
+        struct.pack_into("<BBI?", self._data, 3, port, mode, delta, notify)
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def mode(self) -> int:
+        return self._data[4]
+
+    @property
+    def delta(self) -> int:
+        return struct.unpack_from("<I", self._data, 5)[0]
+
+    @property
+    def notify(self) -> bool:
+        return bool(self._data[9])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.delta)}, {repr(self.notify)})"
+
+
+class AbstractPortFormatSetupComboMessage(AbstractMessage):
+    @abc.abstractmethod
+    def __init__(
+        self, length: int, port: PortID, command: PortInfoFormatSetupCommand
+    ) -> None:
+        super().__init__(length, MessageKind.PORT_INPUT_FMT_SETUP_COMBO)
+
+        self._data[3] = port
+        self._data[4] = command
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def command(self) -> PortInfoFormatSetupCommand:
+        return PortInfoFormatSetupCommand(self._data[4])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)})"
+
+
+class PortFormatSetupComboMessage(AbstractPortFormatSetupComboMessage):
+    def __init__(self, port: PortID, modes_and_datasets: List[Tuple[int, int]]) -> None:
+        super().__init__(
+            5 + len(modes_and_datasets), port, PortInfoFormatSetupCommand.SET
+        )
+
+        for i, (mode, dataset) in enumerate(modes_and_datasets, 5):
+            self._data[i] = ((mode & 0xF) << 4) | (dataset & 0xF)
+
+    @property
+    def modes_and_datasets(self) -> List[Tuple[int, int]]:
+        return [(x >> 4, x & 0xF) for x in self._data[5:]]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.modes_and_datasets)})"
+
+
+class PortFormatSetupComboLockMessage(AbstractPortFormatSetupComboMessage):
+    def __init__(self, port: PortID) -> None:
+        super().__init__(5, port, PortInfoFormatSetupCommand.LOCK)
+
+
+class PortFormatSetupComboUnlockEnabledMessage(AbstractPortFormatSetupComboMessage):
+    def __init__(self, port: PortID) -> None:
+        super().__init__(5, port, PortInfoFormatSetupCommand.UNLOCK_ENABLED)
+
+
+class PortFormatSetupComboUnlockDisabledMessage(AbstractPortFormatSetupComboMessage):
+    def __init__(self, port: PortID) -> None:
+        super().__init__(5, port, PortInfoFormatSetupCommand.UNLOCK_DISABLED)
+
+
+class PortFormatSetupComboResetMessage(AbstractPortFormatSetupComboMessage):
+    def __init__(self, port: PortID) -> None:
+        super().__init__(5, port, PortInfoFormatSetupCommand.RESET)
+
+
+class AbstractPortInfoMessage(AbstractMessage):
+    @abc.abstractmethod
+    def __init__(self, length: int, port: PortID, info_kind: InfoKind) -> None:
+        super().__init__(length, MessageKind.PORT_INFO)
+
+        if info_kind == InfoKind.PORT_VALUE:
+            raise ValueError("info_kind can't be InfoKind.PORT_VALUE")
+
+        self._data[3] = port
+        self._data[4] = info_kind
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def info_kind(self) -> InfoKind:
+        return InfoKind(self._data[4])
+
+
+class PortInfoModeInfoMessage(AbstractPortInfoMessage):
+    def __init__(
+        self,
+        port: PortID,
+        capabilities: ModeCapabilities,
+        num_modes: int,
+        input_modes: List[int],
+        output_modes: List[int],
+    ) -> None:
+        super().__init__(11, port, InfoKind.MODE_INFO)
+
+        input_mode_flags = 0
+        for m in input_modes:
+            input_mode_flags |= 1 << m
+
+        output_mode_flags = 0
+        for m in output_modes:
+            output_mode_flags |= 1 << m
+
+        struct.pack_into(
+            "<BBHH",
+            self._data,
+            5,
+            capabilities,
+            num_modes,
+            input_mode_flags,
+            output_mode_flags,
+        )
+
+    @property
+    def capabilities(self) -> ModeCapabilities:
+        return ModeCapabilities(self._data[5])
+
+    @property
+    def num_modes(self) -> int:
+        return self._data[6]
+
+    @property
+    def input_modes(self) -> List[int]:
+        (flags,) = struct.unpack_from("<H", self._data, 7)
+        return [n for n in range(16) if flags & (1 << n)]
+
+    @property
+    def output_modes(self) -> List[int]:
+        (flags,) = struct.unpack_from("<H", self._data, 9)
+        return [n for n in range(16) if flags & (1 << n)]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.capabilities)}, {repr(self.num_modes)}, {repr(self.input_modes)}, {repr(self.output_modes)})"
+
+
+class PortInfoCombosMessage(AbstractPortInfoMessage):
+    def __init__(
+        self,
+        port: PortID,
+        combos: List[List[int]],
+    ) -> None:
+        super().__init__(5 + len(combos) * 2, port, InfoKind.COMBOS)
+
+        flags = []
+        for combo in combos:
+            f = 0
+
+            for mode in combo:
+                f |= 1 << mode
+
+            flags.append(f)
+
+        struct.pack_into(f"<{len(flags)}H", self._data, 5, *flags)
+
+    @property
+    def combos(self) -> List[List[int]]:
+        count = (len(self._data) - 5) // 2
+        return [
+            [m for m in range(16) if flags & (1 << m)]
+            for flags in struct.unpack_from(f"<{count}H", self._data, 5)
+        ]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.combos)})"
+
+
+class AbstractPortModeInfoMessage(AbstractMessage):
+    @abc.abstractmethod
+    def __init__(
+        self, length: int, port: PortID, mode: int, info_kind: ModeInfoKind
+    ) -> None:
+        super().__init__(length, MessageKind.PORT_MODE_INFO)
+
+        self._data[3] = port
+        self._data[4] = mode
+        self._data[5] = info_kind
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def mode(self) -> int:
+        return self._data[4]
+
+    @property
+    def info_kind(self) -> ModeInfoKind:
+        return ModeInfoKind(self._data[5])
+
+
+class PortModeInfoNameMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, name: str) -> None:
+        name = name.encode("ascii")
+
+        if len(name) == 0:
+            raise ValueError("name cannot be empty")
+
+        if len(name) > 11:
+            raise ValueError("name must be 11 bytes or less")
+
+        super().__init__(6 + len(name), port, mode, ModeInfoKind.NAME)
+
+        self._data[6:] = name
+
+    @property
+    def name(self) -> str:
+        return self._data[6:].decode("ascii").strip("\0")
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.name)})"
+
+
+class PortModeInfoRawMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, min: float, max: float) -> None:
+        super().__init__(14, port, mode, ModeInfoKind.RAW)
+
+        struct.pack_into("<ff", self._data, 6, min, max)
+
+    @property
+    def min(self) -> float:
+        return struct.unpack_from("<f", self._data, 6)[0]
+
+    @property
+    def max(self) -> float:
+        return struct.unpack_from("<f", self._data, 10)[0]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.min)}, {repr(self.max)})"
+
+
+class PortModeInfoPercentMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, min: float, max: float) -> None:
+        super().__init__(14, port, mode, ModeInfoKind.PCT)
+
+        struct.pack_into("<ff", self._data, 6, min, max)
+
+    @property
+    def min(self) -> float:
+        return struct.unpack_from("<f", self._data, 6)[0]
+
+    @property
+    def max(self) -> float:
+        return struct.unpack_from("<f", self._data, 10)[0]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.min)}, {repr(self.max)})"
+
+
+class PortModeInfoSIMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, min: float, max: float) -> None:
+        super().__init__(14, port, mode, ModeInfoKind.SI)
+
+        struct.pack_into("<ff", self._data, 6, min, max)
+
+    @property
+    def min(self) -> float:
+        return struct.unpack_from("<f", self._data, 6)[0]
+
+    @property
+    def max(self) -> float:
+        return struct.unpack_from("<f", self._data, 10)[0]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.min)}, {repr(self.max)})"
+
+
+class PortModeInfoSymbolMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, symbol: str) -> None:
+        symbol = symbol.encode("ascii")
+
+        if len(symbol) > 5:
+            raise ValueError("symbol must be 5 bytes or less")
+
+        super().__init__(6 + len(symbol), port, mode, ModeInfoKind.SYMBOL)
+
+        self._data[6:] = symbol
+
+    @property
+    def symbol(self) -> str:
+        return self._data[6:].decode("ascii").strip("\0")
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.symbol)})"
+
+
+class PortModeInfoMappingMessage(AbstractPortModeInfoMessage):
+    def __init__(
+        self,
+        port: PortID,
+        mode: int,
+        input_mapping: IODeviceMapping,
+        output_mapping: IODeviceMapping,
+    ) -> None:
+        super().__init__(8, port, mode, ModeInfoKind.MAPPING)
+
+        self._data[6] = input_mapping
+        self._data[7] = output_mapping
+
+    @property
+    def input_mapping(self) -> IODeviceMapping:
+        return IODeviceMapping(self._data[6])
+
+    @property
+    def output_mapping(self) -> IODeviceMapping:
+        return IODeviceMapping(self._data[7])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.input_mapping)}, {repr(self.output_mapping)})"
+
+
+class PortModeInfoMotorBiasMessage(AbstractPortModeInfoMessage):
+    def __init__(self, port: PortID, mode: int, bias: int) -> None:
+        super().__init__(7, port, mode, ModeInfoKind.MOTOR_BIAS)
+
+        self._data[6] = bias
+
+    @property
+    def bias(self) -> int:
+        return self._data[6]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.bias)})"
+
+
+class PortModeInfoCapabilitiesMessage(AbstractPortModeInfoMessage):
+    def __init__(
+        self, port: PortID, mode: int, capabilities: IODeviceCapabilities
+    ) -> None:
+        super().__init__(12, port, mode, ModeInfoKind.CAPABILITIES)
+
+        self._data[6:] = capabilities.to_bytes(6, "little")
+
+    @property
+    def capabilities(self) -> IODeviceCapabilities:
+        return IODeviceCapabilities.from_bytes(self._data[6:], "little")
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.capabilities)})"
+
+
+class PortModeInfoFormatMessage(AbstractPortModeInfoMessage):
+    def __init__(
+        self,
+        port: PortID,
+        mode: int,
+        datasets: int,
+        format: DataFormat,
+        figures: int,
+        decimals: int,
+    ) -> None:
+        super().__init__(10, port, mode, ModeInfoKind.FORMAT)
+
+        self._data[6] = datasets
+        self._data[7] = format
+        self._data[8] = figures
+        self._data[9] = decimals
+
+    @property
+    def datasets(self) -> int:
+        return self._data[6]
+
+    @property
+    def format(self) -> DataFormat:
+        return DataFormat(self._data[7])
+
+    @property
+    def figures(self) -> int:
+        return self._data[8]
+
+    @property
+    def decimals(self) -> int:
+        return self._data[9]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.datasets)}, {repr(self.format)}, {repr(self.figures)}, {repr(self.decimals)})"
+
+
+class PortValueMessage(AbstractMessage):
+    def __init__(self, port: PortID, fmt: str, *values: Union[int, float]) -> None:
+        super().__init__(4 + struct.calcsize(fmt), MessageKind.PORT_VALUE)
+
+        self._data[3] = port
+        struct.pack_into(fmt, self._data, 4, *values)
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+        return struct.unpack_from(fmt, self._data, 4)
+
+    def __repr__(self) -> str:
+        fmt = f"<{self._data[0] - 4}b"
+        values = ", ".join(repr(x) for x in struct.unpack_from(fmt, self._data, 4))
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(fmt)}, {values})"
+
+
+class PortValueComboMessage(AbstractMessage):
+    def __init__(
+        self, port: PortID, modes: List[int], fmt: str, *values: Union[int, float]
+    ) -> None:
+        super().__init__(6 + struct.calcsize(fmt), MessageKind.PORT_VALUE_COMBO)
+
+        mode_flags = 0
+        for m in modes:
+            mode_flags |= 1 << m
+
+        self._data[3] = port
+        struct.pack_into("<H", self._data, 4, mode_flags)
+        struct.pack_into(fmt, self._data, 6, *values)
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def modes(self) -> List[int]:
+        (flags,) = struct.unpack_from("<H", self._data, 4)
+        return [m for m in range(16) if flags & (1 << m)]
+
+    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+        return struct.unpack_from(fmt, self._data, 6)
+
+    def __repr__(self) -> str:
+        fmt = f"<{self._data[0] - 6}b"
+        values = ", ".join(repr(x) for x in struct.unpack_from(fmt, self._data, 6))
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.modes)}, {repr(fmt)}, {values})"
+
+
+class PortInputFormatMessage(AbstractMessage):
+    def __init__(self, port: PortID, mode: int, delta: int, notify: bool) -> None:
+        super().__init__(10, MessageKind.PORT_INPUT_FMT)
+
+        struct.pack_into("<BBI?", self._data, 3, port, mode, delta, notify)
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def mode(self) -> int:
+        return self._data[4]
+
+    @property
+    def delta(self) -> int:
+        return struct.unpack_from("<I", self._data, 5)[0]
+
+    @property
+    def notify(self) -> bool:
+        return bool(self._data[9])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.mode)}, {repr(self.delta)}, {repr(self.notify)})"
+
+
+class PortInputFormatComboMessage(AbstractMessage):
+    def __init__(
+        self,
+        port: PortID,
+        combo: int,
+        multi_update: bool,
+        modes_and_datasets: List[int],
+    ) -> None:
+        super().__init__(7, MessageKind.PORT_INPUT_FMT_COMBO)
+
+        combo &= 0xF
+        if multi_update:
+            combo |= 0x80
+
+        modes_and_datasets_flags = 0
+        for m in modes_and_datasets:
+            modes_and_datasets_flags |= 1 << m
+
+        struct.pack_into("<BBH", self._data, 3, port, combo, modes_and_datasets_flags)
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def combo(self) -> int:
+        return self._data[4] & 0xF
+
+    @property
+    def multi_update(self) -> bool:
+        return bool(self._data[4] & 0x80)
+
+    @property
+    def modes_and_datasets(self) -> List[int]:
+        (flags,) = struct.unpack_from("<H", self._data, 5)
+        return [m for m in range(16) if flags & (1 << m)]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.combo)}, {repr(self.multi_update)}, {repr(self.modes_and_datasets)})"
 
 
 ###############################################################################
@@ -761,6 +1374,31 @@ _HW_NET_CMD_CLASS_MAP = {
     HwNetCmd.RESET_LONG_PRESS: HwNetCmdResetLongPressMessage,
 }
 
+_PORT_INPUT_FMT_SETUP_COMBO_CLASS_MAP = {
+    PortInfoFormatSetupCommand.SET: PortFormatSetupComboMessage,
+    PortInfoFormatSetupCommand.LOCK: PortFormatSetupComboLockMessage,
+    PortInfoFormatSetupCommand.UNLOCK_ENABLED: PortFormatSetupComboUnlockEnabledMessage,
+    PortInfoFormatSetupCommand.UNLOCK_DISABLED: PortFormatSetupComboUnlockDisabledMessage,
+    PortInfoFormatSetupCommand.RESET: PortFormatSetupComboResetMessage,
+}
+
+_PORT_INFO_CLASS_MAP = {
+    InfoKind.MODE_INFO: PortInfoModeInfoMessage,
+    InfoKind.COMBOS: PortInfoCombosMessage,
+}
+
+_PORT_MODE_INFO_CLASS_MAP = {
+    ModeInfoKind.NAME: PortModeInfoNameMessage,
+    ModeInfoKind.RAW: PortModeInfoRawMessage,
+    ModeInfoKind.PCT: PortModeInfoPercentMessage,
+    ModeInfoKind.SI: PortModeInfoSIMessage,
+    ModeInfoKind.SYMBOL: PortModeInfoSymbolMessage,
+    ModeInfoKind.MAPPING: PortModeInfoMappingMessage,
+    ModeInfoKind.MOTOR_BIAS: PortModeInfoMotorBiasMessage,
+    ModeInfoKind.CAPABILITIES: PortModeInfoCapabilitiesMessage,
+    ModeInfoKind.FORMAT: PortModeInfoFormatMessage,
+}
+
 # base type descriminator for messages
 _MESSAGE_CLASS_MAP = {
     MessageKind.HUB_PROPERTY: _Lookup(4, _HUB_PROPERTY_OP_CLASS_MAP),
@@ -770,6 +1408,18 @@ _MESSAGE_CLASS_MAP = {
     MessageKind.ERROR: ErrorMessage,
     MessageKind.HW_NET_CMD: _Lookup(3, _HW_NET_CMD_CLASS_MAP),
     MessageKind.FW_UPDATE: FirmwareUpdateMessage,
+    MessageKind.PORT_INFO_REQ: PortInfoRequestMessage,
+    MessageKind.PORT_MODE_INFO_REQ: PortModeInfoRequestMessage,
+    MessageKind.PORT_INPUT_FMT_SETUP: PortInputFormatSetupMessage,
+    MessageKind.PORT_INPUT_FMT_SETUP_COMBO: _Lookup(
+        4, _PORT_INPUT_FMT_SETUP_COMBO_CLASS_MAP
+    ),
+    MessageKind.PORT_INFO: _Lookup(4, _PORT_INFO_CLASS_MAP),
+    MessageKind.PORT_MODE_INFO: _Lookup(5, _PORT_MODE_INFO_CLASS_MAP),
+    MessageKind.PORT_VALUE: PortValueMessage,
+    MessageKind.PORT_VALUE_COMBO: PortValueComboMessage,
+    MessageKind.PORT_INPUT_FMT: PortInputFormatMessage,
+    MessageKind.PORT_INPUT_FMT_COMBO: PortInputFormatComboMessage,
 }
 
 

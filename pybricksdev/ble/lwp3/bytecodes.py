@@ -355,10 +355,10 @@ class MessageKind(IntEnum):
     PORT_VALUE_COMBO = 0x46
     """Value update from a mode combo."""
 
-    PORT_INFO_FMT = 0x47
+    PORT_INPUT_FMT = 0x47
     """Reply to a :attr:`PORT_INPUT_FMT_SETUP`."""
 
-    PORT_INFO_FMT_COMBO = 0x48
+    PORT_INPUT_FMT_COMBO = 0x48
     """Reply to a :attr:`PORT_INPUT_FMT_SETUP_COMBO`."""
 
     VIRTUAL_PORT_SETUP = 0x61
@@ -672,8 +672,8 @@ class IODeviceKind(IntEnum):
     REMOTE_BUTTONS = 0x37
     """Powered Up Handset Buttons."""
 
-    REMOTE_STATUS_LIGHT = 0x38
-    """Powered Up Handset Light?"""
+    HUB_RSSI = 0x38
+    """Powered Up hub Bluetooth RSSI"""
 
     HUB_IMU_ACCEL = 0x39
     """Powered Up hub built-in IMU accelerometer."""
@@ -910,3 +910,88 @@ class HwNetExtFamily(IntEnum):
 
     def __repr__(self) -> str:
         return f"({repr(self.family)} + {repr(self.subfamily)})"
+
+
+class InfoKind(IntEnum):
+    PORT_VALUE = 0x00
+    MODE_INFO = 0x01
+    COMBOS = 0x02
+
+
+class ModeInfoKind(IntEnum):
+    NAME = 0x00
+    RAW = 0x01
+    PCT = 0x02
+    SI = 0x03
+    SYMBOL = 0x04
+    MAPPING = 0x05
+    INTERNAL_USE = 0x06
+    MOTOR_BIAS = 0x07
+    CAPABILITIES = 0x08
+    UNK9 = 0x09
+    UNK10 = 0x0A
+    UNK11 = 0x0B
+    UNK12 = 0x0C
+    FORMAT = 0x80
+
+
+class PortInfoFormatSetupCommand(IntEnum):
+    SET = 0x01
+    """Set mode and data format combos."""
+
+    LOCK = 0x02
+    """Lock I/O device for setup."""
+
+    UNLOCK_ENABLED = 0x03
+    """Unlock and start with updates enabled."""
+
+    UNLOCK_DISABLED = 0x04
+    """Unlock and start with updates disabled."""
+
+    RESERVED = 0x05
+    """Not used."""
+
+    RESET = 0x06
+    """Reset I/O device."""
+
+
+class ModeCapabilities(IntFlag):
+
+    OUTPUT = 1 << 0
+    INTPUT = 1 << 1
+    LOGICAL_COMBINABLE = 1 << 2
+    LOGICAL_SYNCHRONIZEABLE = 1 << 3
+
+
+class IODeviceMapping(IntFlag):
+    DISCRETE = 1 << 2
+    RELATIVE = 1 << 3
+    ABSOLUTE = 1 << 4
+    SUPPORTS_MAPPING_V2 = 1 << 6
+    SUPPORTS_NULL = 1 << 7
+
+
+class IODeviceCapabilities(IntFlag):
+    """
+    Sensor capabilities flags. (48-bit)
+    """
+
+    pass
+
+
+class DataFormat(IntEnum):
+    """
+    I/O Device data format.
+    """
+
+    DATA8 = 0x00
+    """8-bit signed integer."""
+
+    DATA16 = 0x01
+    """16-bit signed integer, little-endian."""
+
+    DATA32 = 0x02
+    """32-bit signed integer, little-endian."""
+
+    DATAF = 0x03
+    """32-bit floating point, little-endian."""
