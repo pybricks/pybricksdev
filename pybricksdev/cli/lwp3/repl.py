@@ -99,9 +99,15 @@ async def repl() -> None:
 
         queue.put_nowait(dev)
 
-    async with BleakScanner(detection_callback=callback):
+    async with BleakScanner(detection_callback=callback) as scanner:
         logger.info("scanning...")
         device = await queue.get()
+
+        # monkey patch for bleak bug
+        # https://github.com/hbldh/bleak/pull/534
+        if hasattr(scanner, "_manager"):
+            device.metadata["delegate"] = scanner._manager.central_manager.delegate()
+
         logger.info("found device")
 
     def handle_disconnect(client: BleakClient):
