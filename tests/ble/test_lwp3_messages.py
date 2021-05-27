@@ -1,7 +1,6 @@
 import inspect
 
 import pytest
-
 from pybricksdev.ble.lwp3.bytecodes import (
     AlertKind,
     AlertOperation,
@@ -9,23 +8,27 @@ from pybricksdev.ble.lwp3.bytecodes import (
     BatteryKind,
     BluetoothAddress,
     DataFormat,
+    EndInfo,
     ErrorCode,
+    Feedback,
     HubAction,
     HubProperty,
     HubPropertyOperation,
     HwNetCmd,
     HwNetFamily,
     HwNetSubfamily,
+    InfoKind,
     IODeviceCapabilities,
     IODeviceKind,
     IODeviceMapping,
     IOEvent,
-    InfoKind,
     MessageKind,
     ModeCapabilities,
     ModeInfoKind,
     PortID,
     PortInfoFormatSetupCommand,
+    PortOutputCommand,
+    StartInfo,
     Version,
     VirtualPortSetupCommand,
 )
@@ -37,6 +40,7 @@ from pybricksdev.ble.lwp3.messages import (
     AbstractMessage,
     AbstractPortInfoMessage,
     AbstractPortModeInfoMessage,
+    AbstractPortOutputCommandMessage,
     AbstractVirtualPortSetupMessage,
     ErrorMessage,
     FirmwareUpdateMessage,
@@ -88,6 +92,9 @@ from pybricksdev.ble.lwp3.messages import (
     PortModeInfoRequestMessage,
     PortModeInfoSIMessage,
     PortModeInfoSymbolMessage,
+    PortOutputCommandFeedbackMessage,
+    PortOutputCommandWriteDirectMessage,
+    PortOutputCommandWriteDirectModeDataMessage,
     PortValueComboMessage,
     PortValueMessage,
     VirtualPortSetupConnectMessage,
@@ -1341,3 +1348,138 @@ class TestVirtualPortMessages:
                 assert msg.command is VirtualPortSetupCommand.CONNECT
                 assert msg.port_a is PortID(1)
                 assert msg.port_b is PortID(2)
+
+
+class TestPortOutputCommandMessages:
+    def test_is_abstract(self):
+        assert inspect.isabstract(AbstractPortOutputCommandMessage)
+
+    class TestPortOutputCommandWriteDirectMessage:
+        def test_constructor(self):
+            msg = PortOutputCommandWriteDirectMessage(
+                PortID(1), StartInfo.IMMEDIATE, EndInfo.FEEDBACK, b"\xd4\x11\x3a"
+            )
+            assert msg.length == 9
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD
+            assert msg.port is PortID(1)
+            assert msg.start is StartInfo.IMMEDIATE
+            assert msg.end is EndInfo.FEEDBACK
+            assert msg.command is PortOutputCommand.WRITE_DIRECT
+            assert msg.payload == b"\xd4\x11\x3a"
+            assert (
+                repr(msg)
+                == "PortOutputCommandWriteDirectMessage(<PortID.1: 1>, <StartInfo.IMMEDIATE: 16>, <EndInfo.FEEDBACK: 1>, b'\\xd4\\x11:')"
+            )
+
+        def test_parse_message(self):
+            msg = parse_message(b"\x09\x00\x81\x01\x11\x50\xd4\x11\x3a")
+            assert isinstance(msg, PortOutputCommandWriteDirectMessage)
+            assert msg.length == 9
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD
+            assert msg.port is PortID(1)
+            assert msg.start is StartInfo.IMMEDIATE
+            assert msg.end is EndInfo.FEEDBACK
+            assert msg.command is PortOutputCommand.WRITE_DIRECT
+            assert msg.payload == b"\xd4\x11\x3a"
+
+    class TestPortOutputCommandWriteDirectModeDataMessage:
+        def test_constructor(self):
+            msg = PortOutputCommandWriteDirectModeDataMessage(
+                PortID(1), StartInfo.IMMEDIATE, EndInfo.FEEDBACK, 2, "<i", 100
+            )
+            assert msg.length == 11
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD
+            assert msg.port is PortID(1)
+            assert msg.start is StartInfo.IMMEDIATE
+            assert msg.end is EndInfo.FEEDBACK
+            assert msg.command is PortOutputCommand.WRITE_DIRECT_MODE_DATA
+            assert msg.mode == 2
+            assert msg.unpack("<i") == (100,)
+            assert (
+                repr(msg)
+                == "PortOutputCommandWriteDirectModeDataMessage(<PortID.1: 1>, <StartInfo.IMMEDIATE: 16>, <EndInfo.FEEDBACK: 1>, 2, '<4b', 100, 0, 0, 0)"
+            )
+
+        def test_parse_message(self):
+            msg = parse_message(b"\x0b\x00\x81\x01\x11\x51\x02\x64\x00\x00\x00")
+            assert isinstance(msg, PortOutputCommandWriteDirectModeDataMessage)
+            assert msg.length == 11
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD
+            assert msg.port is PortID(1)
+            assert msg.start is StartInfo.IMMEDIATE
+            assert msg.end is EndInfo.FEEDBACK
+            assert msg.command is PortOutputCommand.WRITE_DIRECT_MODE_DATA
+            assert msg.mode == 2
+            assert msg.unpack("<i") == (100,)
+
+    class TestPortOutputCommandFeedbackMessage:
+        def test_constructor_1(self):
+            msg = PortOutputCommandFeedbackMessage(
+                PortID(1), Feedback.BUFFER_EMPTY_IN_PROGRESS
+            )
+            assert msg.length == 5
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD_FEEDBACK
+            assert msg.port1 is PortID(1)
+            assert msg.feedback1 is Feedback.BUFFER_EMPTY_IN_PROGRESS
+            assert msg.port2 is None
+            assert msg.feedback2 is None
+            assert msg.port3 is None
+            assert msg.feedback3 is None
+            assert (
+                repr(msg)
+                == "PortOutputCommandFeedbackMessage(<PortID.1: 1>, <Feedback.BUFFER_EMPTY_IN_PROGRESS: 1>, None, None, None, None)"
+            )
+
+        def test_constructor_2(self):
+            msg = PortOutputCommandFeedbackMessage(
+                PortID(1),
+                Feedback.BUFFER_EMPTY_COMPLETED,
+                PortID(2),
+                Feedback.BUFFER_EMPTY_IN_PROGRESS,
+            )
+            assert msg.length == 7
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD_FEEDBACK
+            assert msg.port1 is PortID(1)
+            assert msg.feedback1 is Feedback.BUFFER_EMPTY_COMPLETED
+            assert msg.port2 is PortID(2)
+            assert msg.feedback2 is Feedback.BUFFER_EMPTY_IN_PROGRESS
+            assert msg.port3 is None
+            assert msg.feedback3 is None
+            assert (
+                repr(msg)
+                == "PortOutputCommandFeedbackMessage(<PortID.1: 1>, <Feedback.BUFFER_EMPTY_COMPLETED: 2>, <PortID.2: 2>, <Feedback.BUFFER_EMPTY_IN_PROGRESS: 1>, None, None)"
+            )
+
+        def test_constructor_3(self):
+            msg = PortOutputCommandFeedbackMessage(
+                PortID(1),
+                Feedback.BUFFER_EMPTY_COMPLETED,
+                PortID(2),
+                Feedback.BUFFER_EMPTY_IN_PROGRESS,
+                PortID(3),
+                Feedback.BUSY,
+            )
+            assert msg.length == 9
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD_FEEDBACK
+            assert msg.port1 is PortID(1)
+            assert msg.feedback1 is Feedback.BUFFER_EMPTY_COMPLETED
+            assert msg.port2 is PortID(2)
+            assert msg.feedback2 is Feedback.BUFFER_EMPTY_IN_PROGRESS
+            assert msg.port3 is PortID(3)
+            assert msg.feedback3 is Feedback.BUSY
+            assert (
+                repr(msg)
+                == "PortOutputCommandFeedbackMessage(<PortID.1: 1>, <Feedback.BUFFER_EMPTY_COMPLETED: 2>, <PortID.2: 2>, <Feedback.BUFFER_EMPTY_IN_PROGRESS: 1>, <PortID.3: 3>, <Feedback.BUSY: 16>)"
+            )
+
+        def test_parse_message(self):
+            msg = parse_message(b"\x05\x00\x82\x01\x01")
+            assert isinstance(msg, PortOutputCommandFeedbackMessage)
+            assert msg.length == 5
+            assert msg.kind is MessageKind.PORT_OUTPUT_CMD_FEEDBACK
+            assert msg.port1 is PortID(1)
+            assert msg.feedback1 is Feedback.BUFFER_EMPTY_IN_PROGRESS
+            assert msg.port2 is None
+            assert msg.feedback2 is None
+            assert msg.port3 is None
+            assert msg.feedback3 is None

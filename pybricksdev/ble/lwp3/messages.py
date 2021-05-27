@@ -11,17 +11,20 @@ messages used in the `LWP3 protocol`_.
 """
 
 import abc
-from enum import IntEnum
 import struct
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union
+from enum import IntEnum
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union, overload
 
 from .bytecodes import (
+    Feedback,
+    MAX_NAME_SIZE,
     AlertKind,
     AlertOperation,
     AlertStatus,
     BatteryKind,
     BluetoothAddress,
     DataFormat,
+    EndInfo,
     ErrorCode,
     HubAction,
     HubKind,
@@ -31,22 +34,24 @@ from .bytecodes import (
     HwNetExtFamily,
     HwNetFamily,
     HwNetSubfamily,
+    InfoKind,
     IODeviceCapabilities,
     IODeviceKind,
     IODeviceMapping,
     IOEvent,
-    InfoKind,
-    LWPVersion,
     LastNetwork,
-    MAX_NAME_SIZE,
+    LWPVersion,
     MessageKind,
     ModeCapabilities,
     ModeInfoKind,
     PortID,
     PortInfoFormatSetupCommand,
+    PortOutputCommand,
+    StartInfo,
     Version,
     VirtualPortSetupCommand,
 )
+from ...tools.checksum import xor_bytes
 
 
 class AbstractMessage(abc.ABC):
@@ -747,7 +752,7 @@ class FirmwareUpdateMessage(AbstractMessage):
     @property
     def key(self) -> bytes:
         """Safety string."""
-        return self._data[3:]
+        return bytes(self._data[3:])
 
 
 ###############################################################################
@@ -1366,6 +1371,197 @@ class VirtualPortSetupConnectMessage(AbstractVirtualPortSetupMessage):
 
 
 ###############################################################################
+# Port output messages
+###############################################################################
+
+
+class AbstractPortOutputCommandMessage(AbstractMessage):
+    @abc.abstractmethod
+    def __init__(
+        self,
+        length: int,
+        port: PortID,
+        start: StartInfo,
+        end: EndInfo,
+        command: PortOutputCommand,
+    ) -> None:
+        super().__init__(length, MessageKind.PORT_OUTPUT_CMD)
+
+        self._data[3] = port
+        self._data[4] = start | end
+        self._data[5] = command
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def start(self) -> StartInfo:
+        return StartInfo(self._data[4] & 0xF0)
+
+    @property
+    def end(self) -> EndInfo:
+        return EndInfo(self._data[4] & 0x0F)
+
+    @property
+    def command(self) -> PortOutputCommand:
+        return PortOutputCommand(self._data[5])
+
+    @abc.abstractmethod
+    def __repr__(self, extra: str) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)}, {repr(self.start)}, {repr(self.end)}, {extra})"
+
+
+class PortOutputCommandWriteDirectMessage(AbstractPortOutputCommandMessage):
+    def __init__(
+        self, port: PortID, start: StartInfo, end: EndInfo, payload: bytes
+    ) -> None:
+        super().__init__(
+            6 + len(payload), port, start, end, PortOutputCommand.WRITE_DIRECT
+        )
+
+        if xor_bytes(payload) != 0x00:
+            raise ValueError("payload has invalid checksum")
+
+        self._data[6:] = payload
+
+    @property
+    def payload(self) -> bytes:
+        return bytes(self._data[6:])
+
+    def __repr__(self) -> str:
+        return super().__repr__(repr(self.payload))
+
+
+class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessage):
+    def __init__(
+        self,
+        port: PortID,
+        start: StartInfo,
+        end: EndInfo,
+        mode: int,
+        fmt: str,
+        *values: Union[int, float],
+    ) -> None:
+        super().__init__(
+            7 + struct.calcsize(fmt),
+            port,
+            start,
+            end,
+            PortOutputCommand.WRITE_DIRECT_MODE_DATA,
+        )
+
+        self._data[6] = mode
+        struct.pack_into(fmt, self._data, 7, *values)
+
+    @property
+    def mode(self) -> int:
+        return self._data[6]
+
+    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+        return struct.unpack_from(fmt, self._data, 7)
+
+    def __repr__(self) -> str:
+        fmt = f"<{len(self._data) - 7}b"
+        values = ", ".join(repr(d) for d in self.unpack(fmt))
+        return super().__repr__(f"{repr(self.mode)}, {repr(fmt)}, {values}")
+
+
+class PortOutputCommandFeedbackMessage(AbstractMessage):
+    @overload
+    def __init__(self, port: PortID, feedback: Feedback) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self, port1: PortID, feedback1: Feedback, port2: PortID, feedback2: Feedback
+    ) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self,
+        port1: PortID,
+        feedback1: Feedback,
+        port2: PortID,
+        feedback2: Feedback,
+        port3: PortID,
+        feedback3: Feedback,
+    ) -> None:
+        ...
+
+    def __init__(
+        self,
+        port1: PortID,
+        feedback1: Feedback,
+        port2: Optional[PortID] = None,
+        feedback2: Optional[Feedback] = None,
+        port3: Optional[PortID] = None,
+        feedback3: Optional[Feedback] = None,
+    ) -> None:
+
+        length = 5
+
+        if port2 is not None:
+            length += 2
+
+        if port3 is not None:
+            length += 2
+
+        super().__init__(length, MessageKind.PORT_OUTPUT_CMD_FEEDBACK)
+
+        self._data[3] = port1
+        self._data[4] = feedback1
+
+        if port2 is not None:
+            self._data[5] = port2
+            self._data[6] = feedback2
+
+        if port3 is not None:
+            self._data[7] = port3
+            self._data[8] = feedback3
+
+    @property
+    def port1(self) -> PortID:
+        return PortID(self._data[3])
+
+    @property
+    def feedback1(self) -> Feedback:
+        return Feedback(self._data[4])
+
+    @property
+    def port2(self) -> PortID:
+        try:
+            return PortID(self._data[5])
+        except IndexError:
+            return None
+
+    @property
+    def feedback2(self) -> Feedback:
+        try:
+            return Feedback(self._data[6])
+        except IndexError:
+            return None
+
+    @property
+    def port3(self) -> PortID:
+        try:
+            return PortID(self._data[7])
+        except IndexError:
+            return None
+
+    @property
+    def feedback3(self) -> Feedback:
+        try:
+            return Feedback(self._data[8])
+        except IndexError:
+            return None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port1)}, {repr(self.feedback1)}, {repr(self.port2)}, {repr(self.feedback2)}, {repr(self.port3)}, {repr(self.feedback3)})"
+
+
+###############################################################################
 # Message parsing
 ###############################################################################
 
@@ -1455,6 +1651,11 @@ _VIRTUAL_PORT_SETUP_CLASS_MAP = {
     VirtualPortSetupCommand.CONNECT: VirtualPortSetupConnectMessage,
 }
 
+_OUTPUT_CMD_CLASS_MAP = {
+    PortOutputCommand.WRITE_DIRECT: PortOutputCommandWriteDirectMessage,
+    PortOutputCommand.WRITE_DIRECT_MODE_DATA: PortOutputCommandWriteDirectModeDataMessage,
+}
+
 # base type descriminator for messages
 _MESSAGE_CLASS_MAP = {
     MessageKind.HUB_PROPERTY: _Lookup(4, _HUB_PROPERTY_OP_CLASS_MAP),
@@ -1477,6 +1678,8 @@ _MESSAGE_CLASS_MAP = {
     MessageKind.PORT_INPUT_FMT: PortInputFormatMessage,
     MessageKind.PORT_INPUT_FMT_COMBO: PortInputFormatComboMessage,
     MessageKind.VIRTUAL_PORT_SETUP: _Lookup(3, _VIRTUAL_PORT_SETUP_CLASS_MAP),
+    MessageKind.PORT_OUTPUT_CMD: _Lookup(5, _OUTPUT_CMD_CLASS_MAP),
+    MessageKind.PORT_OUTPUT_CMD_FEEDBACK: PortOutputCommandFeedbackMessage,
 }
 
 

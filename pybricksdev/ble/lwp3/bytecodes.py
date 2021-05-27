@@ -1000,3 +1000,40 @@ class DataFormat(IntEnum):
 class VirtualPortSetupCommand(IntEnum):
     DISCONNECT = 0x00
     CONNECT = 0x01
+
+
+class PortOutputCommand(IntEnum):
+    START_POWER = 0x01
+    START_POWER_2 = 0x02
+    SET_ACC_TIME = 0x05
+    SET_DEC_TIME = 0x06
+    START_SPEED = 0x07
+    START_SPEED_2 = 0x08
+    START_SPEED_FOR_TIME = 0x09
+    START_SPEED_FOR_TIME_2 = 0x0A
+    START_SPEED_FOR_DEGREES = 0x0B
+    START_SPEED_FOR_DEGREES_2 = 0x0C
+    GOTO_ABS_POS = 0x0D
+    GOTO_ABS_POS_2 = 0x0E
+    PRESET_ENCODER = 0x13
+    PRESET_ENCODER_2 = 0x14
+    WRITE_DIRECT = 0x50
+    WRITE_DIRECT_MODE_DATA = 0x51
+
+
+class StartInfo(IntEnum):
+    BUFFER = 0x00
+    IMMEDIATE = 0x10
+
+
+class EndInfo(IntEnum):
+    NO_ACTION = 0x00
+    FEEDBACK = 0x01
+
+
+class Feedback(IntFlag):
+    BUFFER_EMPTY_IN_PROGRESS = 1 << 0
+    BUFFER_EMPTY_COMPLETED = 1 << 1
+    DISCARDED = 1 << 2
+    IDLE = 1 << 3
+    BUSY = 1 << 4
