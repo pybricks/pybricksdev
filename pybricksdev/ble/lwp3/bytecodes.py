@@ -995,3 +995,8 @@ class DataFormat(IntEnum):
 
     DATAF = 0x03
     """32-bit floating point, little-endian."""
+
+
+class VirtualPortSetupCommand(IntEnum):
+    DISCONNECT = 0x00
+    CONNECT = 0x01

@@ -27,6 +27,7 @@ from pybricksdev.ble.lwp3.bytecodes import (
     PortID,
     PortInfoFormatSetupCommand,
     Version,
+    VirtualPortSetupCommand,
 )
 from pybricksdev.ble.lwp3.messages import (
     AbstractHubAlertMessage,
@@ -36,6 +37,7 @@ from pybricksdev.ble.lwp3.messages import (
     AbstractMessage,
     AbstractPortInfoMessage,
     AbstractPortModeInfoMessage,
+    AbstractVirtualPortSetupMessage,
     ErrorMessage,
     FirmwareUpdateMessage,
     HubActionMessage,
@@ -88,6 +90,8 @@ from pybricksdev.ble.lwp3.messages import (
     PortModeInfoSymbolMessage,
     PortValueComboMessage,
     PortValueMessage,
+    VirtualPortSetupConnectMessage,
+    VirtualPortSetupDisconnectMessage,
     parse_message,
 )
 
@@ -1292,3 +1296,48 @@ class TestPortInfoMessages:
             assert msg.combo == 2
             assert msg.multi_update is True
             assert msg.modes_and_datasets == [0, 1]
+
+
+class TestVirtualPortMessages:
+    class TestVirtualPortSetupMessages:
+        def test_is_abstract(self):
+            assert inspect.isabstract(AbstractVirtualPortSetupMessage)
+
+        class TestVirtualPortSetupDisconnectMessage:
+            def test_constructor(self):
+                msg = VirtualPortSetupDisconnectMessage(PortID(3))
+                assert msg.length == 5
+                assert msg.kind is MessageKind.VIRTUAL_PORT_SETUP
+                assert msg.command is VirtualPortSetupCommand.DISCONNECT
+                assert msg.port is PortID(3)
+                assert repr(msg) == "VirtualPortSetupDisconnectMessage(<PortID.3: 3>)"
+
+            def test_parse_message(self):
+                msg = parse_message(b"\x05\x00\x61\x00\x03")
+                assert isinstance(msg, VirtualPortSetupDisconnectMessage)
+                assert msg.length == 5
+                assert msg.kind is MessageKind.VIRTUAL_PORT_SETUP
+                assert msg.command is VirtualPortSetupCommand.DISCONNECT
+                assert msg.port is PortID(3)
+
+        class TestVirtualPortSetupConnectMessage:
+            def test_constructor(self):
+                msg = VirtualPortSetupConnectMessage(PortID(1), PortID(2))
+                assert msg.length == 6
+                assert msg.kind is MessageKind.VIRTUAL_PORT_SETUP
+                assert msg.command is VirtualPortSetupCommand.CONNECT
+                assert msg.port_a is PortID(1)
+                assert msg.port_b is PortID(2)
+                assert (
+                    repr(msg)
+                    == "VirtualPortSetupConnectMessage(<PortID.1: 1>, <PortID.2: 2>)"
+                )
+
+            def test_parse_message(self):
+                msg = parse_message(b"\x06\x00\x61\x01\x01\x02")
+                assert isinstance(msg, VirtualPortSetupConnectMessage)
+                assert msg.length == 6
+                assert msg.kind is MessageKind.VIRTUAL_PORT_SETUP
+                assert msg.command is VirtualPortSetupCommand.CONNECT
+                assert msg.port_a is PortID(1)
+                assert msg.port_b is PortID(2)

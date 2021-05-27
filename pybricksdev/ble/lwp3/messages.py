@@ -45,6 +45,7 @@ from .bytecodes import (
     PortID,
     PortInfoFormatSetupCommand,
     Version,
+    VirtualPortSetupCommand,
 )
 
 
@@ -1315,6 +1316,56 @@ class PortInputFormatComboMessage(AbstractMessage):
 
 
 ###############################################################################
+# Virtual port messages
+###############################################################################
+
+
+class AbstractVirtualPortSetupMessage(AbstractMessage):
+    @abc.abstractmethod
+    def __init__(self, length: int, command: VirtualPortSetupCommand) -> None:
+        super().__init__(length, MessageKind.VIRTUAL_PORT_SETUP)
+
+        self._data[3] = command
+
+    @property
+    def command(self) -> VirtualPortSetupCommand:
+        return VirtualPortSetupCommand(self._data[3])
+
+
+class VirtualPortSetupDisconnectMessage(AbstractVirtualPortSetupMessage):
+    def __init__(self, port: PortID) -> None:
+        super().__init__(5, VirtualPortSetupCommand.DISCONNECT)
+
+        self._data[4] = port
+
+    @property
+    def port(self) -> PortID:
+        return PortID(self._data[4])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port)})"
+
+
+class VirtualPortSetupConnectMessage(AbstractVirtualPortSetupMessage):
+    def __init__(self, port_a: PortID, port_b: PortID) -> None:
+        super().__init__(6, VirtualPortSetupCommand.CONNECT)
+
+        self._data[4] = port_a
+        self._data[5] = port_b
+
+    @property
+    def port_a(self) -> PortID:
+        return PortID(self._data[4])
+
+    @property
+    def port_b(self) -> PortID:
+        return PortID(self._data[5])
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({repr(self.port_a)}, {repr(self.port_b)})"
+
+
+###############################################################################
 # Message parsing
 ###############################################################################
 
@@ -1399,6 +1450,11 @@ _PORT_MODE_INFO_CLASS_MAP = {
     ModeInfoKind.FORMAT: PortModeInfoFormatMessage,
 }
 
+_VIRTUAL_PORT_SETUP_CLASS_MAP = {
+    VirtualPortSetupCommand.DISCONNECT: VirtualPortSetupDisconnectMessage,
+    VirtualPortSetupCommand.CONNECT: VirtualPortSetupConnectMessage,
+}
+
 # base type descriminator for messages
 _MESSAGE_CLASS_MAP = {
     MessageKind.HUB_PROPERTY: _Lookup(4, _HUB_PROPERTY_OP_CLASS_MAP),
@@ -1420,6 +1476,7 @@ _MESSAGE_CLASS_MAP = {
     MessageKind.PORT_VALUE_COMBO: PortValueComboMessage,
     MessageKind.PORT_INPUT_FMT: PortInputFormatMessage,
     MessageKind.PORT_INPUT_FMT_COMBO: PortInputFormatComboMessage,
+    MessageKind.VIRTUAL_PORT_SETUP: _Lookup(3, _VIRTUAL_PORT_SETUP_CLASS_MAP),
 }
 
 
