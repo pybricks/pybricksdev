@@ -258,6 +258,43 @@ class DFU(Tool):
         return self.subparsers.choices[args.action].tool.run(args)
 
 
+class LWP3Repl(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "repl",
+            help="interactive REPL for sending and receiving LWP3 messages",
+        )
+        parser.tool = self
+
+    def run(self, args: argparse.Namespace):
+        from .lwp3.repl import setup_repl_logging, repl
+
+        setup_repl_logging()
+        return repl()
+
+
+class LWP3(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        self.parser = subparsers.add_parser(
+            "lwp3", help="interact with devices using LWP3"
+        )
+        self.parser.tool = self
+        self.subparsers = self.parser.add_subparsers(
+            metavar="<lwp3-tool>", dest="lwp3_tool", help="the tool to run"
+        )
+
+        for tool in (LWP3Repl(),):
+            tool.add_parser(self.subparsers)
+
+    def run(self, args: argparse.Namespace):
+        if args.lwp3_tool not in self.subparsers.choices:
+            self.parser.error(
+                f'Missing name of tool: {"|".join(self.subparsers.choices.keys())}'
+            )
+
+        return self.subparsers.choices[args.lwp3_tool].tool.run(args)
+
+
 class Udev(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser("udev", help="print udev rules to stdout")
@@ -293,7 +330,7 @@ def main():
         help="the tool to use",
     )
 
-    for tool in Compile(), Run(), Flash(), DFU(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), LWP3(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)

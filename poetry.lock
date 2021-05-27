@@ -21,7 +21,7 @@ python-versions = "*"
 name = "appdirs"
 version = "1.4.4"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -760,7 +760,7 @@ twisted = ["twisted"]
 name = "prompt-toolkit"
 version = "3.0.18"
 description = "Library for building powerful interactive command lines in Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6.1"
 
@@ -1257,7 +1257,7 @@ test = ["pytest (>=2.2.3)", "flake8 (>=2.4.0)", "isort (>=4.2.2)"]
 name = "wcwidth"
 version = "0.2.5"
 description = "Measures the displayed width of unicode strings in a terminal"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1283,7 +1283,7 @@ notebook = ">=4.4.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "94b878fc7dc4b570b47ad9efb3e30a2525847276dfd10ec86fc86899c8f7aa57"
+content-hash = "04bede6abeb099d8a6b71ff89c9a31b5e1fca1324bf22c5499b61be00c611889"
 
 [metadata.files]
 aioserial = [
