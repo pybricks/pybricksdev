@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/pybricks/pybricksdev/badge.svg?branch=master)](https://coveralls.io/github/pybricks/pybricksdev?branch=master)
+
 # Pybricks tools & interface library
 
 This is a package with tools for Pybricks developers. For regular users we
