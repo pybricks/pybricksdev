@@ -3,137 +3,27 @@
 
 import asyncio
 import io
-from collections import namedtuple
 import json
 import logging
 import os
 import platform
 import struct
 import sys
-from typing import Dict, Tuple
-from tqdm.auto import tqdm
-from tqdm.contrib.logging import logging_redirect_tqdm
 import typing
 import zipfile
+from collections import namedtuple
+from typing import Dict, Tuple
+
+from tqdm.auto import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLERequestsConnection
 from .ble.lwp3 import BootloaderCommand
 from .ble.lwp3.bytecodes import HubKind
-from .compile import save_script, compile_file
+from .compile import compile_file, save_script
+from .tools.checksum import crc32_checksum, sum_complement
 
 logger = logging.getLogger(__name__)
-
-
-def sum_complement(fw, max_size):
-    """Calculates the checksum of a firmware file using the sum complement
-    method of adding each 32-bit word and the returning the two's complement
-    as the checksum.
-
-    Arguments:
-        fw (file):
-            The firmware file (a binary buffer - e.g. a file opened in 'rb' mode)
-        max_size (int):
-            The maximum size of the firmware file.
-
-    Returns:
-        int: The correction needed to make the checksum of the file == 0.
-    """
-    checksum = 0
-    size = 0
-
-    while True:
-        word = fw.read(4)
-        if not word:
-            break
-        checksum += struct.unpack("I", word)[0]
-        size += 4
-
-    if size > max_size:
-        print('firmware + main.mpy is too large"', file=sys.stderr)
-        exit(1)
-
-    for _ in range(size, max_size, 4):
-        checksum += 0xFFFFFFFF
-
-    checksum &= 0xFFFFFFFF
-    correction = checksum and (1 << 32) - checksum or 0
-
-    return correction
-
-
-# thanks https://stackoverflow.com/a/33152544/1976323
-
-_CRC_TABLE = (
-    0x00000000,
-    0x04C11DB7,
-    0x09823B6E,
-    0x0D4326D9,
-    0x130476DC,
-    0x17C56B6B,
-    0x1A864DB2,
-    0x1E475005,
-    0x2608EDB8,
-    0x22C9F00F,
-    0x2F8AD6D6,
-    0x2B4BCB61,
-    0x350C9B64,
-    0x31CD86D3,
-    0x3C8EA00A,
-    0x384FBDBD,
-)
-
-
-def _dword(value):
-    return value & 0xFFFFFFFF
-
-
-def _crc32_fast(crc, data):
-    crc, data = _dword(crc), _dword(data)
-    crc ^= data
-    for _ in range(8):
-        crc = _dword(crc << 4) ^ _CRC_TABLE[crc >> 28]
-    return crc
-
-
-def _crc32_fast_block(crc, buffer):
-    for data in buffer:
-        crc = _crc32_fast(crc, data)
-    return crc
-
-
-def crc32_checksum(fw, max_size):
-    """Calculate the checksum of a firmware file using CRC-32 as implemented
-    in STM32 microprocessors.
-
-    Parameters
-    ----------
-    fw : file
-        The firmware file (a binary buffer - e.g. a file opened in 'rb' mode)
-    max_size : int
-        The maximum size of the firmware file.
-
-    Returns
-    -------
-    int
-        The checksum
-    """
-
-    # remove the last 4 bytes that are the placeholder for the checksum
-    try:
-        fw = fw.read()[:-4]
-    except AttributeError:
-        fw = fw[:-4]
-    if len(fw) + 4 > max_size:
-        raise ValueError("File is too large")
-
-    if len(fw) & 3:
-        raise ValueError("bytes_data length must be multiple of four")
-
-    crc = 0xFFFFFFFF
-    for index in range(0, len(fw), 4):
-        data = int.from_bytes(fw[index : index + 4], "little")
-        crc = _crc32_fast(crc, data)
-    return crc
 
 
 async def create_firmware(

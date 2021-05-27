@@ -10,22 +10,23 @@ import random
 import struct
 
 import asyncssh
-from bleak.backends.device import BLEDevice
-from bleak import BleakClient
 import semver
+from bleak import BleakClient
+from bleak.backends.device import BLEDevice
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
 from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from .ble.pybricks import (
-    Event,
     PYBRICKS_CONTROL_UUID,
     PYBRICKS_PROTOCOL_VERSION,
     SW_REV_UUID,
+    Event,
     Status,
 )
 from .compile import compile_file
+from .tools.checksum import xor_bytes
 from .usbconnection import USBConnection
 
 logger = logging.getLogger(__name__)
@@ -249,9 +250,7 @@ class PybricksPUPProtocol(CharacterGlue):
             raise ValueError("Cannot send this much data at once")
 
         # Compute expected reply
-        checksum = 0
-        for b in data:
-            checksum ^= b
+        checksum = xor_bytes(data, 0)
 
         # Clear existing checksum
         self.prepare_checksum()
@@ -746,15 +745,9 @@ class PybricksHub:
         else:
             logger.debug("already disconnected")
 
-    def get_checksum(self, block):
-        checksum = 0
-        for b in block:
-            checksum ^= b
-        return checksum
-
     async def send_block(self, data):
         self.checksum_ready.clear()
-        self.expected_checksum = self.get_checksum(data)
+        self.expected_checksum = xor_bytes(data, 0)
         try:
             await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
             await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
