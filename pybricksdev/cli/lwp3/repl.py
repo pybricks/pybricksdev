@@ -145,7 +145,7 @@ async def repl() -> None:
                 logger.exception("bad input:")
             else:
                 logger.info("sending: %s", msg)
-                await client.write_gatt_char(LWP3_HUB_CHARACTERISTIC_UUID, msg)
+                await client.write_gatt_char(LWP3_HUB_CHARACTERISTIC_UUID, bytes(msg))
 
         logger.info("disconnecting...")
 
