@@ -192,8 +192,8 @@ class HubKind(IntEnum):
     TECHNIC = 0x80
     """LEGO 4-port Technic Hub."""
 
-    PRIME = 0x84
-    """LEGO SPIKE Prime Hub (unofficial value)."""
+    TECHNIC_LARGE = 0x81
+    """LEGO SPIKE Prime Hub and MINDSTORMS Robot Inventor hubs."""
 
     @property
     def system(self) -> SystemKind:
