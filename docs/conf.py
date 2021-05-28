@@ -24,7 +24,7 @@ _pyproject = toml.load("../pyproject.toml")
 # needed for local extensions
 sys.path.insert(0, os.path.abspath("./_ext"))
 # needed for autodoc
-sys.path.insert(0, os.path.abspath("../pybricksdev"))
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
@@ -100,4 +100,16 @@ python_use_unqualified_type_names = True
 
 # -- Options for autodoc extension -------------------------------------------
 
+autodoc_mock_imports = [
+    "aioserial",
+    "appdirs",
+    "argcomplete",
+    "asyncssh",
+    "mpy_cross",
+    "prompt_toolkit",
+    "semver",
+    "tqdm",
+    "usb",
+    "validators",
+]
 autoclass_content = "both"
