@@ -94,9 +94,6 @@ async def repl() -> None:
             opt,
         )
 
-        if not (cap & Capabilities.REMOTE):
-            return
-
         queue.put_nowait(dev)
 
     async with BleakScanner(detection_callback=callback) as scanner:
