@@ -68,3 +68,7 @@ demo/_*.py
 
 # Pycharm IDE files
 /.idea/
+
+# Coveage
+.coverage
+htmlcov/

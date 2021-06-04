@@ -16,7 +16,8 @@ import argcomplete
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..ble.lwp3 import HubTypeId, LWP3_BOOTLOADER_SERVICE_UUID
+from ..ble.lwp3 import LWP3_BOOTLOADER_SERVICE_UUID
+from ..ble.lwp3.bytecodes import HubKind
 
 
 PROG_NAME = (
@@ -224,7 +225,7 @@ class Flash(Tool):
         print("Creating firmware")
         firmware, metadata = await create_firmware(args.firmware)
 
-        if metadata["device-id"] == HubTypeId.PRIME_HUB:
+        if metadata["device-id"] == HubKind.PRIME:
             from ..dfu import flash_dfu
 
             flash_dfu(firmware, metadata)
@@ -279,12 +280,12 @@ class DFURestore(Tool):
 
 class DFU(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
+        self.parser = subparsers.add_parser(
             "dfu",
             help="use DFU to backup or restore firmware",
         )
-        parser.tool = self
-        self.subparsers = parser.add_subparsers(
+        self.parser.tool = self
+        self.subparsers = self.parser.add_subparsers(
             metavar="<action>", dest="action", help="the action to perform"
         )
 
@@ -292,7 +293,49 @@ class DFU(Tool):
             tool.add_parser(self.subparsers)
 
     def run(self, args: argparse.Namespace):
+        if args.action not in self.subparsers.choices:
+            self.parser.error(
+                f'Missing name of action: {"|".join(self.subparsers.choices.keys())}'
+            )
+
         return self.subparsers.choices[args.action].tool.run(args)
+
+
+class LWP3Repl(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "repl",
+            help="interactive REPL for sending and receiving LWP3 messages",
+        )
+        parser.tool = self
+
+    def run(self, args: argparse.Namespace):
+        from .lwp3.repl import setup_repl_logging, repl
+
+        setup_repl_logging()
+        return repl()
+
+
+class LWP3(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        self.parser = subparsers.add_parser(
+            "lwp3", help="interact with devices using LWP3"
+        )
+        self.parser.tool = self
+        self.subparsers = self.parser.add_subparsers(
+            metavar="<lwp3-tool>", dest="lwp3_tool", help="the tool to run"
+        )
+
+        for tool in (LWP3Repl(),):
+            tool.add_parser(self.subparsers)
+
+    def run(self, args: argparse.Namespace):
+        if args.lwp3_tool not in self.subparsers.choices:
+            self.parser.error(
+                f'Missing name of tool: {"|".join(self.subparsers.choices.keys())}'
+            )
+
+        return self.subparsers.choices[args.lwp3_tool].tool.run(args)
 
 
 class Udev(Tool):
@@ -330,7 +373,7 @@ def main():
         help="the tool to use",
     )
 
-    for tool in Compile(), Run(), Flash(), DFU(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), LWP3(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)

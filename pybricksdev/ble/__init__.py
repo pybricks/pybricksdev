@@ -33,7 +33,7 @@ async def find_device(
             How long to search before giving up.
 
     Returns:
-        BLEDevice: The first detected matching device.
+        The first detected matching device.
 
     Raises:
         asyncio.TimeoutError:
@@ -101,8 +101,7 @@ class BLEConnection:
         """Connects to a BLE device.
 
         Arguments:
-            device (BLEDevice):
-                Client device
+            device: Client device
         """
 
         print("Connecting to", device)
@@ -188,8 +187,8 @@ class BLERequestsConnection(BLEConnection):
         Returns:
             bytearray: The reply.
 
-        Raises
-            TimeOutError. Same as asyncio.wait_for.
+        Raises:
+            asyncio.TimeoutError: Same as asyncio.wait_for.
         """
         # Await for the reply ready event to be raised.
         await asyncio.wait_for(self.reply_ready.wait(), timeout)

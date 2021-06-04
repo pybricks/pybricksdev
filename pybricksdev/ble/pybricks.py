@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2021 The Pybricks Authors
 
-"""This module is used for Bluetooth Low Energy communications with devices
+"""
+This module is used for Bluetooth Low Energy communications with devices
 that provide the Pybricks GATT service.
 
 Device identification and connection
 ------------------------------------
 
-Devices that support this protocol MUST advertise the :data:`PYBRICKS_SERVICE_UUID:.
+Devices that support this protocol MUST advertise the :data:`PYBRICKS_SERVICE_UUID`.
 Connecting devices SHOULD then filter on this UUID to identify compatible devices.
 
 After connecting, programs SHOULD read the Software Revision characteristic of
@@ -63,7 +64,7 @@ class Event(IntEnum):
     """Status report.
 
     The payload is a 32-bit little-endian unsigned integer containing
-    :class:`StatusFlags`.
+    :class:`Status` flags.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """

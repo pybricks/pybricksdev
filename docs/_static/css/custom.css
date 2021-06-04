@@ -1,0 +1,9 @@
+/* Fix coloring to be like older versions of Sphinx + RTD theme. */
+.descname {
+    color: black;
+}
+
+/* Fix double-click to select single word. */
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) .property::after {
+    content: " ";
+}
