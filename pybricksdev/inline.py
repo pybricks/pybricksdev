@@ -73,13 +73,12 @@ class _Module:
                 symbol = node.id
                 parent = node.parent
                 end_offset = node.end_col_offset
+                names.append(_Symbol(symbol, node.lineno - 1, node.col_offset, end_offset))
                 while isinstance(parent, ast.Attribute):
                     symbol = symbol + "." + parent.attr
                     end_offset = parent.end_col_offset
+                    names.append(_Symbol(symbol, node.lineno - 1, node.col_offset, end_offset))
                     parent = parent.parent
-                names.append(
-                    _Symbol(symbol, node.lineno - 1, node.col_offset, end_offset)
-                )
             elif not self.is_script():
                 # only look for things to export if this is not the top level script
                 if isinstance(node, ast.ClassDef) or isinstance(node, ast.FunctionDef):
@@ -151,13 +150,16 @@ class _Module:
                 next_symbol = names[0]
                 del names[0]
                 result += current_line[up_to : next_symbol.start_col_offset]
-                up_to = next_symbol.start_col_offset
+                up_to = max(up_to, next_symbol.start_col_offset)
                 if next_symbol.name in self.local_symbol_mappings:
                     result += self.local_symbol_mappings[next_symbol.name]
                     up_to = next_symbol.end_col_offset
                 elif next_symbol.name in self.exported_symbol_mappings:
                     result += self.exported_symbol_mappings[next_symbol.name]
                     up_to = next_symbol.end_col_offset
+                elif len(names) > 0 and current_line_num == names[0].line_number and next_symbol.start_col_offset == names[0].start_col_offset:
+                    # There's another overlapping name that might match, so skip this one
+                    pass
                 else:
                     result += current_line[up_to : next_symbol.end_col_offset]
                     up_to = next_symbol.end_col_offset

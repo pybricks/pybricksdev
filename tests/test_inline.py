@@ -12,7 +12,7 @@ def test_1_simple_import_from_sibling():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/1/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_2_chained_import_from_sibling():
@@ -25,7 +25,7 @@ def test_2_chained_import_from_sibling():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/2/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_3_that_functions_and_classes_are_imported():
@@ -38,7 +38,7 @@ def test_3_that_functions_and_classes_are_imported():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/3/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_4_imported_file_in_subdirectory():
@@ -51,7 +51,7 @@ def test_4_imported_file_in_subdirectory():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/4/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_5_that_import_base_is_respected():
@@ -65,7 +65,7 @@ def test_5_that_import_base_is_respected():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/5/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_6_that_repeated_imports_are_handled_correctly():
@@ -78,7 +78,7 @@ def test_6_that_repeated_imports_are_handled_correctly():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/6/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_7_multiple_imports_on_same_line():
@@ -91,7 +91,7 @@ def test_7_multiple_imports_on_same_line():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/7/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_8_that_consistent_alias_is_handled_ok():
@@ -104,7 +104,7 @@ def test_8_that_consistent_alias_is_handled_ok():
     # then
     output = readFileContents(output_path)
     expected = readFileContents("inline_test_resources/8/expected.py")
-    assert expected == output
+    assert output == expected
 
 
 def test_9_that_inconsistent_alias_is_an_error():
@@ -136,6 +136,19 @@ def test_10_that_syntax_error_is_reported_correctly():
         assert "invalid syntax" == ex.msg
         x = traceback.format_exc()
         assert "inline_test_resources/10/importA.py" in traceback.format_exc()
+
+
+def test_11_that_class_refs_in_parameters_are_substituted():
+    # given
+    script_path = "inline_test_resources/11/script.py"
+
+    # when
+    output_path = inline.flatten(script_path)
+
+    # then
+    output = readFileContents(output_path)
+    expected = readFileContents("inline_test_resources/11/expected.py")
+    assert output == expected
 
 
 def readFileContents(path):
