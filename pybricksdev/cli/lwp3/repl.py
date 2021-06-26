@@ -71,11 +71,9 @@ async def repl() -> None:
     os.makedirs(history_file.parent, exist_ok=True)
     session = PromptSession(history=FileHistory(history_file))
 
-    queue = asyncio.Queue()
-
-    def callback(dev: BLEDevice, adv: AdvertisementData) -> None:
+    def match_lwp3_uuid(dev: BLEDevice, adv: AdvertisementData) -> None:
         if LWP3_HUB_SERVICE_UUID.lower() not in adv.service_uuids:
-            return
+            return False
 
         mfg_data = adv.manufacturer_data[LEGO_CID]
         button, kind, cap, last_net, status, opt = struct.unpack("<6B", mfg_data)
@@ -94,18 +92,17 @@ async def repl() -> None:
             opt,
         )
 
-        queue.put_nowait(dev)
+        return True
 
-    async with BleakScanner(detection_callback=callback) as scanner:
-        logger.info("scanning...")
-        device = await queue.get()
+    logger.info("scanning...")
 
-        # monkey patch for bleak bug
-        # https://github.com/hbldh/bleak/pull/534
-        if hasattr(scanner, "_manager"):
-            device.metadata["delegate"] = scanner._manager.central_manager.delegate()
+    device = await BleakScanner.find_device_by_filter(match_lwp3_uuid)
 
-        logger.info("found device")
+    if device is None:
+        logger.error("timed out")
+        return
+
+    logger.info("found device")
 
     def handle_disconnect(client: BleakClient):
         logger.info("disconnected")

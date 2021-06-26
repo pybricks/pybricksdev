@@ -41,21 +41,25 @@ async def find_device(
     """
     print(f"Searching for {name or service}")
 
-    queue = asyncio.Queue()
-
-    def handle_detection(device: BLEDevice, adv: AdvertisementData):
+    def match_uuid_and_name(device: BLEDevice, adv: AdvertisementData):
         if service not in adv.service_uuids:
-            return
+            return False
+
         if (
             name is not None
             and adv.local_name != name
             and device.address.upper() != name.upper()
         ):
-            return
-        queue.put_nowait(device)
+            return False
 
-    async with BleakScanner(detection_callback=handle_detection):
-        return await asyncio.wait_for(queue.get(), timeout=timeout)
+        return True
+
+    device = await BleakScanner.find_device_by_filter(match_uuid_and_name, timeout)
+
+    if device is None:
+        raise asyncio.TimeoutError
+
+    return device
 
 
 class BLEConnection:

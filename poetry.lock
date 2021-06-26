@@ -166,7 +166,7 @@ webencodings = "*"
 
 [[package]]
 name = "bleak"
-version = "0.11.0"
+version = "0.12.0"
 description = "Bluetooth Low Energy platform Agnostic Klient"
 category = "main"
 optional = false
@@ -177,7 +177,11 @@ dbus-next = {version = "*", markers = "platform_system == \"Linux\""}
 pyobjc-core = {version = "*", markers = "platform_system == \"Darwin\""}
 pyobjc-framework-CoreBluetooth = {version = "*", markers = "platform_system == \"Darwin\""}
 pyobjc-framework-libdispatch = {version = "*", markers = "platform_system == \"Darwin\""}
-pythonnet = {version = "*", markers = "platform_system == \"Windows\""}
+pythonnet = {version = "*", markers = "platform_system == \"Windows\" and python_version < \"3.9.0\""}
+
+[package.extras]
+pythonnet = ["pythonnet (>=2.5.1)"]
+winrt = ["winrt (>=1.0.20330.1)"]
 
 [[package]]
 name = "certifi"
@@ -1283,7 +1287,7 @@ notebook = ">=4.4.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.8"
-content-hash = "04bede6abeb099d8a6b71ff89c9a31b5e1fca1324bf22c5499b61be00c611889"
+content-hash = "c0da262ccfa67f27ded8419c24044900bba22d65e8512f871961e6e8e07507a5"
 
 [metadata.files]
 aioserial = [
@@ -1363,8 +1367,8 @@ bleach = [
     {file = "bleach-3.3.0.tar.gz", hash = "sha256:98b3170739e5e83dd9dc19633f074727ad848cbedb6026708c8ac2d3b697a433"},
 ]
 bleak = [
-    {file = "bleak-0.11.0-py2.py3-none-any.whl", hash = "sha256:ed2cd4410740625ed70f17ff403767f4eeac532a1db2d2d6c2fbbc2571d4c7d7"},
-    {file = "bleak-0.11.0.tar.gz", hash = "sha256:7796a6188547cf77f668406e6513d5d23316c508ca929882ed429d90c7a745ff"},
+    {file = "bleak-0.12.0-py2.py3-none-any.whl", hash = "sha256:bcdb94b885ea99c93978c9f6cf453b6e357b90c4285530d2797b99a243a86788"},
+    {file = "bleak-0.12.0.tar.gz", hash = "sha256:a4d1f3db862307a141f592c2dcba174bedaace17e8adf94d5f31ba39616a0af9"},
 ]
 certifi = [
     {file = "certifi-2020.12.5-py2.py3-none-any.whl", hash = "sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830"},
