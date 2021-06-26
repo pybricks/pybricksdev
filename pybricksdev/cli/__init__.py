@@ -144,7 +144,9 @@ class Run(Tool):
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
+            print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
             device_or_address = await find_device(args.name)
+
         elif args.conntype == "usb" and args.name == "lego":
             # It's LEGO stock firmware Hub with USB.
             hub = USBRPCConnection()
@@ -195,7 +197,14 @@ class Flash(Tool):
             from ..ble import find_device
             from ..flash import BootloaderConnection
 
-            device = await find_device(service=LWP3_BOOTLOADER_SERVICE_UUID)
+            print("Searching for LEGO Bootloader...")
+
+            try:
+                device = await find_device(service=LWP3_BOOTLOADER_SERVICE_UUID)
+            except asyncio.TimeoutError:
+                print("timed out")
+                return
+
             print("Found:", device)
             updater = BootloaderConnection()
             await updater.connect(device)

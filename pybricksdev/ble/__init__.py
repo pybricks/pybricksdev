@@ -39,7 +39,6 @@ async def find_device(
         asyncio.TimeoutError:
             Device was not found within the timeout.
     """
-    print(f"Searching for {name or service}")
 
     def match_uuid_and_name(device: BLEDevice, adv: AdvertisementData):
         if service not in adv.service_uuids:
