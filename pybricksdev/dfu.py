@@ -134,7 +134,7 @@ def restore_dfu(file: BinaryIO) -> None:
 def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
     """Flashes a firmware file using DFU."""
 
-    if metadata["device-id"] != HubKind.PRIME:
+    if metadata["device-id"] != HubKind.TECHNIC_LARGE:
         print("Unknown hub type:", metadata["device-id"], file=sys.stderr)
         exit(1)
 
