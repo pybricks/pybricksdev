@@ -4,17 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
+## [1.0.0-alpha.10] - 2021-06-27
 ### Added
 - Support for Python 3.9.
 - Short `-n` option for `--name` option in `pybricksdev run`.
 - Option to set hub name when flashing firmware.
-
 ### Changed
 - Update to Bleak v0.12.0.
 - Change `pybricksdev run` to use `--wait`/`--no-wait` instead of `--wait=False`.
-
 ### Fixed
 - Fix `pybricksdev lwp3 repl` can only connect to remote control.
 - Fix Technic Large hub Bluetooth hub kind.
@@ -85,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.9..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.10..HEAD
+[1.0.0-alpha.9]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.9...v1.0.0-alpha.10
 [1.0.0-alpha.9]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.8...v1.0.0-alpha.9
 [1.0.0-alpha.8]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.7...v1.0.0-alpha.8
 [1.0.0-alpha.7]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.5...v1.0.0-alpha.7
