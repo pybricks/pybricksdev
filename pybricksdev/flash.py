@@ -11,8 +11,9 @@ import struct
 import sys
 import zipfile
 from collections import namedtuple
-from typing import BinaryIO, Dict, Tuple, Union
+from typing import BinaryIO, Dict, Optional, Tuple, Union
 
+import semver
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -26,17 +27,25 @@ logger = logging.getLogger(__name__)
 
 
 async def create_firmware(
-    firmware_zip: Union[str, os.PathLike, BinaryIO]
+    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
 ) -> Tuple[bytes, dict]:
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
         firmware_zip:
             Path to the firmware zip file or a file-like object.
+        name:
+            A custom name for the hub.
 
     Returns:
         bytes: Composite binary blob with correct padding and checksum.
         dict: Meta data for this firmware file.
+
+    Raises:
+        ValueError:
+            A name is given but the firmware does not support it or the name
+            exceeds the alloted space in the firmware.
+
     """
 
     archive = zipfile.ZipFile(firmware_zip)
@@ -60,6 +69,23 @@ async def create_firmware(
     firmware.extend(mpy)
     # pad with 0s to align to 4-byte boundary
     firmware.extend(0 for _ in range(-len(firmware) % 4))
+
+    if name:
+        if semver.compare(metadata["metadata-version"], "1.1.0") < 0:
+            raise ValueError(
+                "this firmware image does not support setting the hub name"
+            )
+
+        name = name.encode() + b"\0"
+
+        max_size = metadata["max-hub-name-size"]
+        if len(name) > max_size:
+            raise ValueError(
+                f"name is too big - must be < {metadata['max-hub-name-size']} UTF-8 bytes"
+            )
+
+        offset = metadata["hub-name-offset"]
+        firmware[offset : offset + len(name)] = name
 
     # append 32-bit little-endian checksum
     if metadata["checksum-type"] == "sum":

@@ -192,6 +192,7 @@ class Flash(Tool):
             "flash", help="flash firmware on a LEGO Powered Up device"
         )
         parser.tool = self
+
         parser.add_argument(
             "firmware",
             metavar="<firmware-file>",
@@ -199,11 +200,15 @@ class Flash(Tool):
             help="the firmware .zip file",
         ).completer = FilesCompleter(allowednames=(".zip",))
 
+        parser.add_argument(
+            "-n", "--name", metavar="<name>", type=str, help="a custom name for the hub"
+        )
+
     async def run(self, args: argparse.Namespace):
         from ..flash import create_firmware
 
         print("Creating firmware")
-        firmware, metadata = await create_firmware(args.firmware)
+        firmware, metadata = await create_firmware(args.firmware, args.name)
 
         if metadata["device-id"] == HubKind.TECHNIC_LARGE:
             from ..dfu import flash_dfu
