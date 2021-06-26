@@ -1,4 +1,4 @@
-[![Coverage Status](https://coveralls.io/repos/github/pybricks/pybricksdev/badge.svg?branch=master)](https://coveralls.io/github/pybricks/pybricksdev?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/pybricks/pybricksdev/badge.svg?branch=master)](https://coveralls.io/github/pybricks/pybricksdev?branch=master) [![Documentation Status](https://readthedocs.org/projects/pybricksdev/badge/?version=latest)](https://docs.pybricks.com/projects/pybricksdev/en/latest/?badge=latest)
 
 # Pybricks tools & interface library
 
@@ -156,3 +156,7 @@ contents of the `.mpy` file. To get the actual file, just use `mpy-cross`
 directly. We have used this tool in the past to test bare minimum MicroPython
 ports that have neither a builtin compiler or any form of I/O yet. You can
 paste the generated `const uint8_t script[]` directly ito your C code.
+
+## Additional Documentation
+
+https://docs.pybricks.com/projects/pybricksdev (work in progress)

@@ -8,6 +8,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://pybricks.com"
 repository = "https://github.com/pybricks/pybricksdev"
+documentation = "https://docs.pybricks.com/projects/pybricksdev"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
