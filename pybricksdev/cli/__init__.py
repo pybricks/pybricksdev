@@ -109,13 +109,28 @@ class Run(Tool):
             "Bluetooth device name or Bluetooth address for BLE connection; "
             "serial port name for USB connection",
         )
-        parser.add_argument(
-            "--wait",
-            help="Await program completion (True) or disconnect immediately (False)",
-            required=False,
-            default="True",
-            choices=["True", "False"],
-        )
+
+        if hasattr(argparse, "BooleanOptionalAction"):
+            # BooleanOptionalAction requires Python 3.9
+            parser.add_argument(
+                "--wait",
+                help="wait for the program to complete before disconnecting",
+                action=argparse.BooleanOptionalAction,
+                default=True,
+            )
+        else:
+            parser.add_argument(
+                "--wait",
+                help="wait for the program to complete before disconnecting (default)",
+                action="store_true",
+                default=True,
+            )
+            parser.add_argument(
+                "--no-wait",
+                help="disconnect as soon as program is done downloading",
+                action="store_false",
+                dest="wait",
+            )
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
@@ -165,7 +180,7 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect(device_or_address)
         try:
-            await hub.run(script_path, args.wait == "True")
+            await hub.run(script_path, args.wait)
         finally:
             await hub.disconnect()
 

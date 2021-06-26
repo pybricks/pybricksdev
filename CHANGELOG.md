@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Python 3.9.
 
 ### Changed
-- Update to Bleak v0.12.0
+- Update to Bleak v0.12.0.
+- Change `pybricksdev run` to use `--wait`/`--no-wait` instead of `--wait=False`.
 
 ### Fixed
-- Fix `pybricks lwp3 repl` can only connect to remote control.
+- Fix `pybricksdev lwp3 repl` can only connect to remote control.
 - Fix Technic Large hub Bluetooth hub kind.
 
 ## [1.0.0-alpha.9] - 2021-05-27
