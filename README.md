@@ -14,8 +14,7 @@ operations from within a Python script.
 
 ### Python Runtime
 
-We currently only support Python 3.8.x. (Newer versions are not supported yet
-for technical reasons.)
+`pybricksdev` requires Python 3.8 or higher.
 
 - For Windows, use the [official Python installer][py-dl] or the [Windows Store][py38-win].
 - For Mac, use the [official Python installer][py-dl] or Homebrew (`brew install python@3.8`).

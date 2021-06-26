@@ -11,7 +11,7 @@ to use, you are welcome to use them, but we can't help you if things go wrong.
 ### Prerequisites
 
 - [Git](https://git-scm.com/) (or install `git` with your favorite package manager)
-- [Python 3.8](https://python.org) (see [README](./README.md) for more info)
+- [Python](https://python.org) (see [README](./README.md) for more info)
 - [Poetry](https://python-poetry.org/)
 - [VS Code](https://code.visualstudio.com/)
 

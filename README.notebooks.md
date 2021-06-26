@@ -2,7 +2,7 @@
 
 Here are some tips on using `pybricksdev` with Jupyter notebooks.
 
-- Create a virtual environment for hosting the kernel (remember `pybricksdev` is Python 3.8 only!).
+- Create a virtual environment for hosting the kernel.
 - Use `apt`, `brew`, `pipx`, etc. and not `pip` for installing notebook server globally.
 - Required packages for kernel: `pybricksdev`, `ipykernel`, `ipywidgets`
 - Recommended packages for kernel: `matplotlib`
