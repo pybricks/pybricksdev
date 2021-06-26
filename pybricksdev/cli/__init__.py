@@ -102,6 +102,7 @@ class Run(Tool):
             help="path to a MicroPython script or inline script",
         )
         parser.add_argument(
+            "-n",
             "--name",
             metavar="<name>",
             required=False,
