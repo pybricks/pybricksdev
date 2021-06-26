@@ -39,6 +39,7 @@ pyusb = "^1.0.2"
 semver = "^2.13.0"
 appdirs = "^1.4.4"
 prompt-toolkit = "^3.0.18"
+winrt = {version = "^1.0.21033", platform = "win32"}
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.5b1", allow-prereleases = true}
