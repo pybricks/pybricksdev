@@ -757,6 +757,9 @@ class PybricksHub:
             self.expected_checksum = -1
             raise
 
+    async def write(self, data, with_response=False):
+        await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
+
     async def run(self, py_path, wait=True, print_output=True):
 
         # Reset output buffer
