@@ -59,6 +59,9 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 nitpicky = True
 nitpick_ignore = [
+    # TODO: remove BT and USB after https://github.com/sphinx-doc/sphinx/commit/86091934db5ec593b4b0c982b7f08f3231ef995b is released
+    ("py:class", "BT"),
+    ("py:class", "USB"),
     ("py:class", "abc.ABC"),
     ("py:class", "bleak.backends.bluezdbus.client.BleakClientBlueZDBus"),
     ("py:class", "bleak.backends.device.BLEDevice"),

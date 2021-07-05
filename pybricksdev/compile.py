@@ -67,7 +67,7 @@ async def run_mpy_cross(args):
     return stdout.decode()
 
 
-async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=None):
+async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=5):
     """Compiles a Python file with mpy-cross and return as bytes.
 
     Arguments:
@@ -89,7 +89,7 @@ async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=None):
     # Get version info
     out = await run_mpy_cross(["--version"])
     installed_mpy_version = int(out.strip()[-1])
-    if mpy_version is not None and installed_mpy_version != mpy_version:
+    if installed_mpy_version != mpy_version:
         raise ValueError(
             "Expected mpy-cross ABI v{0} but v{1} is installed.".format(
                 mpy_version, installed_mpy_version

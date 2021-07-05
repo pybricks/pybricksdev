@@ -174,8 +174,8 @@ SW_REV_UUID = _standard_uuid(0x2A28)
 PNP_ID_UUID = _standard_uuid(0x2A50)
 """Standard PnP ID UUID
 
-    Vendor ID is :data:`pybricks.ble.lwp3.LEGO_CID`. Product ID is one of
-    :class:`pybricks.ble.lwp3.bytecodes.HubKind`. Revision is ``0`` for most
+    Vendor ID is :const:`pybricksdev.ble.lwp3.LEGO_CID`. Product ID is one of
+    :class:`pybricksdev.ble.lwp3.bytecodes.HubKind`. Revision is ``0`` for most
     hubs or ``1`` for MINDSTORMS Robot Inventor Hub.
 
 .. availability:: Since Pybricks protocol v1.1.0.
