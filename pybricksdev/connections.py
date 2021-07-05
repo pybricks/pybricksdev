@@ -17,13 +17,16 @@ from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLEConnection
+from .ble.lwp3.bytecodes import HubKind
 from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from .ble.pybricks import (
     PYBRICKS_CONTROL_UUID,
     PYBRICKS_PROTOCOL_VERSION,
     SW_REV_UUID,
+    PNP_ID_UUID,
     Event,
     Status,
+    unpack_pnp_id,
 )
 from .compile import compile_file
 from .tools.checksum import xor_bytes
@@ -601,6 +604,9 @@ class PybricksHub:
         # used to notify when the user program has ended
         self.user_program_stopped = asyncio.Event()
 
+        self.hub_kind: HubKind
+        self.hub_variant: int
+
         # File handle for logging
         self.log_file = None
 
@@ -722,6 +728,7 @@ class PybricksHub:
             logger.info("Connected successfully!")
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
+
             if (
                 protocol_version < PYBRICKS_PROTOCOL_VERSION
                 or protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
@@ -729,6 +736,10 @@ class PybricksHub:
                 raise RuntimeError(
                     f"Unsupported Pybricks protocol version: {protocol_version}"
                 )
+
+            pnp_id = await self.client.read_gatt_char(PNP_ID_UUID)
+            _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
+
             await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
             await self.client.start_notify(
                 PYBRICKS_CONTROL_UUID, self.pybricks_service_handler
@@ -749,7 +760,15 @@ class PybricksHub:
         self.checksum_ready.clear()
         self.expected_checksum = xor_bytes(data, 0)
         try:
-            await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), False)
+            if self.hub_kind == HubKind.BOOST:
+                # BOOST Move hub has fixed MTU of 23 so we can only send 20
+                # bytes at a time
+                for i in range(0, len(data), 20):
+                    await self.client.write_gatt_char(
+                        NUS_RX_UUID, data[i : i + 20], False
+                    )
+            else:
+                await self.client.write_gatt_char(NUS_RX_UUID, data, False)
             await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
         except:  # noqa: E722
             # normally self.expected_checksum = -1 will be called in nus_handler()
