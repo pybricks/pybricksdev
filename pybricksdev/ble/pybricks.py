@@ -17,6 +17,8 @@ version can be used to determine the capabilities of the device.
 """
 
 from enum import IntEnum
+from struct import unpack
+from typing import Literal, Tuple
 
 import semver
 
@@ -34,7 +36,7 @@ PYBRICKS_CONTROL_UUID = _pybricks_uuid(0x0002)
 .. availability:: Since Pybricks protocol v1.0.0.
 """
 
-PYBRICKS_PROTOCOL_VERSION = semver.VersionInfo(1)
+PYBRICKS_PROTOCOL_VERSION = semver.VersionInfo(1, 1, 0)
 """The minimum required Pybricks protocol version supported by this library."""
 
 # The Pybricks protocol is defined at:
@@ -118,6 +120,12 @@ class Status(IntEnum):
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
+    SHUTDOWN = 7
+    """Hub shutdown was requested.
+
+    .. availability:: Since Pybricks protocol v1.1.0.
+    """
+
     @property
     def flag(self) -> int:
         """Gets the value of the enum as a bit flag."""
@@ -162,3 +170,29 @@ SW_REV_UUID = _standard_uuid(0x2A28)
 
 .. availability:: Since Pybricks protocol v1.0.0.
 """
+
+PNP_ID_UUID = _standard_uuid(0x2A50)
+"""Standard PnP ID UUID
+
+    Vendor ID is :data:`pybricks.ble.lwp3.LEGO_CID`. Product ID is one of
+    :class:`pybricks.ble.lwp3.bytecodes.HubKind`. Revision is ``0`` for most
+    hubs or ``1`` for MINDSTORMS Robot Inventor Hub.
+
+.. availability:: Since Pybricks protocol v1.1.0.
+"""
+
+
+def unpack_pnp_id(data: bytes) -> Tuple[Literal["BT", "USB"], int, int, int]:
+    """
+    Unpacks raw data from the PnP ID characteristic.
+
+    Args:
+        data: The raw data
+
+    Returns:
+        Tuple containing the vendor ID type (``'BT'`` or ``'USB'``), the vendor
+        ID, the product ID and the product revision.
+    """
+    vid_type, vid, pid, rev = unpack("<BHHH", data)
+    vid_type = "BT" if vid_type else "USB"
+    return vid_type, vid, pid, rev
