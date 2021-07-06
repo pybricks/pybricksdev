@@ -3,11 +3,13 @@
 
 import asyncio
 import base64
+import io
 import json
 import logging
 import os
 import random
 import struct
+import sys
 
 import asyncssh
 import semver
@@ -604,8 +606,13 @@ class PybricksHub:
         # used to notify when the user program has ended
         self.user_program_stopped = asyncio.Event()
 
+        # after a hub is connected, this will contain the kind of hub
         self.hub_kind: HubKind
+        # after a hub is connected, this will contain the hub variant
         self.hub_variant: int
+        # buffer to hold hub stdout data received from the hub while local
+        # stdout is busy
+        self._buffered_stdout: io.BytesIO = io.BytesIO()
 
         # File handle for logging
         self.log_file = None
@@ -668,6 +675,16 @@ class PybricksHub:
             logger.debug(f"Correct checksum: {checksum}")
             return
 
+        if self.loading:
+            # avoid echoing while progress bar is showing
+            self._buffered_stdout.write(data)
+        else:
+            sys.stdout.buffer.write(data)
+            sys.stdout.buffer.flush()
+        return
+
+        # FIXME: make attaching data handler optional
+
         # Store incoming data
         self.stream_buf += data
         logger.debug("NUS DATA: {0}".format(data))
@@ -702,6 +719,10 @@ class PybricksHub:
                 if self.program_running != program_running_now:
                     logger.info(f"Program running: {program_running_now}")
                     self.program_running = program_running_now
+                    # we can receive stdio data from the hub before the download
+                    # is "done", so it was buffered and we output it now
+                    sys.stdout.buffer.write(self._buffered_stdout.read())
+                    sys.stdout.buffer.flush()
                 if not program_running_now:
                     self.user_program_stopped.set()
 
@@ -813,5 +834,89 @@ class PybricksHub:
             self.loading = False
 
         if wait:
-            await self.user_program_stopped.wait()
-            await asyncio.sleep(0.3)
+            loop = asyncio.get_running_loop()
+
+            # parallel task: read from stdin and send it to the hub
+            async def pipe_stdin():
+                try:
+                    reader = asyncio.StreamReader()
+                    protocol = asyncio.StreamReaderProtocol(reader)
+                    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+
+                    # BOOST Move hub has limited MTU of 23 bytes
+                    chunk_size = 20 if self.hub_kind == HubKind.BOOST else 100
+
+                    while True:
+                        data = await reader.read(chunk_size)
+
+                        if not data:  # EOF
+                            break
+
+                        await self.client.write_gatt_char(NUS_RX_UUID, data)
+                except asyncio.CancelledError:
+                    pass
+
+            # parallel task: wait for the hub to tell us that the program is done
+            async def wait_for_program_end():
+                await self.user_program_stopped.wait()
+
+                # HACK: There may still be buffered stdout from the user
+                # program that hasn't been received yet. Hopefully, this
+                # is long enough to wait for all of it.
+                await asyncio.sleep(0.3)
+
+                # HACK: handle dropping to REPL after Ctrl-C
+                # needed since user program flag is unset then set again
+                if self.program_running:
+                    self.user_program_stopped.clear()
+                    await self.user_program_stopped.wait()
+
+            # combine the parallel tasks
+            def pipe_and_wait():
+                pipe_task = loop.create_task(pipe_stdin())
+                wait_task = loop.create_task(wait_for_program_end())
+
+                # pipe_stdin() will run until EOF, which may be never, so we
+                # have to cancel to prevent waiting forever
+                wait_task.add_done_callback(lambda _: pipe_task.cancel())
+
+                return asyncio.gather(pipe_task, wait_task)
+
+            fd = sys.stdin.fileno()
+            if os.isatty(fd):
+                from termios import (
+                    tcgetattr,
+                    tcsetattr,
+                    TCSANOW,
+                    ECHO,
+                    ICANON,
+                    ICRNL,
+                    INLCR,
+                    VINTR,
+                    VMIN,
+                    VTIME,
+                )
+                from tty import LFLAG, IFLAG, CC
+
+                new_mode = save_mode = tcgetattr(fd)
+                try:
+                    new_mode = tcgetattr(fd)
+                    # Disable echo and canonical input (don't wait for newline, pass EOF, etc.)
+                    new_mode[LFLAG] = new_mode[LFLAG] & ~(ECHO | ICANON)
+                    # Change the line endings from \n to \r as required by MicroPython's readline
+                    new_mode[IFLAG] = new_mode[IFLAG] & ~(ICRNL) | (INLCR)
+                    # Change Ctrl-C to Ctrl-X so that Ctrl-C gets passed to the hub
+                    new_mode[CC][VINTR] = 24
+                    # read at least one byte at a time, no timeout
+                    new_mode[CC][VMIN] = 1
+                    new_mode[CC][VTIME] = 0
+
+                    tcsetattr(fd, TCSANOW, new_mode)
+
+                    await pipe_and_wait()
+                finally:
+                    # restore the original TTY settings
+                    tcsetattr(fd, TCSANOW, save_mode)
+
+            else:
+                await pipe_and_wait()
