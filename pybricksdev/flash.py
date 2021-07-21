@@ -11,7 +11,7 @@ import struct
 import sys
 import zipfile
 from collections import namedtuple
-from typing import BinaryIO, Dict, Optional, Tuple, Union
+from typing import BinaryIO, Dict, List, Optional, Tuple, Union
 
 import semver
 from tqdm.auto import tqdm
@@ -122,12 +122,12 @@ class BootloaderRequest:
 
     def __init__(
         self,
-        command,
-        name,
-        request_format,
-        data_format,
-        request_reply=True,
-        write_with_response=True,
+        command: BootloaderCommand,
+        name: str,
+        request_format: List[str],
+        data_format: str,
+        request_reply: bool = True,
+        write_with_response: bool = True,
     ):
         self.command = command
         self.ReplyClass = namedtuple(name, request_format)
@@ -137,17 +137,19 @@ class BootloaderRequest:
             self.reply_len += 1
         self.write_with_response = write_with_response
 
-    def make_request(self, payload=None):
-        request = bytearray((self.command,))
+    def make_request(self, payload: Optional[bytes] = None) -> bytearray:
+        request = bytearray([self.command])
         if payload is not None:
             request += payload
         return request
 
-    def parse_reply(self, reply):
+    def parse_reply(self, reply) -> namedtuple:
         if reply[0] == self.command:
             return self.ReplyClass(*struct.unpack(self.data_format, reply[1:]))
         else:
-            raise ValueError("Unknown message: {0}".format(reply))
+            raise ValueError(
+                f"Expecting reply to {self.command.name} but received {BootloaderCommand(reply[0]).name}"
+            )
 
 
 class BootloaderConnection(BLERequestsConnection):
