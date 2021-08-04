@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated `bleak` dependency to v0.12.1.
+- `run` and `compile` scripts now accept `-` as an argument to mean stdin.
+
+### Removed
+- Removed script command line args in `run` and `compile` commands. Only accepts
+  file name now.
 
 ## [1.0.0-alpha.11] - 2021-07-05
 

@@ -5,8 +5,12 @@
 
 import argparse
 import asyncio
+import contextlib
 import logging
+import os
 import sys
+from tempfile import NamedTemporaryFile
+from typing import ContextManager, TextIO
 import validators
 
 from abc import ABC, abstractmethod
@@ -50,13 +54,43 @@ class Tool(ABC):
         pass
 
 
-def _parse_script_arg(script_arg):
-    """Save user script argument to a file if it is a Python one-liner."""
-    from ..compile import save_script
+def _get_script_path(file: TextIO) -> ContextManager:
+    """
+    Gets the path to a script on the file system.
 
-    if not path.exists(script_arg):
-        return save_script(script_arg)
-    return script_arg
+    If the file is ``sys.stdin``, the contents are copied to a temporary file
+    and the path to the temporary file is returned. Otherwise, the file is closed
+    and the path is returned.
+
+    The context manager will delete the temporary file, if applicable.
+    """
+    if file is sys.stdin:
+
+        # Have to close the temp file so that mpy-cross can read it, so we
+        # create our own context manager to delete the file when we are done
+        # using it.
+
+        @contextlib.contextmanager
+        def temp_context():
+            try:
+                with NamedTemporaryFile(suffix=".py", delete=False) as temp:
+                    temp.write(file.buffer.read())
+
+                yield temp.name
+            finally:
+                try:
+                    os.remove(temp.name)
+                except NameError:
+                    # if NamedTemporaryFile() throws, temp is not defined
+                    pass
+                except OSError:
+                    # file was already deleted or other strangeness
+                    pass
+
+        return temp_context()
+
+    file.close()
+    return contextlib.nullcontext(file.name)
 
 
 class Compile(Tool):
@@ -65,21 +99,19 @@ class Compile(Tool):
             "compile",
             help="compile a Pybricks program without running it",
         )
-        parser.tool = self
-        # The argument is a filename or a Python one-liner.
         parser.add_argument(
-            "script",
-            metavar="<script>",
-            help="path to a MicroPython script or inline script",
+            "file",
+            metavar="<file>",
+            help="path to a MicroPython script or `-` for stdin",
+            type=argparse.FileType(),
         )
+        parser.tool = self
 
     async def run(self, args: argparse.Namespace):
         from ..compile import compile_file, print_mpy
 
-        script_path = _parse_script_arg(args.script)
-
-        # Compile the script and print the result
-        mpy = await compile_file(script_path)
+        with _get_script_path(args.file) as script_path:
+            mpy = await compile_file(script_path)
         print_mpy(mpy)
 
 
@@ -97,9 +129,10 @@ class Run(Tool):
             choices=["ble", "usb", "ssh"],
         )
         parser.add_argument(
-            "script",
-            metavar="<script>",
-            help="path to a MicroPython script or inline script",
+            "file",
+            metavar="<file>",
+            help="path to a MicroPython script or `-` for stdin",
+            type=argparse.FileType(),
         )
         parser.add_argument(
             "-n",
@@ -142,9 +175,6 @@ class Run(Tool):
             USBRPCConnection,
         )
 
-        # Convert script argument to valid path
-        script_path = _parse_script_arg(args.script)
-
         # Pick the right connection
         if args.conntype == "ssh":
             # So it's an ev3dev
@@ -181,7 +211,8 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect(device_or_address)
         try:
-            await hub.run(script_path, args.wait)
+            with _get_script_path(args.file) as script_path:
+                await hub.run(script_path, args.wait)
         finally:
             await hub.disconnect()
 
