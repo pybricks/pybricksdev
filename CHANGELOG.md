@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0-alpha.12]
 
 ### Changed
 - Updated `bleak` dependency to v0.12.1.
@@ -100,7 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.11..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.12..HEAD
+[1.0.0-alpha.12]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.11...v1.0.0-alpha.12
 [1.0.0-alpha.11]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.10...v1.0.0-alpha.11
 [1.0.0-alpha.10]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.9...v1.0.0-alpha.10
 [1.0.0-alpha.9]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.8...v1.0.0-alpha.9
