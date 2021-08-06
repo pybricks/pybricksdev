@@ -104,7 +104,7 @@ def build(file, targets, device=DEFAULT_DEVICE):
         )
         data += tdata
     data = struct.pack("<5sBIB", b"DfuSe", 1, len(data) + 11, len(targets)) + data
-    v, d = map(lambda x: int(x, 0) & 0xFFFF, device.split(":", 1))
+    v, d = map(lambda x: int(x, 16) & 0xFFFF, device.split(":", 1))
     data += struct.pack("<4H3sB", 0, d, v, 0x011A, b"UFD", 16)
     crc = compute_crc(data)
     data += struct.pack("<I", crc)

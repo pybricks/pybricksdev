@@ -8,7 +8,7 @@ import sys
 
 from contextlib import nullcontext
 from importlib.resources import path
-from subprocess import DEVNULL, call, check_call
+from subprocess import DEVNULL, PIPE, call, check_call, run
 from tempfile import TemporaryDirectory
 from typing import BinaryIO, ContextManager
 
@@ -24,8 +24,9 @@ SPIKE_PRIME_PID = 0x0008
 MINDSTORMS_INVENTOR_PID = 0x0011
 
 
-SPIKE_PRIME_DEVICE = f"0x{LEGO_VID:04x}:0x{SPIKE_PRIME_PID:04x}"
-MINDSTORMS_INVENTOR_DEVICE = f"0x{LEGO_VID:04x}:0x{MINDSTORMS_INVENTOR_PID:04x}"
+SPIKE_PRIME_DEVICE = f"{LEGO_VID:04x}:{SPIKE_PRIME_PID:04x}"
+MINDSTORMS_INVENTOR_DEVICE = f"{LEGO_VID:04x}:{MINDSTORMS_INVENTOR_PID:04x}"
+ALL_DEVICES = [SPIKE_PRIME_DEVICE, MINDSTORMS_INVENTOR_DEVICE]
 
 
 def _get_dfu_util() -> ContextManager[os.PathLike]:
@@ -54,6 +55,28 @@ def _get_dfu_util() -> ContextManager[os.PathLike]:
     return nullcontext(dfu_util)
 
 
+def _get_vid_pid(dfu_util: os.PathLike) -> str:
+    """
+    Gets the VID and PID of a connected LEGO DFU device.
+
+    Returns: The first matching LEGO DFU device from ``dfu-util --list``
+
+    Raises: RuntimeError: No matching hubs found.
+    """
+    proc = run([dfu_util, "--list"], stdout=PIPE, check=True)
+
+    for line in proc.stdout.splitlines():
+        if not line.startswith(b"Found DFU:"):
+            continue
+
+        dev_id = line[line.index(b"[") + 1 : line.index(b"]")].decode()
+
+        if dev_id in ALL_DEVICES:
+            return dev_id
+
+    raise RuntimeError("No LEGO DFU USB device found")
+
+
 def backup_dfu(file: BinaryIO) -> None:
     """Backs up device data via DFU.
 
@@ -79,7 +102,7 @@ def backup_dfu(file: BinaryIO) -> None:
                     [
                         dfu_util,
                         "--device",
-                        f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                        f",{_get_vid_pid(dfu_util)}",
                         "--alt",
                         "0",
                         "--dfuse-address",
@@ -119,7 +142,7 @@ def restore_dfu(file: BinaryIO) -> None:
                     [
                         dfu_util,
                         "--device",
-                        f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                        f",{_get_vid_pid(dfu_util)}",
                         "--alt",
                         "0",
                         "--dfuse-address",
@@ -197,16 +220,16 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
 
             with _get_dfu_util() as dfu_util:
 
-                # Exact device product ID doesn't matter here since we are using
-                # the --device command line option below.
-                _dfu_create.build(outfile, [[target]], SPIKE_PRIME_DEVICE)
+                dev_id = _get_vid_pid(dfu_util)
+
+                _dfu_create.build(outfile, [[target]], dev_id)
 
                 exit(
                     call(
                         [
                             dfu_util,
                             "--device",
-                            f",{SPIKE_PRIME_DEVICE},{MINDSTORMS_INVENTOR_DEVICE}",
+                            f",{dev_id}",
                             "--alt",
                             "0",
                             "--download",
