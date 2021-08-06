@@ -14,7 +14,7 @@ from typing import ContextManager, TextIO
 import validators
 
 from abc import ABC, abstractmethod
-from os import path
+from os import PathLike, path
 
 import argcomplete
 from argcomplete.completers import FilesCompleter
@@ -54,7 +54,7 @@ class Tool(ABC):
         pass
 
 
-def _get_script_path(file: TextIO) -> ContextManager:
+def _get_script_path(file: TextIO) -> ContextManager[PathLike]:
     """
     Gets the path to a script on the file system.
 
