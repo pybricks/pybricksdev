@@ -86,11 +86,11 @@ _CRC_TABLE = (
 )
 
 
-def _dword(value):
+def _dword(value: int) -> int:
     return value & 0xFFFFFFFF
 
 
-def _crc32_fast(crc, data):
+def _crc32_fast(crc, data: int) -> int:
     crc, data = _dword(crc), _dword(data)
     crc ^= data
     for _ in range(8):
@@ -126,6 +126,6 @@ def crc32_checksum(data: BytesIO, max_size: int) -> int:
 
     crc = 0xFFFFFFFF
     for index in range(0, len(data), 4):
-        data = int.from_bytes(data[index : index + 4], "little")
-        crc = _crc32_fast(crc, data)
+        word = int.from_bytes(data[index : index + 4], "little")
+        crc = _crc32_fast(crc, word)
     return crc
