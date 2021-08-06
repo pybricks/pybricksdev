@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed crash in CRC32 checksum.
 - Fixed flashing with `dfu-util` not always working ([support#420]).
 
-## [1.0.0-alpha.12] - 2021-08-05
+## [1.0.0-alpha.12] - 2021-08-04
 
 ### Changed
 - Updated `bleak` dependency to v0.12.1.
