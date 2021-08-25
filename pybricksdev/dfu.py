@@ -146,7 +146,7 @@ def restore_dfu(file: BinaryIO) -> None:
                         "--alt",
                         "0",
                         "--dfuse-address",
-                        f"{FIRMWARE_ADDRESS}",
+                        f"{FIRMWARE_ADDRESS}:leave",
                         "--download",
                         file.name,
                     ]

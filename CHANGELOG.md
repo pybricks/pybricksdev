@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Changed
 - Changed udev rules to use `TAG+="uaccess"` instead of `MODE="0666"`.
 
+## Fixed
+- Fixed device not rebooting after `dfu restore`.
+
 ## [1.0.0-alpha.13] - 2021-08-06
 
 ### Fixed
