@@ -9,6 +9,7 @@ from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+from ..tools import chunk
 from .pybricks import PYBRICKS_SERVICE_UUID
 
 logger = logging.getLogger(__name__)
@@ -131,16 +132,14 @@ class BLEConnection:
                 Write with or without response.
         """
         # Send the chunks one by one
-        for i in range(0, len(data), self.max_data_size):
-            chunk = data[i : i + self.max_data_size]
+        for c in chunk(data, self.max_data_size):
             logger.debug(
                 "TX CHUNK: {0}, {1} response".format(
-                    chunk, "with" if with_response else "without"
+                    c, "with" if with_response else "without"
                 )
             )
-            # Send one chunk
             await self.client.write_gatt_char(
-                self.char_rx_UUID, bytearray(chunk), with_response
+                self.char_rx_UUID, bytearray(c), with_response
             )
 
 

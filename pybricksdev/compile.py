@@ -9,6 +9,8 @@ from subprocess import Popen, PIPE
 
 import mpy_cross
 
+from .tools import chunk
+
 logger = logging.getLogger(__name__)
 
 BUILD_DIR = "build"
@@ -138,9 +140,8 @@ def print_mpy(data):
     print(f"// MPY file. Version: {data[1]}. Size: {len(data)} bytes")
     print("const uint8_t script[] = {")
 
-    for i in range(0, len(data), WIDTH):
-        chunk = data[i : i + WIDTH]
-        hex_repr = [f"0x{i:02X}" for i in chunk]
+    for c in chunk(data, WIDTH):
+        hex_repr = [f"0x{i:02X}" for i in c]
         print(f"    {', '.join(hex_repr)},")
 
     print("};")

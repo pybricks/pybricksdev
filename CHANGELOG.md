@@ -90,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0-alpha.4] - 2021-04-12
 ### Added
 - Size check when restoring firmware via USB/DFU.
+- Added `pybricksdev.tools.chunk()` function.
 ### Fixed
 - Wait for some time to allow program output to be received before disconnecting
   in the `run` command.

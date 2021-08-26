@@ -29,6 +29,7 @@ from .ble.pybricks import (
     unpack_pnp_id,
 )
 from .compile import compile_file
+from .tools import chunk
 from .tools.checksum import xor_bytes
 from .usbconnection import USBConnection
 
@@ -295,17 +296,13 @@ class PybricksPUPProtocol(CharacterGlue):
         length = len(mpy).to_bytes(4, byteorder="little")
         await self.send_message(length)
 
-        # Divide script in chunks of bytes
-        n = 100
-        chunks = [mpy[i : i + n] for i in range(0, len(mpy), n)]
-
         # Send the data chunk by chunk
         with logging_redirect_tqdm(), tqdm(
             total=len(mpy), unit="B", unit_scale=True
         ) as pbar:
-            for chunk in chunks:
-                await self.send_message(chunk)
-                pbar.update(len(chunk))
+            for c in chunk(mpy, 100):
+                await self.send_message(c)
+                pbar.update(len(c))
 
         # Optionally wait for the program to finish
         if wait:
@@ -424,11 +421,6 @@ class USBRPCConnection(CharacterGlue, USBConnection):
         with open(py_path, "rb") as demo:
             program = demo.read()
 
-        chunk_size = 512
-        chunks = [
-            program[i : i + chunk_size] for i in range(0, len(program), chunk_size)
-        ]
-
         while response is None or "transferid" not in response:
             response = await self.send_command_and_get_response(
                 "start_write_program",
@@ -450,15 +442,15 @@ class USBRPCConnection(CharacterGlue, USBConnection):
         with logging_redirect_tqdm(), tqdm(
             total=len(program), unit="B", unit_scale=True
         ) as pbar:
-            for chunk in chunks:
+            for c in chunk(program, 512):
                 response = await self.send_command_and_get_response(
                     "write_package",
                     {
-                        "data": base64.b64encode(chunk).decode("ascii"),
+                        "data": base64.b64encode(c).decode("ascii"),
                         "transferid": transferid,
                     },
                 )
-                pbar.update(len(chunk))
+                pbar.update(len(c))
 
         await asyncio.sleep(0.5)
         response = await self.send_command_and_get_response(
@@ -798,17 +790,13 @@ class PybricksHub:
             length = len(mpy).to_bytes(4, byteorder="little")
             await self.send_block(length)
 
-            # Divide script in chunks of bytes
-            n = 100
-            chunks = [mpy[i : i + n] for i in range(0, len(mpy), n)]
-
             # Send the data chunk by chunk
             with logging_redirect_tqdm(), tqdm(
                 total=len(mpy), unit="B", unit_scale=True
             ) as pbar:
-                for chunk in chunks:
-                    await self.send_block(chunk)
-                    pbar.update(len(chunk))
+                for c in chunk(mpy, 100):
+                    await self.send_block(c)
+                    pbar.update(len(c))
         finally:
             self.loading = False
 
