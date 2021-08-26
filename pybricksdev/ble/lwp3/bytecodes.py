@@ -958,7 +958,7 @@ class PortInfoFormatSetupCommand(IntEnum):
 class ModeCapabilities(IntFlag):
 
     OUTPUT = 1 << 0
-    INTPUT = 1 << 1
+    INPUT = 1 << 1
     LOGICAL_COMBINABLE = 1 << 2
     LOGICAL_SYNCHRONIZEABLE = 1 << 3
 

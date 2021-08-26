@@ -926,7 +926,7 @@ class TestPortInfoMessages:
             def test_constructor(self):
                 msg = PortInfoModeInfoMessage(
                     PortID(1),
-                    ModeCapabilities.INTPUT | ModeCapabilities.OUTPUT,
+                    ModeCapabilities.INPUT | ModeCapabilities.OUTPUT,
                     num_modes=5,
                     input_modes=[0, 1, 2],
                     output_modes=[3, 4],
@@ -936,15 +936,14 @@ class TestPortInfoMessages:
                 assert msg.port is PortID(1)
                 assert msg.info_kind is InfoKind.MODE_INFO
                 assert (
-                    msg.capabilities
-                    == ModeCapabilities.INTPUT | ModeCapabilities.OUTPUT
+                    msg.capabilities == ModeCapabilities.INPUT | ModeCapabilities.OUTPUT
                 )
                 assert msg.num_modes == 5
                 assert msg.input_modes == [0, 1, 2]
                 assert msg.output_modes == [3, 4]
                 assert (
                     repr(msg)
-                    == "PortInfoModeInfoMessage(<PortID.1: 1>, <ModeCapabilities.INTPUT|OUTPUT: 3>, 5, [0, 1, 2], [3, 4])"
+                    == "PortInfoModeInfoMessage(<PortID.1: 1>, <ModeCapabilities.INPUT|OUTPUT: 3>, 5, [0, 1, 2], [3, 4])"
                 )
 
             def test_parse_message(self):
@@ -955,8 +954,7 @@ class TestPortInfoMessages:
                 assert msg.port is PortID(1)
                 assert msg.info_kind is InfoKind.MODE_INFO
                 assert (
-                    msg.capabilities
-                    == ModeCapabilities.INTPUT | ModeCapabilities.OUTPUT
+                    msg.capabilities == ModeCapabilities.INPUT | ModeCapabilities.OUTPUT
                 )
                 assert msg.num_modes == 5
                 assert msg.input_modes == [0, 1, 2]
