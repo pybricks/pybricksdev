@@ -104,50 +104,62 @@ async def repl() -> None:
 
     logger.info("found device")
 
+    repl_task = asyncio.current_task()
+
     def handle_disconnect(client: BleakClient):
-        logger.info("disconnected")
+        repl_task.cancel()
 
-    async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
-        logger.info("connected")
+    try:
+        async with BleakClient(
+            device, disconnected_callback=handle_disconnect
+        ) as client:
+            logger.info("connected")
 
-        def handle_notify(handle, value):
-            try:
-                msg = parse_message(value)
-            except Exception as ex:
-                logger.warning("failed to parse message: %s", value, exc_info=ex)
-            else:
-                logger.info("received: %s", msg)
-
-        await client.start_notify(LWP3_HUB_CHARACTERISTIC_UUID, handle_notify)
-
-        # welcome is delayed to allow initial log messages to settle.
-        async def welcome():
-            await asyncio.sleep(1)
-            print("Type message and press ENTER to send. Press CTRL+D to exit.")
-
-        asyncio.ensure_future(welcome())
-
-        while True:
-            with patch_stdout():
+            def handle_notify(handle, value):
                 try:
-                    result = await session.prompt_async(">>> ")
-                except KeyboardInterrupt:
-                    # CTRL+C ignores the line
-                    continue
-                except EOFError:
-                    # CTRL+D exits the program
-                    break
-            try:
-                msg = eval(result, _eval_pool)
-                if not isinstance(msg, AbstractMessage):
-                    raise ValueError("not a message object")
-            except Exception:
-                logger.exception("bad input:")
-            else:
-                logger.info("sending: %s", msg)
-                await client.write_gatt_char(LWP3_HUB_CHARACTERISTIC_UUID, bytes(msg))
+                    msg = parse_message(value)
+                except Exception as ex:
+                    logger.warning("failed to parse message: %s", value, exc_info=ex)
+                else:
+                    logger.info("received: %s", msg)
 
-        logger.info("disconnecting...")
+            await client.start_notify(LWP3_HUB_CHARACTERISTIC_UUID, handle_notify)
+
+            # welcome is delayed to allow initial log messages to settle.
+            async def welcome():
+                await asyncio.sleep(1)
+                print("Type message and press ENTER to send. Press CTRL+D to exit.")
+
+            asyncio.ensure_future(welcome())
+
+            while True:
+                with patch_stdout():
+                    try:
+                        result = await session.prompt_async(">>> ")
+                    except KeyboardInterrupt:
+                        # CTRL+C ignores the line
+                        continue
+                    except EOFError:
+                        # CTRL+D exits the program
+                        break
+                try:
+                    msg = eval(result, _eval_pool)
+                    if not isinstance(msg, AbstractMessage):
+                        raise ValueError("not a message object")
+                except Exception:
+                    logger.exception("bad input:")
+                else:
+                    logger.info("sending: %s", msg)
+                    await client.write_gatt_char(
+                        LWP3_HUB_CHARACTERISTIC_UUID, bytes(msg)
+                    )
+
+            logger.info("disconnecting...")
+    except asyncio.CancelledError:
+        # happens on disconnect
+        pass
+
+    logger.info("disconnected")
 
 
 def setup_repl_logging() -> None:

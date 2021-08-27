@@ -95,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wait for some time to allow program output to be received before disconnecting
   in the `run` command.
 - Fixed spelling of `INPUT` in `pybricksdev.ble.lwp3.messages`.
+- Fixed `pybricksdev lwp3 repl` does not exit if device disconnects.
 
 ## [1.0.0-alpha.3] - 2021-04-09
 ### Changed
