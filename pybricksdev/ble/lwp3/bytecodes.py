@@ -422,6 +422,9 @@ class HubProperty(IntEnum):
     HW_NET_FAMILY = 0x0F
     """Hardware network family."""
 
+    VOLUME = 0x12
+    """Sound volume level."""
+
 
 @unique
 class HubPropertyOperation(IntEnum):

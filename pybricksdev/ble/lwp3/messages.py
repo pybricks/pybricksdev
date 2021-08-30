@@ -164,6 +164,7 @@ _HUB_PROPERTY_TYPE_MAP = {
     HubProperty.BDADDR: _HubPropertyType(BluetoothAddress, "6s"),
     HubProperty.BOOTLOADER_BDADDR: _HubPropertyType(BluetoothAddress, "6s"),
     HubProperty.HW_NET_FAMILY: _HubPropertyType(HwNetFamily, "B"),
+    HubProperty.VOLUME: _HubPropertyType(int, "B"),
 }
 
 Op = HubPropertyOperation
@@ -207,6 +208,14 @@ _HUB_PROPERTY_OPS_MAP = {
     HubProperty.BDADDR: [Op.REQUEST_UPDATE, Op.UPDATE],
     HubProperty.BOOTLOADER_BDADDR: [Op.REQUEST_UPDATE, Op.UPDATE],
     HubProperty.HW_NET_FAMILY: [Op.SET, Op.REQUEST_UPDATE, Op.UPDATE],
+    HubProperty.VOLUME: [
+        Op.SET,
+        Op.ENABLE_UPDATES,
+        Op.DISABLE_UPDATES,
+        Op.RESET,
+        Op.REQUEST_UPDATE,
+        Op.UPDATE,
+    ],
 }
 
 del Op
