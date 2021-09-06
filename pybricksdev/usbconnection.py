@@ -63,6 +63,7 @@ class USBConnection:
                 or (dev.pid == 0x5740 and dev.vid == 0x0483)
                 or (dev.vid == 0x0694 and dev.pid == 0x0010)
                 or (dev.vid == 0x0694 and dev.pid == 0x0009)
+                or (dev.vid == 0x0694 and dev.pid == 0x000D)
             ):
                 port = dev.device
                 break

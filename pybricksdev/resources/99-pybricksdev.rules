@@ -20,6 +20,12 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0008", TAG+="uacce
 # SPIKE Prime hub
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0009", TAG+="uaccess"
 
+# SPIKE Essential hub in firmware update mode (DFU mode)
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="000C", TAG+="uaccess"
+
+# SPIKE Essential hub
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="000D", TAG+="uaccess"
+
 # MINDSTORMS Inventor hub
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0010", TAG+="uaccess"
 

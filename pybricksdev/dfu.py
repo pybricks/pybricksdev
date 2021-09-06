@@ -21,12 +21,12 @@ FIRMWARE_ADDRESS = 0x08008000
 FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB
 LEGO_VID = 0x0694
 SPIKE_PRIME_PID = 0x0008
+SPIKE_ESSENTIAL_PID = 0x000C
 MINDSTORMS_INVENTOR_PID = 0x0011
 
 
-SPIKE_PRIME_DEVICE = f"{LEGO_VID:04x}:{SPIKE_PRIME_PID:04x}"
-MINDSTORMS_INVENTOR_DEVICE = f"{LEGO_VID:04x}:{MINDSTORMS_INVENTOR_PID:04x}"
-ALL_DEVICES = [SPIKE_PRIME_DEVICE, MINDSTORMS_INVENTOR_DEVICE]
+ALL_PIDS = [SPIKE_PRIME_PID, SPIKE_ESSENTIAL_PID, MINDSTORMS_INVENTOR_PID]
+ALL_DEVICES = [f"{LEGO_VID:04x}:{pid:04x}" for pid in ALL_PIDS]
 
 
 def _get_dfu_util() -> ContextManager[os.PathLike]:
@@ -178,7 +178,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
                 exit(1)
 
             product_id = devices[0].idProduct
-            if product_id != SPIKE_PRIME_PID and product_id != MINDSTORMS_INVENTOR_PID:
+            if product_id not in ALL_PIDS:
                 print(f"Unknown USB product ID: {product_id:04X}", file=sys.stderr)
                 exit(1)
 
