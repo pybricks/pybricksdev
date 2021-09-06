@@ -189,11 +189,15 @@ class HubKind(IntEnum):
     MARIO = 0x43
     """LEGO Mario Hub."""
 
+    LUIGI = 0x44
+    """LEGO Luigi Hub."""
+
     TECHNIC = 0x80
     """LEGO 4-port Technic Hub."""
 
     TECHNIC_LARGE = 0x81
     """LEGO SPIKE Prime Hub and MINDSTORMS Robot Inventor hubs."""
+
     TECHNIC_SMALL = 0x83
     """LEGO SPIKE Essential Hub."""
 

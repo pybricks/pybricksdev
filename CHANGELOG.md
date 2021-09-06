@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `VOLUME` to `ble.lwp3.bytecodes.HubProperty` enum.
 - Added SPIKE Essential hub device IDs.
+- Added Luigi hub device ID.
 
 ## [1.0.0-alpha.14] - 2021-08-27
 
