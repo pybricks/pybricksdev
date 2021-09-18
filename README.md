@@ -80,7 +80,7 @@ environment for your project. Our tool of choice for this is [poetry][poetry]:
 
 Of course you can always use `pip` as well:
 
-    pip install pybrickdev --pre
+    pip install pybricskdev --pre
 
 
 [poetry]: https://python-poetry.org
