@@ -186,7 +186,7 @@ async def repl() -> None:
                 else:
                     logger.info("sending: %s", msg)
                     await client.write_gatt_char(
-                        LWP3_HUB_CHARACTERISTIC_UUID, bytes(msg)
+                        LWP3_HUB_CHARACTERISTIC_UUID, bytes(msg), response=True
                     )
 
             logger.info("disconnecting...")
