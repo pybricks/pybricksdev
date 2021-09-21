@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `VOLUME` to `ble.lwp3.bytecodes.HubProperty` enum.
 - Added SPIKE Essential hub device IDs.
 - Added Luigi hub device ID.
+- 
+## Fixed
+- Fixed BlueZ disconnecting when sending a command with `pybricksdev lwp3 repl`
+  to a City hub.
+
 
 ## [1.0.0-alpha.14] - 2021-08-27
 
@@ -20,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Fixed
 - Fixed device not rebooting after `dfu restore`.
-- Fixed BlueZ disconnecting when sending a command with `pybricksdev lwp3 repl`
-  to a City hub.
 
 ## [1.0.0-alpha.13] - 2021-08-06
 
