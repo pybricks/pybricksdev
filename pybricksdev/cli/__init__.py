@@ -168,12 +168,7 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import (
-            PybricksHub,
-            EV3Connection,
-            USBPUPConnection,
-            USBRPCConnection,
-        )
+        from ..connections import PybricksHub, EV3Connection
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -193,18 +188,8 @@ class Run(Tool):
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
             device_or_address = await find_device(args.name)
 
-        elif args.conntype == "usb" and args.name == "lego":
-            # It's LEGO stock firmware Hub with USB.
-            hub = USBRPCConnection()
-            device_or_address = "LEGO Technic Large Hub in FS Mode"
         elif args.conntype == "usb":
-            if args.name is None:
-                print("--name is required for USB connections", file=sys.stderr)
-                exit(1)
-
-            # It's a Pybricks Hub with USB. Port name is given.
-            hub = USBPUPConnection()
-            device_or_address = args.name
+            pass
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
