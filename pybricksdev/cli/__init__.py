@@ -168,7 +168,7 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import PybricksHub, EV3Connection
+        from ..connections import PybricksHub, EV3Connection, REPLHub
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -189,7 +189,8 @@ class Run(Tool):
             device_or_address = await find_device(args.name)
 
         elif args.conntype == "usb":
-            pass
+            hub = REPLHub()
+            device_or_address = None
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 

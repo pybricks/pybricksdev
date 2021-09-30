@@ -2,17 +2,16 @@
 # Copyright (c) 2021 The Pybricks Authors
 
 import asyncio
-import base64
-import json
 import logging
 import os
-import random
 import struct
 
 import asyncssh
 import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
+from serial.tools import list_ports
+from serial import Serial
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -187,13 +186,15 @@ class PybricksHub:
         """
 
         # The line tells us to open a log file, so do it.
-        if b"PB_OF" in line:
+        if b"PB_OF:" in line or b"_file_begin_ " in line:
             if self.log_file is not None:
                 raise RuntimeError("Log file is already open!")
 
+            path_start = len(b"PB_OF:") if b"PB_OF:" in line else len(b"_file_begin_ ")
+
             # Get path relative to running script, so log will go
             # in the same folder unless specified otherwise.
-            full_path = os.path.join(self.script_dir, line[6:].decode())
+            full_path = os.path.join(self.script_dir, line[path_start:].decode())
             dir_path, _ = os.path.split(full_path)
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
@@ -203,7 +204,7 @@ class PybricksHub:
             return
 
         # The line tells us to close a log file, so do it.
-        if b"PB_EOF" in line:
+        if b"PB_EOF" in line or b"_file_end_" in line:
             if self.log_file is None:
                 raise RuntimeError("No log file is currently open!")
             logger.info("Done saving log.")
@@ -378,3 +379,180 @@ class PybricksHub:
         if wait:
             await self.user_program_stopped.wait()
             await asyncio.sleep(0.3)
+
+
+class REPLHub:
+    """Run scripts on generic MicroPython boards with a REPL over USB."""
+
+    EOL = b"\r\n"  # MicroPython EOL
+
+    def __init__(self):
+        self.reset_buffers()
+
+    def reset_buffers(self):
+        """Resets internal buffers that track (parsed) serial data."""
+        self.print_output = False
+        self.output = []
+        self.buffer = b""
+        self.log_file = None
+        try:
+            self.serial.read(self.serial.in_waiting)
+        except AttributeError:
+            pass
+
+    async def connect(self, device=None):
+        """Connects to a SPIKE Prime or MINDSTORMS Inventor Hub."""
+
+        # Go through all comports.
+        port = None
+        devices = list_ports.comports()
+        for dev in devices:
+            if dev.product == "LEGO Technic Large Hub in FS Mode" or dev.vid == 0x0694:
+                port = dev.device
+                break
+
+        # Raise error if there is no hub.
+        if port is None:
+            raise OSError("Could not find hub.")
+
+        # Open the serial connection.
+        print("Connecting to {0}".format(port))
+        self.serial = Serial(port)
+        self.serial.read(self.serial.in_waiting)
+        print("Connected!")
+
+    async def disconnect(self):
+        """Disconnects from the hub."""
+        self.serial.close()
+
+    def parse_input(self):
+        """Reads waiting serial data and parse as needed."""
+        data = self.serial.read(self.serial.in_waiting)
+        self.buffer += data
+
+    def is_idle(self, key=b">>> "):
+        """Checks if REPL is ready for a new command."""
+        self.parse_input()
+        return self.buffer[-len(key) :] == key
+
+    async def reset_hub(self):
+        """Soft resets the hub to clear MicroPython variables."""
+
+        # Cancel anything that is running
+        for i in range(5):
+            self.serial.write(b"\x03")
+            await asyncio.sleep(0.1)
+
+        # Soft reboot
+        self.serial.write(b"\x04")
+        await asyncio.sleep(0.5)
+
+        # Prevent runtime from coming up
+        while not self.is_idle():
+            self.serial.write(b"\x03")
+            await asyncio.sleep(0.1)
+
+        # Clear all buffers
+        self.reset_buffers()
+
+    async def exec_line(self, line, wait=True):
+        """Executes one line on the REPL."""
+
+        # Initialize
+        self.reset_buffers()
+        encoded = line.encode()
+        start_len = len(self.buffer)
+
+        # Write the command and prepare expected echo.
+        echo = encoded + b"\r\n"
+        self.serial.write(echo)
+
+        # We are done if we don't want to wait for the result.
+        if not wait:
+            return
+
+        # Wait until the echo has been read.
+        while len(self.buffer) < start_len + len(echo):
+            await asyncio.sleep(0.05)
+            self.parse_input()
+        # Raise error if we did not get the echo back.
+        if echo not in self.buffer[start_len:]:
+            print(start_len, self.buffer, self.buffer[start_len - 1 :], echo)
+            raise ValueError("Failed to execute line: {0}.".format(line))
+
+        # Wait for MicroPython to execute the command.
+        while not self.is_idle():
+            await asyncio.sleep(0.1)
+
+    line_handler = PybricksHub.line_handler
+
+    async def exec_paste_mode(self, code, wait=True, print_output=True):
+        """Executes commands via paste mode."""
+
+        # Initialize buffers
+        self.reset_buffers()
+        self.print_output = print_output
+
+        # Convert script string to binary.
+        encoded = code.encode()
+
+        # Enter paste mode.
+        self.serial.write(b"\x05")
+        while not self.is_idle(key=b"=== "):
+            await asyncio.sleep(0.1)
+
+        # Paste the script, chunk by chunk to avoid overrun
+        start_len = len(self.buffer)
+        echo = encoded + b"\r\n"
+
+        for c in chunk(echo, 200):
+            self.serial.write(c)
+            # Wait until the pasted code is echoed back.
+            while len(self.buffer) < start_len + len(c):
+                await asyncio.sleep(0.05)
+                self.parse_input()
+
+            # If it isn't, then stop.
+            if c not in self.buffer[start_len:]:
+                print(start_len, self.buffer, self.buffer[start_len - 1 :], echo)
+                raise ValueError("Failed to paste: {0}.".format(code))
+
+            start_len += len(c)
+
+        # Parse hub output until the script is done.
+        line_index = len(self.buffer)
+        self.output = []
+
+        # Exit paste mode and start executing.
+        self.serial.write(b"\x04")
+
+        # If we don't want to wait, we are done.
+        if not wait:
+            return
+
+        # Look for output while the program runs
+        while not self.is_idle():
+
+            # Keep parsing hub data.
+            self.parse_input()
+
+            # Look for completed lines that we haven't parsed yet.
+            next_line_index = self.buffer.find(self.EOL, line_index)
+
+            if next_line_index >= 0:
+                # If a new line is found, parse it.
+                self.line_handler(self.buffer[line_index:next_line_index])
+                line_index = next_line_index + len(self.EOL)
+            await asyncio.sleep(0.1)
+
+        # Parse remaining hub data.
+        while (next_line_index := self.buffer.find(self.EOL, line_index)) >= 0:
+            self.line_handler(self.buffer[line_index:next_line_index])
+            line_index = next_line_index + len(self.EOL)
+
+    async def run(self, py_path, wait=True, print_output=True):
+        """Executes a script via paste mode."""
+        script = open(py_path).read()
+        self.script_dir, _ = os.path.split(py_path)
+        await self.reset_hub()
+        await self.exec_paste_mode(script, wait, print_output)
