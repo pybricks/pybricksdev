@@ -13,7 +13,6 @@
             "args": [
                 "run",
                 "ble",
-                "Pybricks Hub",
                 "${workspaceFolder}/demo/shortdemo.py"
             ]
         },
@@ -26,7 +25,6 @@
             "args": [
                 "run",
                 "usb",
-                "Pybricks Hub",
                 "${file}"
             ]
         },
