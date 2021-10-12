@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.16] - 2021-10-26
+
+### Added
+- Script runner for generic MicroPython boards via USB. This is mainly used for
+  debugging.
+
+## Fixed
+- Visual Studio Code launcher settings to run a script via BLE.
+
 ## [1.0.0-alpha.15] - 2021-09-21
 
 ### Added
