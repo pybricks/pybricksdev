@@ -144,7 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- let's try to keep these sorted alphabetically -->
 [support#420]: https://github.com/pybricks/support/issues/420
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.15..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.16..HEAD
+[1.0.0-alpha.16]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.15...v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.14...v1.0.0-alpha.15
 [1.0.0-alpha.14]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.13...v1.0.0-alpha.14
 [1.0.0-alpha.13]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.12...v1.0.0-alpha.13
