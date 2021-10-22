@@ -24,9 +24,12 @@ SPIKE_PRIME_PID = 0x0008
 SPIKE_ESSENTIAL_PID = 0x000C
 MINDSTORMS_INVENTOR_PID = 0x0011
 
-
-ALL_PIDS = [SPIKE_PRIME_PID, SPIKE_ESSENTIAL_PID, MINDSTORMS_INVENTOR_PID]
-ALL_DEVICES = [f"{LEGO_VID:04x}:{pid:04x}" for pid in ALL_PIDS]
+ALL_PIDS = {
+    MINDSTORMS_INVENTOR_PID: HubKind.TECHNIC_LARGE,
+    SPIKE_ESSENTIAL_PID: HubKind.TECHNIC_SMALL,
+    SPIKE_PRIME_PID: HubKind.TECHNIC_LARGE,
+}
+ALL_DEVICES = [f"{LEGO_VID:04x}:{pid:04x}" for pid in ALL_PIDS.keys()]
 
 
 def _get_dfu_util() -> ContextManager[os.PathLike]:
@@ -157,10 +160,6 @@ def restore_dfu(file: BinaryIO) -> None:
 def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
     """Flashes a firmware file using DFU."""
 
-    if metadata["device-id"] != HubKind.TECHNIC_LARGE:
-        print("Unknown hub type:", metadata["device-id"], file=sys.stderr)
-        exit(1)
-
     with TemporaryDirectory() as out_dir:
         outfile = os.path.join(out_dir, "firmware.dfu")
         target = {"address": FIRMWARE_ADDRESS, "data": firmware_bin}
@@ -180,6 +179,10 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
             product_id = devices[0].idProduct
             if product_id not in ALL_PIDS:
                 print(f"Unknown USB product ID: {product_id:04X}", file=sys.stderr)
+                exit(1)
+
+            if ALL_PIDS[product_id] != metadata["device-id"]:
+                print("Incorrect firmware type for this hub", file=sys.stderr)
                 exit(1)
 
             # Create dfu file
