@@ -49,9 +49,16 @@ async def create_firmware(
     """
 
     archive = zipfile.ZipFile(firmware_zip)
+    metadata = json.load(archive.open("firmware.metadata.json"))
+
+    # For SPIKE Hubs, we can use the firmware without changes.
+    if metadata["device-id"] in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
+        firmware = bytearray(archive.open("firmware.bin").read())
+        return firmware, metadata
+
+    # For Powered Up hubs, we append a script and checksum to a base firmware.
     base = archive.open("firmware-base.bin").read()
     main_py = io.TextIOWrapper(archive.open("main.py"))
-    metadata = json.load(archive.open("firmware.metadata.json"))
 
     mpy = await compile_file(
         save_script(main_py.read()),

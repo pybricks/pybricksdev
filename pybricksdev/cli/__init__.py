@@ -227,7 +227,7 @@ class Flash(Tool):
         print("Creating firmware")
         firmware, metadata = await create_firmware(args.firmware, args.name)
 
-        if metadata["device-id"] == HubKind.TECHNIC_LARGE:
+        if metadata["device-id"] in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
             from ..dfu import flash_dfu
 
             flash_dfu(firmware, metadata)
