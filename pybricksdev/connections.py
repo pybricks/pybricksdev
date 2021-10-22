@@ -381,6 +381,47 @@ class PybricksHub:
             await asyncio.sleep(0.3)
 
 
+FILE_PACKET_SIZE = 1024
+FILE_TRANSFER_SCRIPT = f"""
+import sys
+import micropython
+import utime
+
+PACKETSIZE = {FILE_PACKET_SIZE}
+
+def receive_file(filename, filesize):
+
+    micropython.kbd_intr(-1)
+
+    with open(filename, "wb") as f:
+
+        # Initialize buffers
+        done = 0
+        buf = bytearray(PACKETSIZE)
+        sys.stdin.buffer.read(1)
+
+        while done < filesize:
+
+            # Size of last package
+            if filesize - done < PACKETSIZE:
+                buf = bytearray(filesize - done)
+
+            # Read one packet from standard in.
+            time_now = utime.ticks_ms()
+            bytes_read = sys.stdin.buffer.readinto(buf)
+
+            # If transmission took a long time, something bad happened.
+            if utime.ticks_ms() - time_now > 5000:
+                print("transfer timed out")
+                return
+
+            # Write the data and say we're ready for more.
+            f.write(buf)
+            done += bytes_read
+            print("ACK")
+"""
+
+
 class REPLHub:
     """Run scripts on generic MicroPython boards with a REPL over USB."""
 
@@ -455,6 +496,12 @@ class REPLHub:
         # Clear all buffers
         self.reset_buffers()
 
+        # Load file transfer function
+        await self.exec_paste_mode(FILE_TRANSFER_SCRIPT, print_output=False)
+        self.reset_buffers()
+
+        print("Hub is ready.")
+
     async def exec_line(self, line, wait=True):
         """Executes one line on the REPL."""
 
@@ -467,10 +514,6 @@ class REPLHub:
         echo = encoded + b"\r\n"
         self.serial.write(echo)
 
-        # We are done if we don't want to wait for the result.
-        if not wait:
-            return
-
         # Wait until the echo has been read.
         while len(self.buffer) < start_len + len(echo):
             await asyncio.sleep(0.05)
@@ -479,6 +522,10 @@ class REPLHub:
         if echo not in self.buffer[start_len:]:
             print(start_len, self.buffer, self.buffer[start_len - 1 :], echo)
             raise ValueError("Failed to execute line: {0}.".format(line))
+
+        # We are done if we don't want to wait for the result.
+        if not wait:
+            return
 
         # Wait for MicroPython to execute the command.
         while not self.is_idle():
@@ -556,3 +603,38 @@ class REPLHub:
         self.script_dir, _ = os.path.split(py_path)
         await self.reset_hub()
         await self.exec_paste_mode(script, wait, print_output)
+
+    async def upload_file(self, destination, contents):
+        """Uploads a file to the hub."""
+
+        # Print upload info.
+        size = len(contents)
+        print(f"Uploading {destination} ({size} bytes)")
+        self.reset_buffers()
+
+        # Prepare hub to receive file
+        await self.exec_line(f"receive_file('{destination}', {size})", wait=False)
+
+        ACK = b"ACK" + self.EOL
+        progress = 0
+
+        # Write file chunk by chunk.
+        for data in chunk(contents, FILE_PACKET_SIZE):
+
+            # Send a chunk and wait for acknowledgement of receipt
+            buffer_now = len(self.buffer)
+            progress += self.serial.write(data)
+            while len(self.buffer) < buffer_now + len(ACK):
+                await asyncio.sleep(0.01)
+                self.parse_input()
+
+            # Raise error if we didn't get acknowledgement
+            if self.buffer[buffer_now : buffer_now + len(ACK)] != ACK:
+                print(self.buffer[buffer_now:])
+                raise ValueError("Did not get expected response from the hub.")
+
+            # Print progress
+            print(f"Progress: {int(progress / size * 100)}%", end="\r")
+
+        # Get REPL back in normal state
+        await self.exec_line("# File transfer complete")
