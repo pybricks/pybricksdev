@@ -6,7 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0-alpha.16] - 2021-10-26
+## [1.0.0-alpha.17] - 2021-10-25
+
+### Added
+- Experimental firmware installation on SPIKE Prime and SPIKE Essential via
+  usb. The command line commands are unchanged. If you try to install the
+  firmware on SPIKE hubs, it will first look for a hub running the regular
+  firmware. If it doesn't find any, it will proceed using DFU as before.
+
+## Changed
+- Firmware binaries for SPIKE hubs are no longer being customized with a main
+  script and a changed checksum. Instead, it simply installs firmware.bin from
+  the CI ZIP file.
+
+## [1.0.0-alpha.16] - 2021-10-12
 
 ### Added
 - Script runner for generic MicroPython boards via USB. This is mainly used for
@@ -144,7 +157,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- let's try to keep these sorted alphabetically -->
 [support#420]: https://github.com/pybricks/support/issues/420
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.16..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.17..HEAD
+[1.0.0-alpha.17]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.16...v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.15...v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.14...v1.0.0-alpha.15
 [1.0.0-alpha.14]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.13...v1.0.0-alpha.14
