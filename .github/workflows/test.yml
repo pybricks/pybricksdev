@@ -25,7 +25,7 @@ jobs:
       - run: poetry run coverage run
       - run: |
           pipx install coveralls
-          pipx inject coveralls toml
+          pipx inject coveralls coverage[toml]
       - run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
