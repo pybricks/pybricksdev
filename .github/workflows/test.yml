@@ -18,7 +18,7 @@ jobs:
       - run: poetry run pytest
       - run: poetry run flake8 --show-source
         if: ${{ success() || failure() }}
-      - run: poetry run black --check --diff
+      - run: poetry run black --check --diff .
         if: ${{ success() || failure() }}
       - run: poetry run make -C docs/ html
         if: ${{ success() || failure() }}
