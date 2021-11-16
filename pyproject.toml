@@ -31,16 +31,15 @@ pybricksdev = 'pybricksdev.cli:main'
 aioserial = "^1.3.0"
 argcomplete = "^1.11.1"
 asyncssh = "^2.2.1"
-bleak = "^0.12.1"
+bleak = "^0.13.0"
 mpy-cross = "1.14"
-python = "^3.8"
+python = ">=3.8,<3.11"
 tqdm = "^4.62.3"
 validators = "^0.18.2"
 pyusb = "^1.0.2"
 semver = "^2.13.0"
 appdirs = "^1.4.4"
 prompt-toolkit = "^3.0.18"
-winrt = {version = "^1.0.21033", platform = "win32"}
 
 [tool.poetry.dev-dependencies]
 black = {version = "^21.5b1", allow-prereleases = true}

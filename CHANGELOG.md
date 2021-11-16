@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added support for Python 3.10.
+
 ### Fixed
 - Fixed `tqdm` dependency version.
 

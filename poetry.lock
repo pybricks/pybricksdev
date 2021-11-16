@@ -163,23 +163,26 @@ webencodings = "*"
 
 [[package]]
 name = "bleak"
-version = "0.12.1"
+version = "0.13.0"
 description = "Bluetooth Low Energy platform Agnostic Klient"
 category = "main"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
+bleak-winrt = {version = ">=1.0.1", markers = "platform_system == \"Windows\""}
 dbus-next = {version = "*", markers = "platform_system == \"Linux\""}
 pyobjc-core = {version = "*", markers = "platform_system == \"Darwin\""}
 pyobjc-framework-CoreBluetooth = {version = "*", markers = "platform_system == \"Darwin\""}
 pyobjc-framework-libdispatch = {version = "*", markers = "platform_system == \"Darwin\""}
-pythonnet = {version = "*", markers = "platform_system == \"Windows\" and python_version < \"3.9.0\""}
-winrt = {version = ">=1.0.21033.1", markers = "platform_system == \"Windows\" and python_version >= \"3.9.0\""}
 
-[package.extras]
-pythonnet = ["pythonnet (>=2.5.1)"]
-winrt = ["winrt (>=1.0.21033.1)"]
+[[package]]
+name = "bleak-winrt"
+version = "1.0.1"
+description = "Python WinRT bindings for Bleak"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "certifi"
@@ -960,17 +963,6 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 six = ">=1.5"
 
 [[package]]
-name = "pythonnet"
-version = "2.5.2"
-description = ".Net and Mono integration for Python"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-pycparser = "*"
-
-[[package]]
 name = "pytz"
 version = "2021.3"
 description = "World timezone definitions, modern and historical"
@@ -1336,14 +1328,6 @@ python-versions = "*"
 notebook = ">=4.4.1"
 
 [[package]]
-name = "winrt"
-version = "1.0.21033.1"
-description = "Access Windows Runtime APIs from Python"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "zipp"
 version = "3.6.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -1357,8 +1341,8 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.8"
-content-hash = "17999506e47482968f37a264a137e9968cea48f134af19a2b86d7748d6bf10f0"
+python-versions = ">=3.8,<3.11"
+content-hash = "74b5d9900399740ecc39ce169c80d05868abf07dee1154b9b1a2731f04712d71"
 
 [metadata.files]
 aioserial = [
@@ -1423,8 +1407,19 @@ bleach = [
     {file = "bleach-4.1.0.tar.gz", hash = "sha256:0900d8b37eba61a802ee40ac0061f8c2b5dee29c1927dd1d233e075ebf5a71da"},
 ]
 bleak = [
-    {file = "bleak-0.12.1-py2.py3-none-any.whl", hash = "sha256:09733060e7561bf852359eadf959cd496c64a87e8875d26b6545fd2e8e07cd2c"},
-    {file = "bleak-0.12.1.tar.gz", hash = "sha256:4a80a24cc944e52e856054639f298229c39a2fc720e5f7adbeebb117d10849ed"},
+    {file = "bleak-0.13.0-py2.py3-none-any.whl", hash = "sha256:33e92739a8a117628fa1533bf973fd55ade2051c3a12ba3bbfee6ca9eca46959"},
+    {file = "bleak-0.13.0.tar.gz", hash = "sha256:eb0716852cad7e96613934680b6aff4f48d68671d6ab967155497387cd98dcee"},
+]
+bleak-winrt = [
+    {file = "bleak-winrt-1.0.1.tar.gz", hash = "sha256:ffa15cf859eb4c90da946245386983d9036aa510299bdbd0a838cb104203d5b5"},
+    {file = "bleak_winrt-1.0.1-cp310-cp310-win32.whl", hash = "sha256:47c08ba2ba5bbf50892e50f772c01220c0f61055c6b6c0368122e86d8b099a22"},
+    {file = "bleak_winrt-1.0.1-cp310-cp310-win_amd64.whl", hash = "sha256:31aeb236ba59f779d18694be850e23131a02fc77919babf183a876a6cbe2ebc8"},
+    {file = "bleak_winrt-1.0.1-cp37-cp37m-win32.whl", hash = "sha256:bef08a8cffc56e6e84c03ff24764e992212a26ce51cb255164fc800f6c6304d8"},
+    {file = "bleak_winrt-1.0.1-cp37-cp37m-win_amd64.whl", hash = "sha256:d0f92bebbaa91cd23dc3daec29ccc93d34e540d1679cf31f6d63b43b9d0ec6a7"},
+    {file = "bleak_winrt-1.0.1-cp38-cp38-win32.whl", hash = "sha256:d19a19a24c1d5f776e2951e21c961b1fba86f97608f9999586f1698da7dfddce"},
+    {file = "bleak_winrt-1.0.1-cp38-cp38-win_amd64.whl", hash = "sha256:60cb003399f0bd9522356ae39b748c1781cfb93394a47393ae4579f4a6e1d5db"},
+    {file = "bleak_winrt-1.0.1-cp39-cp39-win32.whl", hash = "sha256:6adcb5d3efd0790768bccf8dcf285d937f9fd86ad3b879869d92620af443d8b2"},
+    {file = "bleak_winrt-1.0.1-cp39-cp39-win_amd64.whl", hash = "sha256:7de3d3ce87f420192fa97853e8eaf82ae6aacb1e76fd3d8008a45017cdb048f4"},
 ]
 certifi = [
     {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
@@ -1876,19 +1871,6 @@ python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
 ]
-pythonnet = [
-    {file = "pythonnet-2.5.2-cp27-cp27m-win32.whl", hash = "sha256:d519bbc7b1cd3999651efc594d91cb67c46d1d8466dad3d83b578102e58d05bd"},
-    {file = "pythonnet-2.5.2-cp27-cp27m-win_amd64.whl", hash = "sha256:c02f53d0e61b202cddf3198fac9553d5b4ee0ea0cc4fe658c2ed69ab24def276"},
-    {file = "pythonnet-2.5.2-cp35-cp35m-win32.whl", hash = "sha256:840bdef89b378663d73f74f18895b6d8630d1f5671457a1db5ffb68179d85582"},
-    {file = "pythonnet-2.5.2-cp35-cp35m-win_amd64.whl", hash = "sha256:d8e5b27de1e2cfb69b88782ac5cdf605b1a73598a85d86570e46961126628dbb"},
-    {file = "pythonnet-2.5.2-cp36-cp36m-win32.whl", hash = "sha256:62645c29840c4a877d66e047f3e065b2e5a1a66431a99bce8d42a5af3a093ee1"},
-    {file = "pythonnet-2.5.2-cp36-cp36m-win_amd64.whl", hash = "sha256:058e536062d1585d07ec5f2cf16aefcfc8eb8179faa90e5db0063d358469d025"},
-    {file = "pythonnet-2.5.2-cp37-cp37m-win32.whl", hash = "sha256:cc77fc63e2afb0a80199ab44ced4fdfb78c19d8030063c345c80740d15380dd9"},
-    {file = "pythonnet-2.5.2-cp37-cp37m-win_amd64.whl", hash = "sha256:80c8f5c9bd10440a73eb6aedbbacb2f3dd7701b474816f5ef7636f529d838d38"},
-    {file = "pythonnet-2.5.2-cp38-cp38-win32.whl", hash = "sha256:41a607b7304e9efc6d4d8db438d6018a17c6637e8b8998848ff5c2a7a1b4687c"},
-    {file = "pythonnet-2.5.2-cp38-cp38-win_amd64.whl", hash = "sha256:00a4fed9fc05b4efbe8947c79dc0799cffbca4c89e3e068e70b6618f20c906f2"},
-    {file = "pythonnet-2.5.2.tar.gz", hash = "sha256:b7287480a1f6ae4b6fc80d775446d8af00e051ca1646b6cc3d32c5d3a461ede3"},
-]
 pytz = [
     {file = "pytz-2021.3-py2.py3-none-any.whl", hash = "sha256:3672058bc3453457b622aab7a1c3bfd5ab0bdae451512f6cf25f64ed37f5b87c"},
     {file = "pytz-2021.3.tar.gz", hash = "sha256:acad2d8b20a1af07d4e4c9d2e9285c5ed9104354062f275f3fcd88dcef4f1326"},
@@ -2159,14 +2141,6 @@ webencodings = [
 widgetsnbextension = [
     {file = "widgetsnbextension-3.5.2-py2.py3-none-any.whl", hash = "sha256:763a9fdc836d141fa080005a886d63f66f73d56dba1fb5961afc239c77708569"},
     {file = "widgetsnbextension-3.5.2.tar.gz", hash = "sha256:e0731a60ba540cd19bbbefe771a9076dcd2dde90713a8f87f27f53f2d1db7727"},
-]
-winrt = [
-    {file = "winrt-1.0.21033.1-cp37-none-win32.whl", hash = "sha256:d035570ce2cf7e8caa785abb43f25a6ede600c2cde0378c931495bdbeaf1a075"},
-    {file = "winrt-1.0.21033.1-cp37-none-win_amd64.whl", hash = "sha256:da3ca3626fb992f2efa4528993d4760b298f399a7f459f7e070a2f8681d82106"},
-    {file = "winrt-1.0.21033.1-cp38-none-win32.whl", hash = "sha256:224e13eb172435aaabdc7066752898a61dae0fcc3022f6f8cbd1ce953be3358c"},
-    {file = "winrt-1.0.21033.1-cp38-none-win_amd64.whl", hash = "sha256:f5ab502117da4777ab49b846ad1919fbf448bd5e49b4aca00cc59667bae2c362"},
-    {file = "winrt-1.0.21033.1-cp39-none-win32.whl", hash = "sha256:9d7b7d2e48c301855afd3280aaf51ea0d3c683450f46de2db813f71ee1cd5937"},
-    {file = "winrt-1.0.21033.1-cp39-none-win_amd64.whl", hash = "sha256:ad4afd1c7b041a6b770256d70e07093920fa83eecd80e42cac2704cd03902243"},
 ]
 zipp = [
     {file = "zipp-3.6.0-py3-none-any.whl", hash = "sha256:9fe5ea21568a0a70e50f273397638d39b03353731e6cbbb3fd8502a33fec40bc"},
