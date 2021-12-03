@@ -6,11 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.18] - 2021-12-03
+
 ### Added
 - Added support for Python 3.10.
 
 ### Fixed
 - Fixed `tqdm` dependency version.
+- Fixed being unable to set the name of SPIKE hubs.
 
 ## [1.0.0-alpha.17] - 2021-10-25
 
@@ -163,7 +166,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- let's try to keep these sorted alphabetically -->
 [support#420]: https://github.com/pybricks/support/issues/420
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.17..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.18..HEAD
+[1.0.0-alpha.18]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.17...v1.0.0-alpha.18
 [1.0.0-alpha.17]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.16...v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.15...v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.14...v1.0.0-alpha.15
