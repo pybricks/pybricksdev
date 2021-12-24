@@ -52,10 +52,10 @@ def sum_complement(data: BytesIO, max_size: int) -> int:
         checksum += int.from_bytes(word, "little")
         size += 4
 
-    if size > max_size:
+    if size + 4 > max_size:
         raise ValueError("data is too large")
 
-    for _ in range(size, max_size, 4):
+    for _ in range(size, max_size - 4, 4):
         checksum += 0xFFFFFFFF
 
     checksum &= 0xFFFFFFFF
@@ -112,11 +112,7 @@ def crc32_checksum(data: BytesIO, max_size: int) -> int:
         The checksum.
     """
 
-    # remove the last 4 bytes that are the placeholder for the checksum
-    try:
-        data = data.read()[:-4]
-    except AttributeError:
-        data = data[:-4]
+    data = data.read()
 
     if len(data) + 4 > max_size:
         raise ValueError("data is too large")

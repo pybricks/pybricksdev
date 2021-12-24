@@ -26,27 +26,6 @@ from .tools.checksum import crc32_checksum, sum_complement
 logger = logging.getLogger(__name__)
 
 
-def update_hub_name(firmware, metadata, name):
-    """Changes the hub name in the firmware blob."""
-
-    if not name:
-        return
-
-    if semver.compare(metadata["metadata-version"], "1.1.0") < 0:
-        raise ValueError("this firmware image does not support setting the hub name")
-
-    name = name.encode() + b"\0"
-
-    max_size = metadata["max-hub-name-size"]
-    if len(name) > max_size:
-        raise ValueError(
-            f"name is too big - must be < {metadata['max-hub-name-size']} UTF-8 bytes"
-        )
-
-    offset = metadata["hub-name-offset"]
-    firmware[offset : offset + len(name)] = name
-
-
 async def create_firmware(
     firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
 ) -> Tuple[bytes, dict]:
@@ -72,54 +51,63 @@ async def create_firmware(
     archive = zipfile.ZipFile(firmware_zip)
     metadata = json.load(archive.open("firmware.metadata.json"))
 
-    # For SPIKE Hubs, we can use the firmware without appending anything.
-    if metadata["device-id"] in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
-        firmware = bytearray(archive.open("firmware.bin").read())
-        update_hub_name(firmware, metadata, name)
-        return firmware, metadata
+    # Check if there's a complete firmware already
+    if "firmware.bin" in archive.namelist():
+        # If so, use it as-is, with the final checksum stripped off.
+        # We'll add an updated checksum later on.
+        firmware = bytearray(archive.open("firmware.bin").read()[:-4])
+    else:
+        # Otherwise, we have to take a base firmware and extend it.
+        base = archive.open("firmware-base.bin").read()
+        main_py = io.TextIOWrapper(archive.open("main.py"))
 
-    # For Powered Up hubs, we append a script and checksum to a base firmware.
-    base = archive.open("firmware-base.bin").read()
-    main_py = io.TextIOWrapper(archive.open("main.py"))
+        mpy = await compile_file(
+            save_script(main_py.read()),
+            metadata["mpy-cross-options"],
+            metadata["mpy-abi-version"],
+        )
 
-    mpy = await compile_file(
-        save_script(main_py.read()),
-        metadata["mpy-cross-options"],
-        metadata["mpy-abi-version"],
-    )
+        # start with base firmware binary blob
+        firmware = bytearray(base)
+        # pad with 0s until user-mpy-offset
+        firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
+        # append 32-bit little-endian main.mpy file size
+        firmware.extend(struct.pack("<I", len(mpy)))
+        # append main.mpy file
+        firmware.extend(mpy)
+        # pad with 0s to align to 4-byte boundary
+        firmware.extend(0 for _ in range(-len(firmware) % 4))
 
-    # start with base firmware binary blob
-    firmware = bytearray(base)
-    # pad with 0s until user-mpy-offset
-    firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
-    # append 32-bit little-endian main.mpy file size
-    firmware.extend(struct.pack("<I", len(mpy)))
-    # append main.mpy file
-    firmware.extend(mpy)
-    # pad with 0s to align to 4-byte boundary
-    firmware.extend(0 for _ in range(-len(firmware) % 4))
+    # Update hub name if given
+    if name:
 
-    # Update hub name
-    update_hub_name(firmware, metadata, name)
+        if semver.compare(metadata["metadata-version"], "1.1.0") < 0:
+            raise ValueError(
+                "this firmware image does not support setting the hub name"
+            )
 
-    # append 32-bit little-endian checksum
+        name = name.encode() + b"\0"
+
+        max_size = metadata["max-hub-name-size"]
+        if len(name) > max_size:
+            raise ValueError(
+                f"name is too big - must be < {metadata['max-hub-name-size']} UTF-8 bytes"
+            )
+
+        offset = metadata["hub-name-offset"]
+        firmware[offset : offset + len(name)] = name
+
+    # Get checksum for this firmware
     if metadata["checksum-type"] == "sum":
-        firmware.extend(
-            struct.pack(
-                "<I",
-                sum_complement(io.BytesIO(firmware), metadata["max-firmware-size"] - 4),
-            )
-        )
+        checksum = sum_complement(io.BytesIO(firmware), metadata["max-firmware-size"])
     elif metadata["checksum-type"] == "crc32":
-        firmware.extend(
-            struct.pack(
-                "<I",
-                crc32_checksum(io.BytesIO(firmware), metadata["max-firmware-size"] - 4),
-            )
-        )
+        checksum = crc32_checksum(io.BytesIO(firmware), metadata["max-firmware-size"])
     else:
         print(f'Unknown checksum type "{metadata["checksum-type"]}"', file=sys.stderr)
         exit(1)
+
+    # Append checksum to the firmware
+    firmware.extend(struct.pack("<I", checksum))
 
     return firmware, metadata
 
