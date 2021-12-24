@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.19] - 2021-12-24
+
+### Fixed
+- Fixed incorrect metadata checksum for the firmware installer for SPIKE hubs.
+
 ## [1.0.0-alpha.18] - 2021-12-03
 
 ### Added
@@ -166,7 +171,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- let's try to keep these sorted alphabetically -->
 [support#420]: https://github.com/pybricks/support/issues/420
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.18..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.19..HEAD
+[1.0.0-alpha.19]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.18...v1.0.0-alpha.19
 [1.0.0-alpha.18]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.17...v1.0.0-alpha.18
 [1.0.0-alpha.17]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.16...v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.15...v1.0.0-alpha.16

@@ -2,6 +2,7 @@
 # Copyright (c) 2019-2021 The Pybricks Authors
 
 import asyncio
+import hashlib
 import io
 import json
 import logging
@@ -108,6 +109,9 @@ async def create_firmware(
 
     # Append checksum to the firmware
     firmware.extend(struct.pack("<I", checksum))
+
+    # Update sha256 of updated composite firmware
+    metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
 
     return firmware, metadata
 

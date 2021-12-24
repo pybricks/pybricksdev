@@ -6,6 +6,7 @@
 import argparse
 import asyncio
 import contextlib
+import json
 import logging
 import os
 import sys
@@ -249,7 +250,7 @@ class Flash(Tool):
                 # Upload metadata.
                 await hub.upload_file(
                     "_firmware/firmware.metadata.json",
-                    bytearray(archive.open("firmware.metadata.json").read()),
+                    json.dumps(metadata, indent=4).encode(),
                 )
 
                 # Upload Pybricks firmware
