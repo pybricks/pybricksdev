@@ -127,6 +127,15 @@ firmware.
     # Run script on the first device we find called Pybricks hub
     pybricksdev run ble --name "Pybricks Hub" demo/shortdemo.py
 
+    # Run script on device with address 90:84:2B:4A:2B:75 (doesn't work on Mac)
+    pybricksdev run ble --name 90:84:2B:4A:2B:75 demo/shortdemo.py
+           
+    #
+    # usb connection examples:
+    # NOTE: running programs via usb connection works for official LEGO firmwares only
+
+    # Run script on any Pybricks device
+    pybricksdev run usb demo/shortdemo.py
 
     #
     # Other connection examples:
