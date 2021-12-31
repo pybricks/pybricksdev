@@ -54,7 +54,9 @@ async def find_device(
 
         return True
 
-    device = await BleakScanner.find_device_by_filter(match_uuid_and_name, timeout)
+    device = await BleakScanner.find_device_by_filter(
+        match_uuid_and_name, timeout, service_uuids=[service]
+    )
 
     if device is None:
         raise asyncio.TimeoutError

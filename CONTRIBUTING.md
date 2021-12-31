@@ -36,3 +36,20 @@ Python VS Code extension so that it does not modify the `.vscode/settings.json`
 file in the project when you select the interpreter.
 
 [DeprecatePythonPath]: https://github.com/microsoft/vscode-python/wiki/AB-Experiments#deprecatepythonpath
+
+### Test your changes
+
+#### Run a script on your Hub
+
+    poetry run pybricksdev run ble test.py
+
+#### Build and install your changes globally
+
+    poetry build
+    pipx install --force ./dist/pybricksdev-1.0.0a19.tar.gz
+
+#### Inject a custom dependency
+
+For instance, if you want the installed `pybricksdev` to use code from the `develop` branch of the `bleak` package.
+
+    pipx inject pybricksdev https://github.com/hbldh/bleak/archive/refs/heads/develop.zip
