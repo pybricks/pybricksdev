@@ -66,9 +66,8 @@ nitpick_ignore = [
     ("py:class", "bleak.backends.bluezdbus.client.BleakClientBlueZDBus"),
     ("py:class", "bleak.backends.device.BLEDevice"),
     ("py:exc", "asyncio.TimeoutError"),
+    ("py:class", "bleak.BleakClient"),
 ]
-# TODO: requires Sphinx 4.1
-# nitpick_ignore_regex = [(r"py:.*", r"bleak\..*")]
 
 add_module_names = False
 
@@ -108,6 +107,7 @@ autodoc_mock_imports = [
     "appdirs",
     "argcomplete",
     "asyncssh",
+    "bleak",
     "mpy_cross",
     "prompt_toolkit",
     "semver",
