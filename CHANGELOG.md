@@ -84,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed crash in CRC32 checksum.
 - Fixed flashing with `dfu-util` not always working ([support#420]).
 
+[support#420]: https://github.com/pybricks/support/issues/420
+
 ## [1.0.0-alpha.12] - 2021-08-04
 
 ### Changed
@@ -184,8 +186,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-<!-- let's try to keep these sorted alphabetically -->
-[support#420]: https://github.com/pybricks/support/issues/420
 
 [Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.21..HEAD
 [1.0.0-alpha.21]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.20...v1.0.0-alpha.21
