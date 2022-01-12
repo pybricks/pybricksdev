@@ -1,30 +1,25 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2021 The Pybricks Authors
+# Copyright (c) 2019-2022 The Pybricks Authors
 
 """Command line wrapper around pybricksdev library."""
 
 import argparse
 import asyncio
 import contextlib
-import json
 import logging
 import os
 import sys
-from tempfile import NamedTemporaryFile
-from typing import ContextManager, TextIO
-import validators
-import zipfile
-
 from abc import ABC, abstractmethod
 from os import PathLike, path
+from tempfile import NamedTemporaryFile
+from typing import ContextManager, TextIO
 
 import argcomplete
+import validators
 from argcomplete.completers import FilesCompleter
 
-from .. import __name__ as MODULE_NAME, __version__ as MODULE_VERSION
-from ..ble.lwp3 import LWP3_BOOTLOADER_SERVICE_UUID
-from ..ble.lwp3.bytecodes import HubKind
-
+from .. import __name__ as MODULE_NAME
+from .. import __version__ as MODULE_VERSION
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -170,7 +165,7 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import PybricksHub, EV3Connection, REPLHub
+        from ..connections import EV3Connection, PybricksHub, REPLHub
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -223,64 +218,10 @@ class Flash(Tool):
             "-n", "--name", metavar="<name>", type=str, help="a custom name for the hub"
         )
 
-    async def run(self, args: argparse.Namespace):
-        from ..flash import create_firmware
+    def run(self, args: argparse.Namespace):
+        from .flash import flash_firmware
 
-        print("Creating firmware")
-        firmware, metadata = await create_firmware(args.firmware, args.name)
-
-        if metadata["device-id"] in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
-            from ..dfu import flash_dfu
-            from ..connections import REPLHub
-
-            try:
-                # Connect to the hub and exit the runtime.
-                hub = REPLHub()
-                await hub.connect()
-                await hub.reset_hub()
-
-                # Upload installation script.
-                archive = zipfile.ZipFile(args.firmware)
-                await hub.exec_line("import uos; uos.mkdir('_firmware')")
-                await hub.upload_file(
-                    "_firmware/install_pybricks.py",
-                    bytearray(archive.open("install_pybricks.py").read()),
-                )
-
-                # Upload metadata.
-                await hub.upload_file(
-                    "_firmware/firmware.metadata.json",
-                    json.dumps(metadata, indent=4).encode(),
-                )
-
-                # Upload Pybricks firmware
-                await hub.upload_file("_firmware/firmware.bin", firmware)
-
-                # Run installation script
-                print("Installing firmware")
-                await hub.exec_line("from _firmware.install_pybricks import install")
-                await hub.exec_paste_mode("install()")
-
-            except OSError:
-                print("Could not find hub in standard firmware mode. Trying DFU.")
-                flash_dfu(firmware, metadata)
-        else:
-            from ..ble import find_device
-            from ..flash import BootloaderConnection
-
-            print("Searching for LEGO Bootloader...")
-
-            try:
-                device = await find_device(service=LWP3_BOOTLOADER_SERVICE_UUID)
-            except asyncio.TimeoutError:
-                print("timed out")
-                return
-
-            print("Found:", device)
-            updater = BootloaderConnection()
-            await updater.connect(device)
-            print("Erasing flash and starting update")
-            await updater.flash(firmware, metadata)
+        return flash_firmware(args.firmware, args.name)
 
 
 class DFUBackup(Tool):
@@ -352,7 +293,7 @@ class LWP3Repl(Tool):
         parser.tool = self
 
     def run(self, args: argparse.Namespace):
-        from .lwp3.repl import setup_repl_logging, repl
+        from .lwp3.repl import repl, setup_repl_logging
 
         setup_repl_logging()
         return repl()
@@ -387,6 +328,7 @@ class Udev(Tool):
 
     async def run(self, args: argparse.Namespace):
         from importlib.resources import read_text
+
         from .. import resources
 
         print(read_text(resources, resources.UDEV_RULES))
