@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.21] - 2022-01-12
+
+### Changed
+- Updated `bleak` dependency to v0.14.1.
+
+
 ## [1.0.0-alpha.20] - 2022-01-10
 
 ### Changed
@@ -181,7 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- let's try to keep these sorted alphabetically -->
 [support#420]: https://github.com/pybricks/support/issues/420
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.20..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.21..HEAD
+[1.0.0-alpha.21]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.20...v1.0.0-alpha.21
 [1.0.0-alpha.20]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.19...v1.0.0-alpha.20
 [1.0.0-alpha.19]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.18...v1.0.0-alpha.19
 [1.0.0-alpha.18]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.17...v1.0.0-alpha.18

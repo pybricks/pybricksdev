@@ -177,7 +177,7 @@ webencodings = "*"
 
 [[package]]
 name = "bleak"
-version = "0.14.0"
+version = "0.14.1"
 description = "Bluetooth Low Energy platform Agnostic Klient"
 category = "main"
 optional = false
@@ -1352,7 +1352,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "b596d71c897abb60b4518b06c919124196b41a8fe70338ed520f38124f531811"
+content-hash = "2aeccd6aabe7b47e502ca2d3eb8145794de018224abc771dbf82de9ae84f4b1f"
 
 [metadata.files]
 aioserial = [
@@ -1431,8 +1431,8 @@ bleach = [
     {file = "bleach-4.1.0.tar.gz", hash = "sha256:0900d8b37eba61a802ee40ac0061f8c2b5dee29c1927dd1d233e075ebf5a71da"},
 ]
 bleak = [
-    {file = "bleak-0.14.0-py2.py3-none-any.whl", hash = "sha256:a328d6a7b25b90f5f924f7fec738e000a08d020cbf81e319420acd548394fba6"},
-    {file = "bleak-0.14.0.tar.gz", hash = "sha256:b449cc63f769c2d219c67e23ffb9f3a5b5f23eb2d68d05878743dbed83a14360"},
+    {file = "bleak-0.14.1-py2.py3-none-any.whl", hash = "sha256:af5a57a3c93970525e3d2953c80d69489a2903f1fd28e30bf85e473f22fb657a"},
+    {file = "bleak-0.14.1.tar.gz", hash = "sha256:9794685d25f8f71d48fef04e2ca8ce8cc243b070f5b08ed70e70ae98341d24bb"},
 ]
 bleak-winrt = [
     {file = "bleak-winrt-1.1.0.tar.gz", hash = "sha256:d0e68e9f882c4d18c07adbbb7f77dd30327a3a461f835001c5e83b5a0b379100"},
