@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added ``ble.lpw3.AdvertisementData`` class.
 - Added ``ble.lpw3.BootloaderAdvertisementData`` class.
 
+### Changed
+- Moved ``Bootloader*`` to new ``ble.lwp3.bootloader`` module.
+
 ## [1.0.0-alpha.21] - 2022-01-12
 
 ### Changed

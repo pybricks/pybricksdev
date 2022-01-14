@@ -5,6 +5,7 @@ LEGO Wireless Protocol v3
     :maxdepth: 1
     :caption: Additional modules:
 
+    bootloader
     bytecodes
     messages
 

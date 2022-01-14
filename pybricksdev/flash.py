@@ -19,7 +19,7 @@ from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from .ble import BLERequestsConnection
-from .ble.lwp3 import BootloaderCommand
+from .ble.lwp3.bootloader import BootloaderCommand
 from .ble.lwp3.bytecodes import HubKind
 from .compile import compile_file, save_script
 from .tools.checksum import crc32_checksum, sum_complement
