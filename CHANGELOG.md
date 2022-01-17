@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Moved ``Bootloader*`` to new ``ble.lwp3.bootloader`` module.
+- ``pybricksdev flash`` will now discover hubs running official LEGO firmware
+  or Pybricks firmware and reboot in bootloader mode automatically.
 
 ## [1.0.0-alpha.21] - 2022-01-12
 
