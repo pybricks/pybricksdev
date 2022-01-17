@@ -57,25 +57,17 @@ hub.system.reset(2)
 """
 
 
-def match_hub(
-    hub_kind: HubKind, hub_name: Optional[str], adv: AdvertisementData
-) -> bool:
+def match_hub(hub_kind: HubKind, adv: AdvertisementData) -> bool:
     """
     Advertisement data matching function for filtering supported hubs.
 
     Args:
         hub_kind: The hub type ID to match.
-        hub_name: An optional name to match to the "local name" in the
-            advertisement data.
         adv: The advertisemet data to check.
 
     Returns:
         ``True`` if *adv* matches the criteria, otherwise ``False``.
     """
-    # hub name filtering is optional
-    if hub_name and adv.local_name != hub_name:
-        return False
-
     # LEGO firmware uses manufacturer-specific data
 
     lego_data = adv.manufacturer_data.get(LEGO_CID)
@@ -222,9 +214,7 @@ async def reboot_pybricks_to_bootloader(hub_kind: HubKind, device: BLEDevice) ->
         await download_and_run(client, REBOOT_SCRIPT)
 
 
-async def flash_ble(
-    hub_kind: HubKind, hub_name: Optional[str], firmware: bytes, metadata: dict
-):
+async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
     """
     Flashes firmware to the hub using Bluetooth Low Energy.
 
@@ -233,18 +223,17 @@ async def flash_ble(
 
     Args:
         hub_kind: The hub type ID. Only hubs matching this ID will be discovered.
-        hub_name: If given, only hubs that advertise this name will be disovered.
         firmware: The raw firmware binary blob.
         metadata: The firmware metadata from the firmware.zip file.
     """
 
-    print(f"Searching for {repr(hub_name) if hub_name else hub_kind.name} hub...")
+    print(f"Searching for {hub_kind.name} hub...")
 
     # scan for hubs in bootloader mode, running official LEGO firmware or
     # running Pybricks firmware
 
     device = await BleakScanner.find_device_by_filter(
-        lambda _d, a: match_hub(hub_kind, hub_name, a),
+        lambda _d, a: match_hub(hub_kind, a),
         service_uuids=[
             LWP3_BOOTLOADER_SERVICE_UUID,
             LWP3_HUB_SERVICE_UUID,
@@ -267,7 +256,7 @@ async def flash_ble(
     # if not previously in bootlaoder mode, scan again, this time only for bootloader
     if LWP3_BOOTLOADER_SERVICE_UUID not in device.metadata["uuids"]:
         device = await BleakScanner.find_device_by_filter(
-            lambda _d, a: match_hub(hub_kind, hub_name, a),
+            lambda _d, a: match_hub(hub_kind, a),
             service_uuids=[
                 LWP3_BOOTLOADER_SERVICE_UUID,
             ],
@@ -284,18 +273,18 @@ async def flash_ble(
     await updater.flash(firmware, metadata)
 
 
-async def flash_firmware(firmware_zip: BinaryIO, hub_name: Optional[str]) -> None:
+async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> None:
     """
     Command line tool for flasing firmware.
 
     Args:
         firmware_zip: The path to the ``firmware.zip`` file.
-        hub_name: Optional custom hub name.
+        new_name: Optional custom hub name to be applied to the firmware image.
     """
 
     print("Creating firmware...")
 
-    firmware, metadata = await create_firmware(firmware_zip, hub_name)
+    firmware, metadata = await create_firmware(firmware_zip, new_name)
     hub_kind = HubKind(metadata["device-id"])
 
     if hub_kind in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
@@ -331,4 +320,4 @@ async def flash_firmware(firmware_zip: BinaryIO, hub_name: Optional[str]) -> Non
             print("Could not find hub in standard firmware mode. Trying DFU.")
             flash_dfu(firmware, metadata)
     else:
-        await flash_ble(hub_kind, hub_name, firmware, metadata)
+        await flash_ble(hub_kind, firmware, metadata)

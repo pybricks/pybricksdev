@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.23] - 2022-01-17
+
+### Fixed
+- Fixed ``pybricksdev flash`` command with ``--name`` argument not connecting.
+
 ## [1.0.0-alpha.22] - 2022-01-17
 
 ### Added
@@ -198,7 +203,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.22..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.23..HEAD
+[1.0.0-alpha.23]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.22...v1.0.0-alpha.23
 [1.0.0-alpha.22]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.21...v1.0.0-alpha.22
 [1.0.0-alpha.21]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.20...v1.0.0-alpha.21
 [1.0.0-alpha.20]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.19...v1.0.0-alpha.20
