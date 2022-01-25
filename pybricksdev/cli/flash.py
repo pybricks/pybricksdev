@@ -295,7 +295,7 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
             await hub.reset_hub()
 
             # Upload installation script.
-            archive = zipfile.ZipFile(firmware)
+            archive = zipfile.ZipFile(firmware_zip)
             await hub.exec_line("import uos; uos.mkdir('_firmware')")
             await hub.upload_file(
                 "_firmware/install_pybricks.py",

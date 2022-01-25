@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed regression causing crash when attempting to flash SPIKE firmware ([support#617]).
+
+[support#617]: https://github.com/pybricks/support/issues/617
+
 ## [1.0.0-alpha.23] - 2022-01-17
 
 ### Fixed
