@@ -163,8 +163,8 @@ class PybricksHub:
         # indicates when a valid checksum was received
         self.checksum_ready = asyncio.Event()
 
-        # indicates is we are currently downloading a program
-        self.loading = False
+        # indicates that the user program is loaded
+        self.program_loaded = False
         # indicates that the user program is running
         self.program_running = False
         # used to notify when the user program has ended
@@ -222,7 +222,7 @@ class PybricksHub:
         if self.print_output:
             print(line.decode())
 
-    def nus_handler(self, sender, data):
+    def __nus_handler(self, sender, data):
         # If we are currently expecting a checksum, validate it and notify the waiter
         if self.expected_checksum != -1:
             checksum = data[0]
@@ -256,22 +256,34 @@ class PybricksHub:
         for line in lines:
             self.line_handler(line)
 
-    def pybricks_service_handler(self, _: int, data: bytes) -> None:
+    def __pybricks_service_handler(self, _: int, data: bytes) -> None:
         if data[0] == Event.STATUS_REPORT:
-            # decode the payload
-            (flags,) = struct.unpack("<I", data[1:])
-            program_running_now = bool(flags & Status.USER_PROGRAM_RUNNING.flag)
-
             # If we are currently downloading a program, we must ignore user
             # program running state changes, otherwise the checksum will be
             # sent to the terminal instead of being handled by the download
             # algorithm
-            if not self.loading:
-                if self.program_running != program_running_now:
-                    logger.info(f"Program running: {program_running_now}")
-                    self.program_running = program_running_now
-                if not program_running_now:
-                    self.user_program_stopped.set()
+            if self.program_loaded:
+                self.__handle_program_state_changes(data)
+
+    def __handle_program_state_changes(self, data: bytes) -> None:
+        old_program_state = self.program_running
+
+        # Decode the payload
+        (flags,) = struct.unpack("<I", data[1:])
+        new_program_state = bool(flags & Status.USER_PROGRAM_RUNNING.flag)
+
+        # Program state has changed
+        if old_program_state != new_program_state:
+            logger.info(
+                f"Program state has changed to {'running' if new_program_state else 'stopped'}"
+            )
+            self.program_running = new_program_state
+
+        # Program state changed from running to stopped.
+        # Avoids terminating pybricksdev when the program was loaded but is not running yet.
+        if old_program_state and not new_program_state:
+            logger.info("Program stopped flag was set")
+            self.user_program_stopped.set()
 
     async def connect(self, device: BLEDevice):
         """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
@@ -308,9 +320,9 @@ class PybricksHub:
             pnp_id = await self.client.read_gatt_char(PNP_ID_UUID)
             _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
 
-            await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
+            await self.client.start_notify(NUS_TX_UUID, self.__nus_handler)
             await self.client.start_notify(
-                PYBRICKS_CONTROL_UUID, self.pybricks_service_handler
+                PYBRICKS_CONTROL_UUID, self.__pybricks_service_handler
             )
             self.connected = True
         except:  # noqa: E722
@@ -324,7 +336,7 @@ class PybricksHub:
         else:
             logger.debug("already disconnected")
 
-    async def send_block(self, data):
+    async def __send_block(self, data):
         self.checksum_ready.clear()
         self.expected_checksum = xor_bytes(data, 0)
         try:
@@ -348,7 +360,6 @@ class PybricksHub:
         await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
 
     async def run(self, py_path, wait=True, print_output=True):
-
         # Reset output buffer
         self.log_file = None
         self.output = []
@@ -358,27 +369,29 @@ class PybricksHub:
         self.script_dir, _ = os.path.split(py_path)
         mpy = await compile_file(py_path)
 
-        try:
-            self.loading = True
-            self.user_program_stopped.clear()
-
-            # Get length of file and send it as bytes to hub
-            length = len(mpy).to_bytes(4, byteorder="little")
-            await self.send_block(length)
-
-            # Send the data chunk by chunk
-            with logging_redirect_tqdm(), tqdm(
-                total=len(mpy), unit="B", unit_scale=True
-            ) as pbar:
-                for c in chunk(mpy, 100):
-                    await self.send_block(c)
-                    pbar.update(len(c))
-        finally:
-            self.loading = False
+        await self.__load_program(mpy)
 
         if wait:
             await self.user_program_stopped.wait()
             await asyncio.sleep(0.3)
+
+    async def __load_program(self, mpy):
+        self.program_loaded = False
+        self.user_program_stopped.clear()
+
+        # Get length of file and send it as bytes to hub
+        length = len(mpy).to_bytes(4, byteorder="little")
+        await self.__send_block(length)
+
+        # Send the data chunk by chunk
+        with logging_redirect_tqdm(), tqdm(
+            total=len(mpy), unit="B", unit_scale=True
+        ) as pbar:
+            for c in chunk(mpy, 100):
+                await self.__send_block(c)
+                pbar.update(len(c))
+
+        self.program_loaded = True
 
 
 FILE_PACKET_SIZE = 1024

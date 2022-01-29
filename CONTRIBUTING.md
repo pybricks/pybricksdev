@@ -53,3 +53,8 @@ file in the project when you select the interpreter.
 For instance, if you want the installed `pybricksdev` to use code from the `develop` branch of the `bleak` package.
 
     pipx inject pybricksdev https://github.com/hbldh/bleak/archive/refs/heads/develop.zip
+                   
+### Make sure the code style and formatting are correct
+
+    poetry run flake8 --show-source
+    poetry run black .
