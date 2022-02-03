@@ -93,22 +93,11 @@ For additional info, run `pybricksdev --help`.
 
 ### Flashing Pybricks MicroPython firmware
 
-Make sure the hub is off. Press and keep holding the hub button, and run:
+Turn on the hub, and run:
 
     pybricksdev flash <firmware.zip>
 
 Replace `<firmware.zip>` with the actual path to the firmware archive.
-
-You may release the button once the progress bar first appears. 
-
-The SPIKE Prime Hub and MINDSTORMS Robot Inventor Hub do not have a Bluetooth
-bootloader. It is recommended to [install Pybricks using a Python script][issue-167] that
-runs on the hub. You can also flash the firmware manually using [DFU](dfu).
-
-
-[dfu]: ./README_dfu.rst
-[issue-167]: https://github.com/pybricks/support/issues/167
-
 
 ### Running Pybricks MicroPython programs
 
