@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021 The Pybricks Authors
+# Copyright (c) 2021-2022 The Pybricks Authors
 
 import asyncio
 import logging
@@ -14,6 +14,7 @@ from serial.tools import list_ports
 from serial import Serial
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
+from rx.subject import Subject
 
 from .ble.lwp3.bytecodes import HubKind
 from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
@@ -151,17 +152,13 @@ class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
+        self.nus_observable = Subject()
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
 
         # indicates that the hub is currently connected via BLE
         self.connected = False
-
-        # stores the next expected checksum or -1 when not expecting a checksum
-        self.expected_checksum = -1
-        # indicates when a valid checksum was received
-        self.checksum_ready = asyncio.Event()
 
         # indicates is we are currently downloading a program
         self.loading = False
@@ -223,22 +220,12 @@ class PybricksHub:
             print(line.decode())
 
     def nus_handler(self, sender, data):
-        # If we are currently expecting a checksum, validate it and notify the waiter
-        if self.expected_checksum != -1:
-            checksum = data[0]
-            if checksum != self.expected_checksum:
-                raise RuntimeError(
-                    f"Expected checksum {self.expected_checksum} but got {checksum}"
-                )
-
-            self.expected_checksum = -1
-            self.checksum_ready.set()
-            logger.debug(f"Correct checksum: {checksum}")
-            return
+        self.nus_observable.on_next(data)
 
         # Store incoming data
-        self.stream_buf += data
-        logger.debug("NUS DATA: {0}".format(data))
+        if not self.loading:
+            self.stream_buf += data
+            logger.debug("NUS DATA: {0}".format(data))
 
         # Break up data into lines and take those out of the buffer
         lines = []
@@ -324,26 +311,6 @@ class PybricksHub:
         else:
             logger.debug("already disconnected")
 
-    async def send_block(self, data):
-        self.checksum_ready.clear()
-        self.expected_checksum = xor_bytes(data, 0)
-        try:
-            if self.hub_kind == HubKind.BOOST:
-                # BOOST Move hub has fixed MTU of 23 so we can only send 20
-                # bytes at a time
-                for i in range(0, len(data), 20):
-                    await self.client.write_gatt_char(
-                        NUS_RX_UUID, data[i : i + 20], False
-                    )
-            else:
-                await self.client.write_gatt_char(NUS_RX_UUID, data, False)
-            await asyncio.wait_for(self.checksum_ready.wait(), timeout=0.5)
-        except:  # noqa: E722
-            # normally self.expected_checksum = -1 will be called in nus_handler()
-            # but if we timeout or something like that, we need to reset it here
-            self.expected_checksum = -1
-            raise
-
     async def write(self, data, with_response=False):
         await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
 
@@ -362,18 +329,51 @@ class PybricksHub:
             self.loading = True
             self.user_program_stopped.clear()
 
+            queue = asyncio.Queue()
+            subscription = self.nus_observable.subscribe(
+                lambda data: queue.put_nowait(data)
+            )
+
+            async def send_block(data: bytes) -> None:
+                """
+                In order to prevent sending data to the hub faster than it can
+                be processed, it is sent in blocks of 100 bytes or less. Then
+                we wait for the hub to send a checksum to acknowledge that it
+                has processed the data.
+
+                Args:
+                    data: The data to send (100 bytes or less).
+                """
+                if self.hub_kind == HubKind.BOOST:
+                    # BOOST Move hub has fixed MTU of 23 so we can only send 20
+                    # bytes at a time
+                    for c in chunk(data, 20):
+                        await self.client.write_gatt_char(NUS_RX_UUID, c, False)
+                else:
+                    await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+
+                msg: bytes = await asyncio.wait_for(queue.get(), timeout=0.5)
+                actual_checksum = msg[0]
+                expected_checksum = xor_bytes(data, 0)
+
+                if actual_checksum != expected_checksum:
+                    raise RuntimeError(
+                        f"bad checksum: expecting {hex(expected_checksum)} but received {hex(actual_checksum)}"
+                    )
+
             # Get length of file and send it as bytes to hub
             length = len(mpy).to_bytes(4, byteorder="little")
-            await self.send_block(length)
+            await send_block(length)
 
             # Send the data chunk by chunk
             with logging_redirect_tqdm(), tqdm(
                 total=len(mpy), unit="B", unit_scale=True
             ) as pbar:
                 for c in chunk(mpy, 100):
-                    await self.send_block(c)
+                    await send_block(c)
                     pbar.update(len(c))
         finally:
+            subscription.dispose()
             self.loading = False
 
         if wait:
