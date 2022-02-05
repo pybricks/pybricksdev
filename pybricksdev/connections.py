@@ -378,6 +378,10 @@ class PybricksHub:
 
         if wait:
             await self.user_program_stopped.wait()
+            # sleep is a hack to receive all output from user program since
+            # the firmware currently doesn't flush the buffer before clearing
+            # the user program running status flag
+            # https://github.com/pybricks/support/issues/305
             await asyncio.sleep(0.3)
 
 
