@@ -16,7 +16,7 @@ the Device Information Service to determine the Pybricks protocol version. This
 version can be used to determine the capabilities of the device.
 """
 
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 from struct import unpack
 from typing import Literal, Tuple
 
@@ -72,64 +72,56 @@ class Event(IntEnum):
     """
 
 
-class Status(IntEnum):
-    """Hub status indicators.
+class StatusFlag(IntFlag):
+    """Hub status indicators."""
 
-    Use the :attr:`flag` property to get the value as a bit flag.
-    """
-
-    BATTERY_LOW_VOLTAGE_WARNING = 0
+    BATTERY_LOW_VOLTAGE_WARNING = 1 << 0
     """Battery voltage is low.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    BATTERY_LOW_VOLTAGE_SHUTDOWN = 1
+    BATTERY_LOW_VOLTAGE_SHUTDOWN = 1 << 1
     """Battery voltage is critically low.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    BATTERY_HIGH_CURRENT = 2
+    BATTERY_HIGH_CURRENT = 1 << 2
     """Battery current is too high.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    BLE_ADVERTISING = 3
+    BLE_ADVERTISING = 1 << 3
     """Bluetooth Low Energy is advertising/discoverable.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    BLE_LOW_SIGNAL = 4
+    BLE_LOW_SIGNAL = 1 << 4
     """Bluetooth Low Energy has low signal.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    POWER_BUTTON_PRESSED = 5
+    POWER_BUTTON_PRESSED = 1 << 5
     """Power button is currently pressed.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    USER_PROGRAM_RUNNING = 6
+    USER_PROGRAM_RUNNING = 1 << 6
     """User program is currently running.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
 
-    SHUTDOWN = 7
+    SHUTDOWN = 1 << 7
     """Hub shutdown was requested.
 
     .. availability:: Since Pybricks protocol v1.1.0.
     """
-
-    @property
-    def flag(self) -> int:
-        """Gets the value of the enum as a bit flag."""
-        return 1 << self.value
 
 
 # The Pybricks Protocol version also implies certain other services and

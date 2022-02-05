@@ -24,7 +24,7 @@ from .ble.pybricks import (
     SW_REV_UUID,
     PNP_ID_UUID,
     Event,
-    Status,
+    StatusFlag,
     unpack_pnp_id,
 )
 from .compile import compile_file
@@ -247,7 +247,7 @@ class PybricksHub:
         if data[0] == Event.STATUS_REPORT:
             # decode the payload
             (flags,) = struct.unpack("<I", data[1:])
-            program_running_now = bool(flags & Status.USER_PROGRAM_RUNNING.flag)
+            program_running_now = bool(flags & StatusFlag.USER_PROGRAM_RUNNING)
 
             # If we are currently downloading a program, we must ignore user
             # program running state changes, otherwise the checksum will be
