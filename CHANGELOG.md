@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+- Fixed race condition with `pybricksdev run ble` not waiting for program to
+  finish before disconnecting ([pybricksdev#28]).
+
+[pybricksdev#28]: https://github.com/pybricks/pybricksdev/issues/28
+
 ## [1.0.0-alpha.24] - 2022-01-25
 
 ### Fixed

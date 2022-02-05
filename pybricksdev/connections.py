@@ -8,13 +8,14 @@ import struct
 
 import asyncssh
 import semver
+import rx.operators as op
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from serial.tools import list_ports
 from serial import Serial
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from rx.subject import Subject
+from rx.subject import Subject, BehaviorSubject
 
 from .ble.lwp3.bytecodes import HubKind
 from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
@@ -152,6 +153,7 @@ class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
+        self.status_observable = BehaviorSubject(StatusFlag(0))
         self.nus_observable = Subject()
         self.stream_buf = bytearray()
         self.output = []
@@ -162,10 +164,6 @@ class PybricksHub:
 
         # indicates is we are currently downloading a program
         self.loading = False
-        # indicates that the user program is running
-        self.program_running = False
-        # used to notify when the user program has ended
-        self.user_program_stopped = asyncio.Event()
 
         self.hub_kind: HubKind
         self.hub_variant: int
@@ -246,19 +244,8 @@ class PybricksHub:
     def pybricks_service_handler(self, _: int, data: bytes) -> None:
         if data[0] == Event.STATUS_REPORT:
             # decode the payload
-            (flags,) = struct.unpack("<I", data[1:])
-            program_running_now = bool(flags & StatusFlag.USER_PROGRAM_RUNNING)
-
-            # If we are currently downloading a program, we must ignore user
-            # program running state changes, otherwise the checksum will be
-            # sent to the terminal instead of being handled by the download
-            # algorithm
-            if not self.loading:
-                if self.program_running != program_running_now:
-                    logger.info(f"Program running: {program_running_now}")
-                    self.program_running = program_running_now
-                if not program_running_now:
-                    self.user_program_stopped.set()
+            (flags,) = struct.unpack_from("<I", data, 1)
+            self.status_observable.on_next(StatusFlag(flags))
 
     async def connect(self, device: BLEDevice):
         """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
@@ -327,7 +314,6 @@ class PybricksHub:
 
         try:
             self.loading = True
-            self.user_program_stopped.clear()
 
             queue = asyncio.Queue()
             subscription = self.nus_observable.subscribe(
@@ -377,12 +363,41 @@ class PybricksHub:
             self.loading = False
 
         if wait:
-            await self.user_program_stopped.wait()
-            # sleep is a hack to receive all output from user program since
-            # the firmware currently doesn't flush the buffer before clearing
-            # the user program running status flag
-            # https://github.com/pybricks/support/issues/305
-            await asyncio.sleep(0.3)
+            user_program_running = asyncio.Queue()
+
+            with self.status_observable.pipe(
+                op.map(lambda s: s & StatusFlag.USER_PROGRAM_RUNNING),
+                op.distinct_until_changed(),
+            ).subscribe(lambda s: user_program_running.put_nowait(s)):
+
+                # The first item in the queue is the current status. The status
+                # could change before or after the last checksum is received,
+                # so this could be truthy or falsy.
+                is_running = await user_program_running.get()
+
+                if not is_running:
+                    # if the program has not already started, wait a short time
+                    # for it to start
+                    try:
+                        await asyncio.wait_for(user_program_running.get(), 0.2)
+                    except asyncio.TimeoutError:
+                        # if it doesn't start, assume it was a very short lived
+                        # program and we just missed the status message
+                        return
+
+                # At this point, we know the user program is running, so the
+                # next item in the queue must indicate that the user program
+                # has stopped.
+                is_running = await user_program_running.get()
+
+                # maybe catch mistake if the code is changed
+                assert not is_running
+
+                # sleep is a hack to receive all output from user program since
+                # the firmware currently doesn't flush the buffer before clearing
+                # the user program running status flag
+                # https://github.com/pybricks/support/issues/305
+                await asyncio.sleep(0.3)
 
 
 FILE_PACKET_SIZE = 1024
