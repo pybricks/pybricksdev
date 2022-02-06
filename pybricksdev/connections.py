@@ -5,6 +5,7 @@ import asyncio
 import logging
 import os
 import struct
+from typing import Awaitable, TypeVar
 
 import asyncssh
 import semver
@@ -15,7 +16,7 @@ from serial.tools import list_ports
 from serial import Serial
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from rx.subject import Subject, BehaviorSubject
+from rx.subject import Subject, BehaviorSubject, AsyncSubject
 
 from .ble.lwp3.bytecodes import HubKind
 from .ble.nus import NUS_RX_UUID, NUS_TX_UUID
@@ -33,6 +34,8 @@ from .tools import chunk
 from .tools.checksum import xor_bytes
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 class EV3Connection:
@@ -153,6 +156,7 @@ class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
     def __init__(self):
+        self.disconnect_observable = AsyncSubject()
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self.nus_observable = Subject()
         self.stream_buf = bytearray()
@@ -258,14 +262,18 @@ class PybricksHub:
                 Information Service)
             RuntimeError: if Pybricks Protocol version is not supported
         """
-        logger.info(f"Connecting to {device.address}")
-        self.client = BleakClient(device)
+        logger.info(f"Connecting to {device.name}")
 
-        def disconnected_handler(self, _: BleakClient):
+        def handle_disconnect(client: BleakClient):
             logger.info("Disconnected!")
+            self.disconnect_observable.on_next(True)
+            self.disconnect_observable.on_completed()
             self.connected = False
 
-        await self.client.connect(disconnected_callback=disconnected_handler)
+        self.client = BleakClient(device, disconnected_callback=handle_disconnect)
+
+        await self.client.connect()
+
         try:
             logger.info("Connected successfully!")
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
@@ -298,6 +306,45 @@ class PybricksHub:
         else:
             logger.debug("already disconnected")
 
+    async def race_disconnect(self, awaitable: Awaitable[T]) -> T:
+        """
+        Races an awaitable against a disconnect event.
+
+        If a disconnect event occurs before the awaitable is complete, a
+        ``RuntimeError`` is raised and the awaitable is canceled.
+
+        Otherwise, the result of the awaitable is returned. If the awaitable
+        raises an exception, that exception will be raised.
+
+        Args:
+            awaitable: Any awaitable such as a coroutine.
+
+        Returns:
+            The result of the awaitable.
+
+        Raises:
+            RuntimeError:
+                Thrown if the hub is disconnected before the awaitable completed.
+        """
+        awaitable_task = asyncio.ensure_future(awaitable)
+
+        disconnect_event = asyncio.Event()
+        disconnect_task = asyncio.ensure_future(disconnect_event.wait())
+
+        with self.disconnect_observable.subscribe(lambda _: disconnect_event.set()):
+            done, pending = await asyncio.wait(
+                {awaitable_task, disconnect_task},
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+
+            for t in pending:
+                t.cancel()
+
+            if awaitable_task not in done:
+                raise RuntimeError("disconnected during operation")
+
+            return awaitable_task.result()
+
     async def write(self, data, with_response=False):
         await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
 
@@ -315,7 +362,7 @@ class PybricksHub:
         try:
             self.loading = True
 
-            queue = asyncio.Queue()
+            queue: asyncio.Queue[bytes] = asyncio.Queue()
             subscription = self.nus_observable.subscribe(
                 lambda data: queue.put_nowait(data)
             )
@@ -338,7 +385,9 @@ class PybricksHub:
                 else:
                     await self.client.write_gatt_char(NUS_RX_UUID, data, False)
 
-                msg: bytes = await asyncio.wait_for(queue.get(), timeout=0.5)
+                msg = await asyncio.wait_for(
+                    self.race_disconnect(queue.get()), timeout=0.5
+                )
                 actual_checksum = msg[0]
                 expected_checksum = xor_bytes(data, 0)
 
@@ -363,23 +412,25 @@ class PybricksHub:
             self.loading = False
 
         if wait:
-            user_program_running = asyncio.Queue()
+            user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
             with self.status_observable.pipe(
-                op.map(lambda s: s & StatusFlag.USER_PROGRAM_RUNNING),
+                op.map(lambda s: bool(s & StatusFlag.USER_PROGRAM_RUNNING)),
                 op.distinct_until_changed(),
             ).subscribe(lambda s: user_program_running.put_nowait(s)):
 
                 # The first item in the queue is the current status. The status
                 # could change before or after the last checksum is received,
-                # so this could be truthy or falsy.
-                is_running = await user_program_running.get()
+                # so this could be either true or false.
+                is_running = await self.race_disconnect(user_program_running.get())
 
                 if not is_running:
                     # if the program has not already started, wait a short time
                     # for it to start
                     try:
-                        await asyncio.wait_for(user_program_running.get(), 0.2)
+                        await asyncio.wait_for(
+                            self.race_disconnect(user_program_running.get()), 0.2
+                        )
                     except asyncio.TimeoutError:
                         # if it doesn't start, assume it was a very short lived
                         # program and we just missed the status message
@@ -388,7 +439,7 @@ class PybricksHub:
                 # At this point, we know the user program is running, so the
                 # next item in the queue must indicate that the user program
                 # has stopped.
-                is_running = await user_program_running.get()
+                is_running = await self.race_disconnect(user_program_running.get())
 
                 # maybe catch mistake if the code is changed
                 assert not is_running

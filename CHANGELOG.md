@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Fixed
+### Added
+- Added ``PybricksHub.race_disconnect()`` method.
+
+### Fixed
 - Fixed race condition with `pybricksdev run ble` not waiting for program to
   finish before disconnecting ([pybricksdev#28]).
 
