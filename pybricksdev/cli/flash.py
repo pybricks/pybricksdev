@@ -36,7 +36,7 @@ from ..ble.pybricks import (
     unpack_pnp_id,
 )
 from ..compile import compile_file
-from ..connections import REPLHub
+from ..connections.lego import REPLHub
 from ..dfu import flash_dfu
 from ..flash import BootloaderConnection, create_firmware
 from ..tools import chunk
