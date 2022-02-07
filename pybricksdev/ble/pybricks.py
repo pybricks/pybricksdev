@@ -66,7 +66,7 @@ class Event(IntEnum):
     """Status report.
 
     The payload is a 32-bit little-endian unsigned integer containing
-    :class:`Status` flags.
+    :class:`StatusFlag` flags.
 
     .. availability:: Since Pybricks protocol v1.0.0.
     """
