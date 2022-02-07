@@ -165,7 +165,9 @@ class Run(Tool):
 
     async def run(self, args: argparse.Namespace):
         from ..ble import find_device
-        from ..connections import EV3Connection, PybricksHub, REPLHub
+        from ..connections.ev3dev import EV3Connection
+        from ..connections.lego import REPLHub
+        from ..connections.pybricks import PybricksHub
 
         # Pick the right connection
         if args.conntype == "ssh":

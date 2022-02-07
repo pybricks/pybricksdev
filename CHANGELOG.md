@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added ``PybricksHub.race_disconnect()`` method.
 
+### Changed
+- Moved `EV3Connection` from `connections` to `connections.ev3dev`.
+- Moved `REPLHub` from `connections` to `connections.lego`.
+- Moved `PybricksHub` from `connections` to `connections.pybricks`.
+
 ### Fixed
 - Fixed race condition with `pybricksdev run ble` not waiting for program to
   finish before disconnecting ([pybricksdev#28]).
