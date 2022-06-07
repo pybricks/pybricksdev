@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added typings for firmware metadata json structure.
+  
+### Changed
+- ``main.py`` in ``firmware.zip`` is now optional.
+
+### Removed
+- Removed support for ``firmware.zip`` files with ``firmware.bin`` instead of
+  ``firmware-base.bin``.
+
 ## [1.0.0-alpha.25] - 2022-03-17
 
 ### Added

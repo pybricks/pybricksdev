@@ -22,6 +22,7 @@ from .ble import BLERequestsConnection
 from .ble.lwp3.bootloader import BootloaderCommand
 from .ble.lwp3.bytecodes import HubKind
 from .compile import compile_file, save_script
+from .firmware import ExtendedFirmwareMetadata, AnyFirmwareMetadata
 from .tools.checksum import crc32_checksum, sum_complement
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 async def create_firmware(
     firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
-) -> Tuple[bytes, dict]:
+) -> Tuple[bytes, ExtendedFirmwareMetadata]:
     """Creates a firmware blob from base firmware and main.mpy file.
 
     Arguments:
@@ -39,8 +40,8 @@ async def create_firmware(
             A custom name for the hub.
 
     Returns:
-        bytes: Composite binary blob with correct padding and checksum.
-        dict: Meta data for this firmware file.
+        Composite binary blob with correct padding and checksum and
+        extended metadata for this firmware file.
 
     Raises:
         ValueError:
@@ -50,16 +51,11 @@ async def create_firmware(
     """
 
     archive = zipfile.ZipFile(firmware_zip)
-    metadata = json.load(archive.open("firmware.metadata.json"))
+    metadata: AnyFirmwareMetadata = json.load(archive.open("firmware.metadata.json"))
 
-    # Check if there's a complete firmware already
-    if "firmware.bin" in archive.namelist():
-        # If so, use it as-is, with the final checksum stripped off.
-        # We'll add an updated checksum later on.
-        firmware = bytearray(archive.open("firmware.bin").read()[:-4])
-    else:
-        # Otherwise, we have to take a base firmware and extend it.
-        base = archive.open("firmware-base.bin").read()
+    base = archive.open("firmware-base.bin").read()
+
+    if "main.py" in archive.namelist():
         main_py = io.TextIOWrapper(archive.open("main.py"))
 
         mpy = await compile_file(
@@ -67,17 +63,19 @@ async def create_firmware(
             metadata["mpy-cross-options"],
             metadata["mpy-abi-version"],
         )
+    else:
+        mpy = b""
 
-        # start with base firmware binary blob
-        firmware = bytearray(base)
-        # pad with 0s until user-mpy-offset
-        firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
-        # append 32-bit little-endian main.mpy file size
-        firmware.extend(struct.pack("<I", len(mpy)))
-        # append main.mpy file
-        firmware.extend(mpy)
-        # pad with 0s to align to 4-byte boundary
-        firmware.extend(0 for _ in range(-len(firmware) % 4))
+    # start with base firmware binary blob
+    firmware = bytearray(base)
+    # pad with 0s until user-mpy-offset
+    firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
+    # append 32-bit little-endian main.mpy file size
+    firmware.extend(struct.pack("<I", len(mpy)))
+    # append main.mpy file
+    firmware.extend(mpy)
+    # pad with 0s to align to 4-byte boundary
+    firmware.extend(0 for _ in range(-len(firmware) % 4))
 
     # Update hub name if given
     if name:
@@ -110,7 +108,7 @@ async def create_firmware(
     # Append checksum to the firmware
     firmware.extend(struct.pack("<I", checksum))
 
-    # Update sha256 of updated composite firmware
+    # Add extended metadata needed by install_pybricks.py
     metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
 
     return firmware, metadata
