@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.26] - 2022-06-07
+
 ### Added
 - Added typings for firmware metadata json structure.
   
@@ -236,7 +238,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.25..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.26..HEAD
+[1.0.0-alpha.26]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.25...v1.0.0-alpha.26
 [1.0.0-alpha.25]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.24...v1.0.0-alpha.25
 [1.0.0-alpha.24]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.23...v1.0.0-alpha.24
 [1.0.0-alpha.23]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.22...v1.0.0-alpha.23
