@@ -14,8 +14,10 @@ class FirmwareMetadataV100(
         {
             "metadata-version": Literal["1.0.0"],
             "firmware-version": str,
-            "device-id": Literal[0x40] | Literal[0x41] | Literal[0x80] | Literal[0x81],
-            "checksum-type": Literal["sum"] | Literal["crc32"],
+            "device-id": Union[
+                Literal[0x40], Literal[0x41], Literal[0x80], Literal[0x81]
+            ],
+            "checksum-type": Union[Literal["sum"], Literal["crc32"]],
             "mpy-abi-version": int,
             "mpy-cross-options": list[str],
             "user-mpy-offset": int,
