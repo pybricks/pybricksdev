@@ -5,7 +5,7 @@
 Utilities for working with Pybricks ``firmware.zip`` files.
 """
 
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Union
 
 
 class FirmwareMetadataV100(
@@ -46,7 +46,7 @@ class FirmwareMetadataV110(
     """
 
 
-AnyFirmwareMetadata = FirmwareMetadataV100 | FirmwareMetadataV110
+AnyFirmwareMetadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
 """
 Type for data contained in ``firmware.metadata.json`` files of any version.
 """

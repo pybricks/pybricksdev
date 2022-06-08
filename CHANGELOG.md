@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fix syntax error on Python < 3.10 in `firmware` module.
+
 ## [1.0.0-alpha.26] - 2022-06-07
 
 ### Added
