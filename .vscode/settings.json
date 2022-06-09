@@ -1,4 +1,5 @@
 {
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "restructuredtext.confPath": "",
     "python.formatting.provider": "black",
     "python.linting.pylintEnabled": false,

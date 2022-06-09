@@ -46,9 +46,7 @@ import sys
 import struct
 from collections import namedtuple
 
-sys.path.append(sys.path[0] + "/../py")
-import makeqstrdata as qstrutil
-
+import pybricksdev._makeqstrdata as qstrutil
 
 class FreezeError(Exception):
     def __init__(self, rawcode, msg):

@@ -4,10 +4,14 @@
 import asyncio
 import logging
 import os
+import re
+
 from pathlib import Path
 from subprocess import Popen, PIPE
 
 import mpy_cross
+
+from ._mpy_tool import merge_mpy, read_mpy, config
 
 from .tools import chunk
 
@@ -101,12 +105,55 @@ async def compile_file(path, compile_args=["-mno-unicode"], mpy_version=5):
     # Make the build directory
     make_build_dir()
 
-    # Cross-compile Python file to .mpy and raise errors if any
-    mpy_path = os.path.join(BUILD_DIR, Path(path).stem + ".mpy")
-    await run_mpy_cross([path] + compile_args + ["-o", mpy_path])
+    # Location of script after parsing
+    source_dir = Path(path).parent
+    build_dir = Path(BUILD_DIR)
+    parsed_path = build_dir / Path(path).name
+
+    # Parse input file to detect matching import statements
+    imported_modules = []
+    with open(Path(path)) as source, open(parsed_path, "w") as parsed:
+        for line in source:
+
+            # Scan for imports
+            module_found = None
+            if result := re.search("from (.*) import (.*)", line):
+                module = result.group(1)
+                if module != "pybricks" and not module.startswith("pybricks."):
+                    module_found = module
+
+            # Handle detected import.
+            if module_found:
+                # Replace with empty line to preserve line numbers.
+                imported_modules.append(module_found)
+                parsed.write("\n")
+            else:
+                # Don't modify other lines.
+                parsed.write(line)
+
+    # Cross-compile dependencies to .mpy and raise errors.
+    mpy_paths = []
+    for module in imported_modules:
+        py_path = source_dir / (module + ".py")
+        mpy_paths.append(build_dir / (module + ".mpy"))
+        await run_mpy_cross([py_path] + compile_args + ["-o", mpy_paths[-1]])
+
+    # Cross-compile main script to .mpy and raise errors if any.
+    mpy_paths.append(parsed_path.with_suffix(".mpy"))
+    await run_mpy_cross([parsed_path] + compile_args + ["-o", mpy_paths[-1]])
+
+    # TODO: Get this from from mpy-tool.py instead of hard coding.
+    config.MICROPY_LONGINT_IMPL = 2
+    config.MPZ_DIG_SIZE = 16
+    config.native_arch = 0
+    config.MICROPY_QSTR_BYTES_IN_LEN = 1
+    config.MICROPY_QSTR_BYTES_IN_HASH = 1
+
+    # Use mpy-tool to combine all files, with the main script last.
+    merge_mpy([read_mpy(file) for file in mpy_paths], build_dir / "merged.mpy")
 
     # Read the .mpy file and return as bytes
-    with open(mpy_path, "rb") as mpy:
+    with open(build_dir / "merged.mpy", "rb") as mpy:
         return mpy.read()
 
 
