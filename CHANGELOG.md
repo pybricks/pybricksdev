@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changed
+- Changed dependency from `mpy-cross` to `mpy-cross-v5`.
+
 ### Fixed
 - Fix syntax error on Python < 3.10 in `firmware` module.
 

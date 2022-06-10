@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from subprocess import Popen, PIPE
 
-import mpy_cross
+import mpy_cross_v5
 
 from .tools import chunk
 
@@ -46,7 +46,7 @@ async def run_mpy_cross(args):
     # Run the process asynchronously
     try:
         proc = await asyncio.create_subprocess_exec(
-            mpy_cross.mpy_cross, *args, stdout=PIPE, stderr=PIPE
+            mpy_cross_v5.MPY_CROSS_PATH, *args, stdout=PIPE, stderr=PIPE
         )
 
         # Check the output for compile errors such as syntax errors
@@ -59,7 +59,7 @@ async def run_mpy_cross(args):
         # before 3.8 also used WindowsSelectorEventLoopPolicy() by default, but
         # pybricksdev requires at least Python 3.8, so that shouldn't be a problem.
         logger.debug("calling mpy-cross synchronously")
-        proc = Popen([mpy_cross.mpy_cross, *args], stdout=PIPE, stderr=PIPE)
+        proc = Popen([mpy_cross_v5.MPY_CROSS_PATH, *args], stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
 
     if proc.returncode != 0:
