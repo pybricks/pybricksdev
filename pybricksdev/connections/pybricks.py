@@ -317,6 +317,9 @@ class PybricksHub:
                     except asyncio.TimeoutError:
                         # if it doesn't start, assume it was a very short lived
                         # program and we just missed the status message
+                        logger.debug(
+                            "timed out waiting for user program to start, assuming it was short lived"
+                        )
                         return
 
                 # At this point, we know the user program is running, so the
