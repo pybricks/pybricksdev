@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.27] - 2022-06-21
+
 ## Changed
 - Changed dependency from `mpy-cross` to `mpy-cross-v5`.
 - Increased wait time when waiting for user program to start in `PybricksHub.run()`.
@@ -245,7 +247,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.26..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.27..HEAD
+[1.0.0-alpha.27]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.26...v1.0.0-alpha.27
 [1.0.0-alpha.26]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.25...v1.0.0-alpha.26
 [1.0.0-alpha.25]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.24...v1.0.0-alpha.25
 [1.0.0-alpha.24]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.23...v1.0.0-alpha.24
