@@ -43,7 +43,7 @@ prompt-toolkit = "^3.0.18"
 Rx = "^3.2.0"
 
 [tool.poetry.dev-dependencies]
-black = {version = "^21.5b1", allow-prereleases = true}
+black = "^22.3.0"
 coverage = {extras = ["toml"], version = "^5.5"}
 flake8 = "^3.8.3"
 ipykernel = "^5.3.1"
