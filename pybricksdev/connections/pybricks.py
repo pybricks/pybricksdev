@@ -312,7 +312,7 @@ class PybricksHub:
                     # for it to start
                     try:
                         await asyncio.wait_for(
-                            self.race_disconnect(user_program_running.get()), 0.2
+                            self.race_disconnect(user_program_running.get()), 1
                         )
                     except asyncio.TimeoutError:
                         # if it doesn't start, assume it was a very short lived

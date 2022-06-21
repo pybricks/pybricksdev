@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 - Changed dependency from `mpy-cross` to `mpy-cross-v5`.
+- Increased wait time when waiting for user program to start in `PybricksHub.run()`.
 
 ### Fixed
 - Fix syntax error on Python < 3.10 in `firmware` module.
