@@ -29,38 +29,42 @@ operations from within a Python script.
 
 ### Command Line Tool
 
-We recommend using [pipx] to install `pybricksdev` as a command line tool.
+We recommend using [pipx] to run `pybricksdev` as a command line tool. This
+ensures that you are always running the latest version of `pybricksdev`.
 
 We also highly recommend installing `pipx` using a package manager such as `apt`,
 `brew`, etc. as suggested in the official [pipx installation] instructions.
 
-And don't forget to run `pipx ensurepath` after the initial installation.
-This will make it so that tools installed with `pipx` are in your `PATH`.
-You will need to restart any terminal windows for this to take effect. If that
-doesn't work, try logging out and logging back in.
+Then use `pipx` to run `pybricksdev`:
 
-Then use `pipx` to install `pybricksdev`:
-
-    # POSIX shell (Linux, macOS, Cygwin, etc)
-    PIPX_DEFAULT_PYTHON=python3.8 pipx install pybricksdev
-
-Setting the `PIPX_DEFAULT_PYTHON` environment variable is only needed when
-`pipx` uses a different Python runtime other that Python 3.8. This may be the
-case if your package manager uses a different Python runtime.
+    pipx run pybricksdev ...
 
 [pipx]: https://pipxproject.github.io/pipx/
 [pipx installation]: https://pipxproject.github.io/pipx/installation/
 
+
+If you don't like typing `pipx run ...` all of the time, you can install
+`pybrickdev` with:
+
+    pipx install pybricksdev
+
+Then you can just type:
+
+    pybricksdev run ...
+
+And check for updates with:
+
+    pipx upgrade pybricksdev
+
 #### Windows users
 
 If you are using the *Python Launcher for Windows* (installed by default with
-the official Python installer), then you will need to use `py -3.8` instead
-of `python3.8`.
+the official Python installer), then you will need to use `py -3` instead
+of `python3`.
 
-    py -3.8 -m pip install --upgrade pip # ensure pip is up to date first
-    py -3.8 -m pip install pipx
-    py -3.8 -m pipx ensurepath
-    py -3.8 -m pipx install pybricksdev
+    py -3 -m pip install --upgrade pip # ensure pip is up to date first
+    py -3 -m pip install pipx
+    py -3 -m pipx run pybricksdev ...
 
 #### Linux USB
 
@@ -68,12 +72,12 @@ On Linux, `udev` rules are needed to allow access via USB. The `pybricksdev`
 command line tool contains a function to generate the required rules. Run the
 following:
 
-    pybricksdev udev | sudo tee /etc/udev/rules.d/99-pybricksdev.rules
+    pipx run pybricksdev udev | sudo tee /etc/udev/rules.d/99-pybricksdev.rules
 
 ### Library
 
 To install `pybricksdev` as a library, we highly recommend using a virtual
-environment for your project. Our tool of choice for this is [poetry][poetry]:
+environment for your project. Our tool of choice for this is [poetry]:
 
     poetry env use python3.8
     poetry add pybricksdev
@@ -95,7 +99,7 @@ For additional info, run `pybricksdev --help`.
 
 Turn on the hub, and run:
 
-    pybricksdev flash <firmware.zip>
+    pipx run pybricksdev flash <firmware.zip>
 
 Replace `<firmware.zip>` with the actual path to the firmware archive.
 
@@ -104,34 +108,34 @@ Replace `<firmware.zip>` with the actual path to the firmware archive.
 This compiles a MicroPython script and sends it to a hub with Pybricks
 firmware.
 
-    pybricksdev run --help
+    pipx run pybricksdev run --help
 
     #
     # ble connection examples:
     #
     
     # Run script on any Pybricks device
-    pybricksdev run ble demo/shortdemo.py
+    pipx run pybricksdev run ble demo/shortdemo.py
 
     # Run script on the first device we find called Pybricks hub
-    pybricksdev run ble --name "Pybricks Hub" demo/shortdemo.py
+    pipx run pybricksdev run ble --name "Pybricks Hub" demo/shortdemo.py
 
     # Run script on device with address 90:84:2B:4A:2B:75 (doesn't work on Mac)
-    pybricksdev run ble --name 90:84:2B:4A:2B:75 demo/shortdemo.py
+    pipx run pybricksdev run ble --name 90:84:2B:4A:2B:75 demo/shortdemo.py
            
     #
     # usb connection examples:
     # NOTE: running programs via usb connection works for official LEGO firmwares only
 
     # Run script on any Pybricks device
-    pybricksdev run usb demo/shortdemo.py
+    pipx run pybricksdev run usb demo/shortdemo.py
 
     #
     # Other connection examples:
     #
 
     # Run script on ev3dev at 192.168.0.102
-    pybricksdev run ssh --name 192.168.0.102 demo/shortdemo.py
+    pipx run pybricksdev run ssh --name 192.168.0.102 demo/shortdemo.py
 
 
 ### Compiling Pybricks MicroPython programs without running
@@ -139,9 +143,9 @@ firmware.
 This can be used to compile programs. Instead of also running them as above,
 it just prints the output on the screen instead.
 
-    pybricksdev compile demo/shortdemo.py
+    pipx run pybricksdev compile demo/shortdemo.py
 
-    pybricksdev compile "print('Hello!'); print('world!');"
+    pipx run pybricksdev compile "print('Hello!'); print('world!');"
 
 
 This is mainly intended for developers who want to quickly inspect the
