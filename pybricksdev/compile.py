@@ -27,30 +27,29 @@ def make_build_dir():
         raise FileExistsError("A file named build already exists.")
 
 
-async def compile_file(
-    path: str, compile_args: Optional[List[str]] = None, mpy_version=5
-):
-    """Compiles a Python file with mpy-cross and return as bytes.
+async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = None):
+    """Compiles a Python file with ``mpy-cross``.
 
     Arguments:
         path:
             Path to script that is to be compiled.
+        abi:
+            Expected MPY ABI version.
         compile_args:
-            Extra arguments for mpy-cross.
-        mpy_version (int):
-            Expected mpy ABI version.
+            Extra arguments for ``mpy-cross``.
 
     Returns:
-        bytes: compiled script in mpy format.
+        The compiled script in MPY format.
 
     Raises:
-        RuntimeError with stderr if mpy-cross fails.
-        ValueError if mpy-cross ABI version does not match packaged version.
+        RuntimeError: if there is not a running event loop.
+        ValueError if MPY ABI version is not 5.
+        subprocess.CalledProcessError: if executing the ``mpy-cross` tool failed.
     """
 
     # Get version info
     with open(path, "r") as f:
-        if mpy_version == 5:
+        if abi == 5:
             loop = asyncio.get_running_loop()
 
             proc, mpy = await loop.run_in_executor(

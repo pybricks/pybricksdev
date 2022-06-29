@@ -60,8 +60,8 @@ async def create_firmware(
 
         mpy = await compile_file(
             save_script(main_py.read()),
-            metadata["mpy-cross-options"],
             metadata["mpy-abi-version"],
+            metadata["mpy-cross-options"],
         )
     else:
         mpy = b""

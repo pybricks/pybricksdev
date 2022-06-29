@@ -106,7 +106,7 @@ async def download_and_run(client: BleakClient, script: str) -> None:
         # file has to be closed so mpy-cross can open it
         temp.file.close()
 
-        mpy = await compile_file(temp.name)
+        mpy = await compile_file(temp.name, abi=5)
 
     recv_queue = asyncio.Queue()
 

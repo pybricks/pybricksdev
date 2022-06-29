@@ -108,7 +108,7 @@ class Compile(Tool):
         from ..compile import compile_file, print_mpy
 
         with _get_script_path(args.file) as script_path:
-            mpy = await compile_file(script_path)
+            mpy = await compile_file(script_path, abi=5)
         print_mpy(mpy)
 
 

@@ -17,7 +17,7 @@ async def test_compile_file():
             f.write("print('test')")
             f.close()
 
-            mpy = await compile_file(f.name)
+            mpy = await compile_file(f.name, abi=5)
 
             magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
 
