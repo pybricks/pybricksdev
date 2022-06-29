@@ -12,6 +12,7 @@ from typing import BinaryIO, Optional
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
+from packaging.version import Version
 
 from ..ble.lwp3 import (
     LEGO_CID,
@@ -92,13 +93,14 @@ def match_hub(hub_kind: HubKind, adv: AdvertisementData) -> bool:
     return False
 
 
-async def download_and_run(client: BleakClient, script: str) -> None:
+async def download_and_run(client: BleakClient, script: str, abi: int) -> None:
     """
     Downloads and runs a script on a hub running Pybricks firmware.
 
     Args:
         client: The Bluetooth connection to the hub.
         script: The script to be compiled and run.
+        abi: The MPY ABI version.
     """
     with NamedTemporaryFile("w", suffix=".py") as temp:
         temp.write(script)
@@ -106,7 +108,7 @@ async def download_and_run(client: BleakClient, script: str) -> None:
         # file has to be closed so mpy-cross can open it
         temp.file.close()
 
-        mpy = await compile_file(temp.name, abi=5)
+        mpy = await compile_file(temp.name, abi)
 
     recv_queue = asyncio.Queue()
 
@@ -136,7 +138,9 @@ async def download_and_run(client: BleakClient, script: str) -> None:
         reply: bytes = await asyncio.wait_for(recv_queue.get(), 1)
 
         if reply[0] != checksum:
-            raise RuntimeError("bad checksum")
+            raise RuntimeError(
+                f"bad checksum, expecting {checksum:02X} but received {reply[0]:02X}"
+            )
 
     await client.start_notify(NUS_TX_UUID, on_notify)
 
@@ -211,7 +215,11 @@ async def reboot_pybricks_to_bootloader(hub_kind: HubKind, device: BLEDevice) ->
 
         print("Rebooting in update mode...")
 
-        await download_and_run(client, REBOOT_SCRIPT)
+        # HACK: there isn't a proper way to get the MPY ABI version from hub
+        # so we use heuristics on the firmware version
+        abi = 6 if Version(fw_ver) >= Version("3.2.0b2") else 5
+
+        await download_and_run(client, REBOOT_SCRIPT, abi)
 
 
 async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):

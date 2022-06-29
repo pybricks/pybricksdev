@@ -102,13 +102,21 @@ class Compile(Tool):
             help="path to a MicroPython script or `-` for stdin",
             type=argparse.FileType(),
         )
+        parser.add_argument(
+            "--abi",
+            metavar="<n>",
+            help="the MPY ABI version, one of %(choices)s (default: %(default)s)",
+            default=6,
+            choices=[5, 6],
+            type=int,
+        )
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
         from ..compile import compile_file, print_mpy
 
         with _get_script_path(args.file) as script_path:
-            mpy = await compile_file(script_path, abi=5)
+            mpy = await compile_file(script_path, args.abi)
         print_mpy(mpy)
 
 

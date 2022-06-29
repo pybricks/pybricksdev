@@ -109,6 +109,8 @@ autodoc_mock_imports = [
     "asyncssh",
     "bleak",
     "mpy_cross_v5",
+    "mpy_cross_v6",
+    "packaging",
     "prompt_toolkit",
     "semver",
     "tqdm",

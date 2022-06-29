@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+- Added support for compiling to MPY ABI v6 (MicroPython v1.19+).
+
 ## Changed
 - `abi` arg is now required in `compile.compile_file`.
 

@@ -7,6 +7,7 @@ import os
 from typing import List, Optional
 
 import mpy_cross_v5
+import mpy_cross_v6
 
 from .tools import chunk
 
@@ -43,27 +44,35 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
 
     Raises:
         RuntimeError: if there is not a running event loop.
-        ValueError if MPY ABI version is not 5.
+        ValueError if MPY ABI version is not 5 or 6.
         subprocess.CalledProcessError: if executing the ``mpy-cross` tool failed.
     """
 
     # Get version info
     with open(path, "r") as f:
-        if abi == 5:
-            loop = asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
+        script = f.read()
 
+        if abi == 5:
             proc, mpy = await loop.run_in_executor(
                 None,
                 lambda: mpy_cross_v5.mpy_cross_compile(
-                    path, f.read(), no_unicode=True, extra_args=compile_args
+                    path, script, no_unicode=True, extra_args=compile_args
                 ),
             )
-
-            proc.check_returncode()
-
-            return mpy
+        elif abi == 6:
+            proc, mpy = await loop.run_in_executor(
+                None,
+                lambda: mpy_cross_v6.mpy_cross_compile(
+                    path, script, extra_args=compile_args
+                ),
+            )
         else:
             raise ValueError("mpy_version must be 5")
+
+        proc.check_returncode()
+
+        return mpy
 
 
 def save_script(py_string):
