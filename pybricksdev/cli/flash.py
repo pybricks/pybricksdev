@@ -247,10 +247,10 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
 
     # if not already in bootlaoder mode, we need to reboot into bootloader mode
     if LWP3_HUB_SERVICE_UUID in device.metadata["uuids"]:
-        print("Found hub running official LEGO firmare.")
+        print("Found hub running official LEGO firmware.")
         await reboot_official_to_bootloader(hub_kind, device)
     elif PYBRICKS_SERVICE_UUID in device.metadata["uuids"]:
-        print("Found hub running Pybricks firmare.")
+        print("Found hub running Pybricks firmware.")
         await reboot_pybricks_to_bootloader(hub_kind, device)
 
     # if not previously in bootlaoder mode, scan again, this time only for bootloader
