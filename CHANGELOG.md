@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.28] - 2022-07-04
+
 ## Added
 - Added support for compiling to MPY ABI v6 (MicroPython v1.19+).
 
@@ -253,7 +255,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.27..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.28..HEAD
+[1.0.0-alpha.28]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.27...v1.0.0-alpha.28
 [1.0.0-alpha.27]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.26...v1.0.0-alpha.27
 [1.0.0-alpha.26]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.25...v1.0.0-alpha.26
 [1.0.0-alpha.25]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.24...v1.0.0-alpha.25
