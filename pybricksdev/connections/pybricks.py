@@ -6,11 +6,13 @@ import logging
 import os
 import struct
 from typing import Awaitable, TypeVar
+from pyparsing import Optional
 
 import rx.operators as op
 import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
+from packaging.version import Version
 from rx.subject import Subject, BehaviorSubject, AsyncSubject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -18,6 +20,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 from ..ble.lwp3.bytecodes import HubKind
 from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from ..ble.pybricks import (
+    FW_REV_UUID,
     PYBRICKS_CONTROL_UUID,
     PYBRICKS_PROTOCOL_VERSION,
     SW_REV_UUID,
@@ -38,6 +41,16 @@ T = TypeVar("T")
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
+    fw_version: Optional[Version]
+    """
+    Firmware version of the connected hub or ``None`` if not connected yet.
+    """
+
+    _mpy_abi_version: int
+    """
+    MPY ABI version of the connected hub or ``0`` if not connected yet.
+    """
+
     def __init__(self):
         self.disconnect_observable = AsyncSubject()
         self.status_observable = BehaviorSubject(StatusFlag(0))
@@ -45,6 +58,8 @@ class PybricksHub:
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
+        self.fw_version = None
+        self._mpy_abi_version = 0
 
         # indicates that the hub is currently connected via BLE
         self.connected = False
@@ -159,6 +174,14 @@ class PybricksHub:
 
         try:
             logger.info("Connected successfully!")
+
+            fw_version = await self.client.read_gatt_char(FW_REV_UUID)
+            self.fw_version = Version(fw_version.decode())
+
+            # HACK: there isn't a proper way to get the MPY ABI version from hub
+            # so we use heuristics on the firmware version
+            self._mpy_abi_version = 6 if self.fw_version >= Version("3.2.0b2") else 5
+
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
 
@@ -232,6 +255,8 @@ class PybricksHub:
         await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
 
     async def run(self, py_path, wait=True, print_output=True):
+        if not self.connected:
+            raise RuntimeError("not connected")
 
         # Reset output buffer
         self.log_file = None
@@ -240,7 +265,7 @@ class PybricksHub:
 
         # Compile the script to mpy format
         self.script_dir, _ = os.path.split(py_path)
-        mpy = await compile_file(py_path, abi=6)
+        mpy = await compile_file(py_path, self._mpy_abi_version)
 
         try:
             self.loading = True

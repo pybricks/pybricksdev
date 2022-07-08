@@ -6,9 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `fw_version` attribute to `pybricksdev.connections.pybricks.PybricksHub`.
+
+### Fixed
+- Fixed running programs on hubs with firmware with MPY ABI v5.
+
 ## [1.0.0-alpha.29] - 2022-07-08
 
-## Changed
+### Changed
 - Changed ABI default value to v6 for running programs.
 
 ## [1.0.0-alpha.28] - 2022-07-04
