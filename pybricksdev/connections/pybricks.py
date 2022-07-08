@@ -240,7 +240,7 @@ class PybricksHub:
 
         # Compile the script to mpy format
         self.script_dir, _ = os.path.split(py_path)
-        mpy = await compile_file(py_path, abi=5)
+        mpy = await compile_file(py_path, abi=6)
 
         try:
             self.loading = True
