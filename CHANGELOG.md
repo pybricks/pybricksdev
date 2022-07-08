@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.29] - 2022-07-08
+
+## Changed
+- Changed ABI default value to v6 for running programs.
+
 ## [1.0.0-alpha.28] - 2022-07-04
 
 ## Added
@@ -255,7 +260,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.28..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.29..HEAD
+[1.0.0-alpha.28]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.28...v1.0.0-alpha.29
 [1.0.0-alpha.28]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.27...v1.0.0-alpha.28
 [1.0.0-alpha.27]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.26...v1.0.0-alpha.27
 [1.0.0-alpha.26]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.25...v1.0.0-alpha.26
