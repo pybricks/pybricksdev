@@ -5,15 +5,14 @@ import asyncio
 import logging
 import os
 import struct
-from typing import Awaitable, TypeVar
-from pyparsing import Optional
+from typing import Awaitable, Optional, TypeVar
 
 import rx.operators as op
 import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from packaging.version import Version
-from rx.subject import Subject, BehaviorSubject, AsyncSubject
+from rx.subject import AsyncSubject, BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -21,10 +20,10 @@ from ..ble.lwp3.bytecodes import HubKind
 from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from ..ble.pybricks import (
     FW_REV_UUID,
+    PNP_ID_UUID,
     PYBRICKS_CONTROL_UUID,
     PYBRICKS_PROTOCOL_VERSION,
     SW_REV_UUID,
-    PNP_ID_UUID,
     Event,
     StatusFlag,
     unpack_pnp_id,
