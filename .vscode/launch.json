@@ -13,7 +13,7 @@
             "args": [
                 "run",
                 "ble",
-                "${workspaceFolder}/demo/shortdemo.py"
+                "${workspaceFolder}/demo/multidemo.py"
             ]
         },
         {

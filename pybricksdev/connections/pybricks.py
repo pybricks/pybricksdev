@@ -28,7 +28,7 @@ from ..ble.pybricks import (
     StatusFlag,
     unpack_pnp_id,
 )
-from ..compile import compile_file
+from ..compile import compile_multi_file
 from ..tools import chunk
 from ..tools.checksum import xor_bytes
 
@@ -264,7 +264,7 @@ class PybricksHub:
 
         # Compile the script to mpy format
         self.script_dir, _ = os.path.split(py_path)
-        mpy = await compile_file(py_path, self._mpy_abi_version)
+        mpy = await compile_multi_file(py_path, self._mpy_abi_version)
 
         try:
             self.loading = True
