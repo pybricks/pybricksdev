@@ -4,6 +4,9 @@
 import asyncio
 import logging
 import os
+import re
+
+from pathlib import Path
 from typing import List, Optional
 
 import mpy_cross_v5
@@ -73,6 +76,108 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
         proc.check_returncode()
 
         return mpy
+
+
+async def compile_multi_file(
+    path: str, abi: int, compile_args: Optional[List[str]] = None
+):
+    """Compiles a Python file and its dependencies with ``mpy-cross``.
+
+    All dependencies must be Python modules from the same folder.
+
+    The returned bytes format is of the form:
+
+       - first script size (uint32 little endian)
+       - first script name (no extension, zero terminated string)
+       - first script mpy data
+       - second script size
+       - second script name
+       - second script mpy data
+       - ...
+
+    All components are 0-padded to a size with multiple of 4.
+
+    If the main script does not import any local module, it returns only the
+    first script mpy data (without size and name) for backwards compatibility
+    with older firmware.
+
+    Arguments:
+        path:
+            Path to script that is to be compiled.
+        abi:
+            Expected MPY ABI version.
+        compile_args:
+            Extra arguments for ``mpy-cross``.
+
+    Returns:
+        Concatenation of all compiled files in the format given above.
+
+    Raises:
+        RuntimeError: if there is not a running event loop.
+        ValueError if MPY ABI version is not 5 or 6.
+        subprocess.CalledProcessError: if executing the ``mpy-cross` tool failed.
+    """
+
+    # Make the build directory
+    make_build_dir()
+
+    # Directory where main and dependencies are located
+    source_dir = Path(path).parent
+
+    # Set of all dependencies
+    dependencies = set()
+    not_found = set()
+
+    # Find all dependencies recursively
+    def find_dependencies(module_name):
+        try:
+            with open(source_dir / (module_name + ".py")) as source:
+                # Search non-recursively through current module
+                local_dependencies = set()
+                for line in source:
+                    # from my_module import thing1, thing2 ---> my_module
+                    if result := re.search("from (.*) import (.*)", line):
+                        local_dependencies.add(result.group(1))
+                    # import my_module ---> my_module
+                    elif result := re.search("import (.*)", line):
+                        local_dependencies.add(result.group(1))
+
+                # If each file that wasn't already done, add it and find its
+                # dependencies too.
+                for dep in local_dependencies.difference(dependencies):
+                    if dep not in dependencies:
+                        dependencies.add(dep)
+                        find_dependencies(dep)
+        # Some modules are stored on the hub so we can't find them here.
+        except FileNotFoundError:
+            not_found.add(module_name)
+
+    # Start searching from the top level.
+    main_module = Path(path).stem
+    find_dependencies(main_module)
+
+    # Subtract the (builtin or missing) modules we won't upload.
+    dependencies = dependencies.difference(not_found)
+
+    print("Uploading:", path)
+    # If there are no dependencies, it is an old-style single file script.
+    # For backwards compatibility, upload just the mpy data. Once the new
+    # firmware is stable, we can remove this special case.
+    if not dependencies:
+        return await compile_file(path, abi)
+
+    # Get the total tuple of main programs and module
+    print("Included modules:", dependencies)
+    modules = [main_module] + sorted(tuple(dependencies))
+
+    # Get a data blob with all scripts.
+    blob = bytearray([])
+    for module in modules:
+        name = module.encode() + b"\x00"
+        mpy = await compile_file(source_dir / (module + ".py"), abi)
+        size = len(mpy).to_bytes(4, "little")
+        blob += size + name + mpy
+    return blob
 
 
 def save_script(py_string):
