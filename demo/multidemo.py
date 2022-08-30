@@ -1,7 +1,7 @@
 from pybricks.hubs import ThisHub
 from pybricks.parameters import Color
 from pybricks.tools import wait
-from module2 import nice_color
+from .module2 import nice_color
 
 hub = ThisHub()
 hub.light.on(Color.RED)

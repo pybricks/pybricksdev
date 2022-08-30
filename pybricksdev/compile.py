@@ -83,7 +83,9 @@ async def compile_multi_file(
 ):
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
-    All dependencies must be Python modules from the same folder.
+    On the hub, all dependencies behave as independent modules. Any (leading)
+    dots will be considered to be part of the module name. As such, relative
+    or "package" imports will work, but there is no handling of __init__, etc.
 
     The returned bytes format is of the form:
 
@@ -94,8 +96,6 @@ async def compile_multi_file(
        - second script name
        - second script mpy data
        - ...
-
-    All components are 0-padded to a size with multiple of 4.
 
     If the main script does not import any local module, it returns only the
     first script mpy data (without size and name) for backwards compatibility
@@ -131,7 +131,8 @@ async def compile_multi_file(
     # Find all dependencies recursively
     def find_dependencies(module_name):
         try:
-            with open(source_dir / (module_name + ".py")) as source:
+            path = source_dir / Path(*module_name.split(".")).with_suffix(".py")
+            with open(path) as source:
                 # Search non-recursively through current module
                 local_dependencies = set()
                 for line in source:
@@ -142,8 +143,8 @@ async def compile_multi_file(
                     elif result := re.search("import (.*)", line):
                         local_dependencies.add(result.group(1))
 
-                # If each file that wasn't already done, add it and find its
-                # dependencies too.
+                # Add each file that wasn't already done, and find its
+                # dependencies.
                 for dep in local_dependencies.difference(dependencies):
                     if dep not in dependencies:
                         dependencies.add(dep)
@@ -174,7 +175,9 @@ async def compile_multi_file(
     blob = bytearray([])
     for module in modules:
         name = module.encode() + b"\x00"
-        mpy = await compile_file(source_dir / (module + ".py"), abi)
+        mpy = await compile_file(
+            source_dir / Path(*module.split(".")).with_suffix(".py"), abi
+        )
         size = len(mpy).to_bytes(4, "little")
         blob += size + name + mpy
     return blob
