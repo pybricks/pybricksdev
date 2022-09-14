@@ -70,6 +70,7 @@ nitpick_ignore = [
     ("py:obj", "typing.Union"),
     ("py:class", "os.PathLike"),
     ("py:obj", "typing.BinaryIO"),
+    ("py:class", "BinaryIO"),  # yes, we need both!
 ]
 
 add_module_names = False
