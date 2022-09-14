@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Experimental support for relative and nested imports.
+- Added support for `firmware.metadata.json` v2.0.0.
 
 ## [1.0.0-alpha.30] - 2022-08-26
 

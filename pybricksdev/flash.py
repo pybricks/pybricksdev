@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2021 The Pybricks Authors
+# Copyright (c) 2019-2022 The Pybricks Authors
 
 import asyncio
 import hashlib
@@ -9,7 +9,6 @@ import logging
 import os
 import platform
 import struct
-import sys
 import zipfile
 from collections import namedtuple
 from typing import BinaryIO, Dict, List, Optional, Tuple, Union
@@ -22,37 +21,22 @@ from .ble import BLERequestsConnection
 from .ble.lwp3.bootloader import BootloaderCommand
 from .ble.lwp3.bytecodes import HubKind
 from .compile import compile_file, save_script
-from .firmware import ExtendedFirmwareMetadata, AnyFirmwareMetadata
+from .firmware import (
+    AnyFirmwareV1Metadata,
+    AnyFirmwareV2Metadata,
+    ExtendedFirmwareMetadata,
+    AnyFirmwareMetadata,
+    firmware_metadata_is_v1,
+    firmware_metadata_is_v2,
+)
 from .tools.checksum import crc32_checksum, sum_complement
 
 logger = logging.getLogger(__name__)
 
 
-async def create_firmware(
-    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
-) -> Tuple[bytes, ExtendedFirmwareMetadata]:
-    """Creates a firmware blob from base firmware and main.mpy file.
-
-    Arguments:
-        firmware_zip:
-            Path to the firmware zip file or a file-like object.
-        name:
-            A custom name for the hub.
-
-    Returns:
-        Composite binary blob with correct padding and checksum and
-        extended metadata for this firmware file.
-
-    Raises:
-        ValueError:
-            A name is given but the firmware does not support it or the name
-            exceeds the alloted space in the firmware.
-
-    """
-
-    archive = zipfile.ZipFile(firmware_zip)
-    metadata: AnyFirmwareMetadata = json.load(archive.open("firmware.metadata.json"))
-
+async def _create_firmware_v1(
+    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: Optional[str]
+) -> bytearray:
     base = archive.open("firmware-base.bin").read()
 
     if "main.py" in archive.namelist():
@@ -79,7 +63,6 @@ async def create_firmware(
 
     # Update hub name if given
     if name:
-
         if semver.compare(metadata["metadata-version"], "1.1.0") < 0:
             raise ValueError(
                 "this firmware image does not support setting the hub name"
@@ -88,6 +71,7 @@ async def create_firmware(
         name = name.encode() + b"\0"
 
         max_size = metadata["max-hub-name-size"]
+
         if len(name) > max_size:
             raise ValueError(
                 f"name is too big - must be < {metadata['max-hub-name-size']} UTF-8 bytes"
@@ -102,16 +86,90 @@ async def create_firmware(
     elif metadata["checksum-type"] == "crc32":
         checksum = crc32_checksum(io.BytesIO(firmware), metadata["max-firmware-size"])
     else:
-        print(f'Unknown checksum type "{metadata["checksum-type"]}"', file=sys.stderr)
-        exit(1)
+        raise ValueError(f"unsupported checksum type: {metadata['checksum-type']}")
 
     # Append checksum to the firmware
     firmware.extend(struct.pack("<I", checksum))
 
-    # Add extended metadata needed by install_pybricks.py
-    metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
+    return firmware
 
-    return firmware, metadata
+
+async def _create_firmware_v2(
+    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: Optional[str]
+) -> bytearray:
+    base = archive.open("firmware-base.bin").read()
+
+    # start with base firmware binary blob
+    firmware = bytearray(base)
+
+    # Update hub name if given
+    if name:
+        name = name.encode() + b"\0"
+
+        max_size = metadata["hub-name-size"]
+
+        if len(name) > max_size:
+            raise ValueError(
+                f"name is too big - must be < {metadata['hub-name-size']} UTF-8 bytes"
+            )
+
+        offset = metadata["hub-name-offset"]
+        firmware[offset : offset + len(name)] = name
+
+    # Get checksum for this firmware
+    if metadata["checksum-type"] == "sum":
+        checksum = sum_complement(io.BytesIO(firmware), metadata["checksum-size"])
+    elif metadata["checksum-type"] == "crc32":
+        checksum = crc32_checksum(io.BytesIO(firmware), metadata["checksum-size"])
+    else:
+        raise ValueError(f"unsupported checksum type: {metadata['checksum-type']}")
+
+    # Append checksum to the firmware
+    firmware.extend(struct.pack("<I", checksum))
+
+    return firmware
+
+
+async def create_firmware(
+    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
+) -> Tuple[bytes, ExtendedFirmwareMetadata]:
+    """Creates a firmware blob from base firmware and an optional custom name.
+
+    Arguments:
+        firmware_zip:
+            Path to the firmware zip file or a file-like object.
+        name:
+            A custom name for the hub.
+
+    Returns:
+        Composite binary blob with correct padding and checksum and
+        extended metadata for this firmware file.
+
+    Raises:
+        ValueError:
+            A name is given but the firmware does not support it or the name
+            exceeds the alloted space in the firmware.
+
+    """
+
+    with zipfile.ZipFile(firmware_zip) as archive:
+        metadata: AnyFirmwareMetadata = json.load(
+            archive.open("firmware.metadata.json")
+        )
+
+        if firmware_metadata_is_v1(metadata):
+            firmware = await _create_firmware_v1(metadata, archive, name)
+        elif firmware_metadata_is_v2(metadata):
+            firmware = await _create_firmware_v2(metadata, archive, name)
+        else:
+            raise ValueError(
+                f"unsupported metadata version: {metadata['metadata-version']}"
+            )
+
+        # Add extended metadata needed by install_pybricks.py
+        metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
+
+        return firmware, metadata
 
 
 # NAME, PAYLOAD_SIZE requirement

@@ -1545,7 +1545,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "86758cd62068b29f6fc261f3e01a7694abaf3f009bd61c5e5cd9a82e124820d6"
+content-hash = "814a9395cd980e3dceca5afd590ae19fe888741b98abf30b7f9abc6926c30872"
 
 [metadata.files]
 aioserial = [

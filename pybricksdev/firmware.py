@@ -5,7 +5,13 @@
 Utilities for working with Pybricks ``firmware.zip`` files.
 """
 
+import sys
 from typing import Literal, TypedDict, Union
+
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeGuard
+else:
+    from typing import TypeGuard
 
 
 class FirmwareMetadataV100(
@@ -14,10 +20,8 @@ class FirmwareMetadataV100(
         {
             "metadata-version": Literal["1.0.0"],
             "firmware-version": str,
-            "device-id": Union[
-                Literal[0x40], Literal[0x41], Literal[0x80], Literal[0x81]
-            ],
-            "checksum-type": Union[Literal["sum"], Literal["crc32"]],
+            "device-id": Literal[0x40, 0x41, 0x80, 0x81],
+            "checksum-type": Literal["sum", "crc32"],
             "mpy-abi-version": int,
             "mpy-cross-options": list[str],
             "user-mpy-offset": int,
@@ -48,10 +52,51 @@ class FirmwareMetadataV110(
     """
 
 
-AnyFirmwareMetadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
+class FirmwareMetadataV200(
+    TypedDict(
+        "V200",
+        {
+            "metadata-version": Literal["2.0.0"],
+            "firmware-version": str,
+            "device-id": Literal[0x40, 0x41, 0x80, 0x81, 83],
+            "checksum-type": Literal["sum", "crc32"],
+            "checksum-size": int,
+            "hub-name-offset": int,
+            "hub-name-size": int,
+        },
+    )
+):
+    """
+    Type for data contained in v2.0.0 ``firmware.metadata.json`` files.
+    """
+
+
+AnyFirmwareV1Metadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
+"""
+Type for data contained in ``firmware.metadata.json`` files of any 1.x version.
+"""
+
+AnyFirmwareV2Metadata = FirmwareMetadataV200
+"""
+Type for data contained in ``firmware.metadata.json`` files of any 2.x version.
+"""
+
+AnyFirmwareMetadata = Union[AnyFirmwareV1Metadata, AnyFirmwareV2Metadata]
 """
 Type for data contained in ``firmware.metadata.json`` files of any version.
 """
+
+
+def firmware_metadata_is_v1(
+    metadata: AnyFirmwareMetadata,
+) -> TypeGuard[AnyFirmwareV1Metadata]:
+    return metadata["metadata-version"].startswith("1.")
+
+
+def firmware_metadata_is_v2(
+    metadata: AnyFirmwareMetadata,
+) -> TypeGuard[AnyFirmwareV2Metadata]:
+    return metadata["metadata-version"].startswith("2.")
 
 
 class ExtendedFirmwareMetadata(

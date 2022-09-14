@@ -43,6 +43,7 @@ prompt-toolkit = "^3.0.18"
 Rx = "^3.2.0"
 mpy-cross-v6 = "^1.0.0"
 packaging = "^21.3"
+typing-extensions = "^4.3.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
