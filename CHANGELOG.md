@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.31] - 2022-09-14
+
 ### Added
 - Experimental support for relative and nested imports.
 - Added support for `firmware.metadata.json` v2.0.0.
@@ -277,7 +279,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.30..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31..HEAD
+[1.0.0-alpha.31]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.30...v1.0.0-alpha.31
 [1.0.0-alpha.30]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.29...v1.0.0-alpha.30
 [1.0.0-alpha.29]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.28...v1.0.0-alpha.29
 [1.0.0-alpha.28]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.27...v1.0.0-alpha.28
