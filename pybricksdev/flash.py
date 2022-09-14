@@ -2,7 +2,6 @@
 # Copyright (c) 2019-2022 The Pybricks Authors
 
 import asyncio
-import hashlib
 import io
 import json
 import logging
@@ -24,7 +23,6 @@ from .compile import compile_file, save_script
 from .firmware import (
     AnyFirmwareV1Metadata,
     AnyFirmwareV2Metadata,
-    ExtendedFirmwareMetadata,
     AnyFirmwareMetadata,
     firmware_metadata_is_v1,
     firmware_metadata_is_v2,
@@ -132,7 +130,7 @@ async def _create_firmware_v2(
 
 async def create_firmware(
     firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
-) -> Tuple[bytes, ExtendedFirmwareMetadata]:
+) -> Tuple[bytes, AnyFirmwareMetadata]:
     """Creates a firmware blob from base firmware and an optional custom name.
 
     Arguments:
@@ -142,8 +140,7 @@ async def create_firmware(
             A custom name for the hub.
 
     Returns:
-        Composite binary blob with correct padding and checksum and
-        extended metadata for this firmware file.
+        Tuple of composite binary blob for flashing and the metadata.
 
     Raises:
         ValueError:
@@ -165,9 +162,6 @@ async def create_firmware(
             raise ValueError(
                 f"unsupported metadata version: {metadata['metadata-version']}"
             )
-
-        # Add extended metadata needed by install_pybricks.py
-        metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
 
         return firmware, metadata
 

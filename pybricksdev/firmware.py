@@ -97,17 +97,3 @@ def firmware_metadata_is_v2(
     metadata: AnyFirmwareMetadata,
 ) -> TypeGuard[AnyFirmwareV2Metadata]:
     return metadata["metadata-version"].startswith("2.")
-
-
-class ExtendedFirmwareMetadata(
-    FirmwareMetadataV110, TypedDict("Extended", {"firmware-sha256": str})
-):
-    # NB: Ideally, this should inherit from AnyFirmwareMetadata instead of
-    # FirmwareMetadataV110 but that is not technically possible because being
-    # a Union it has a different meta class from TypedDict
-    """
-    Type for data contained in ``firmware.metadata.json`` files of any version
-    with extended data added.
-
-    The extended data is used by the ``install_pybricks.py`` script.
-    """

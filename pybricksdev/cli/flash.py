@@ -2,6 +2,7 @@
 # Copyright (c) 2019-2022 The Pybricks Authors
 
 import asyncio
+import hashlib
 import json
 import logging
 import sys
@@ -310,10 +311,15 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
                 bytearray(archive.open("install_pybricks.py").read()),
             )
 
+            extended_metadata = metadata.copy()
+
+            # Add extended metadata needed by install_pybricks.py
+            extended_metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
+
             # Upload metadata.
             await hub.upload_file(
                 "_firmware/firmware.metadata.json",
-                json.dumps(metadata, indent=4).encode(),
+                json.dumps(extended_metadata, indent=4).encode(),
             )
 
             # Upload Pybricks firmware
