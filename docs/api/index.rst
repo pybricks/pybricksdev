@@ -7,4 +7,5 @@ API documentation
     :caption: Modules:
  
     ble/index
+    firmware
  

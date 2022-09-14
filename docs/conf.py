@@ -67,6 +67,8 @@ nitpick_ignore = [
     ("py:class", "bleak.backends.device.BLEDevice"),
     ("py:exc", "asyncio.TimeoutError"),
     ("py:class", "bleak.BleakClient"),
+    ("py:obj", "typing.Union"),
+    ("py:class", "os.PathLike"),
 ]
 
 add_module_names = False

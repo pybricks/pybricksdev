@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Experimental support for relative and nested imports.
 - Added support for `firmware.metadata.json` v2.0.0.
 
+### Changed
+- Move/renamed `pybricksdev.flash.create_firmware` to `pybricksdev.firmware.create_firmware_blob`.
+- Changed return value of `pybricksdev.firmware.create_firmware_blob` to include license text.
+
 ## [1.0.0-alpha.30] - 2022-08-26
 
 ### Added

@@ -5,13 +5,24 @@
 Utilities for working with Pybricks ``firmware.zip`` files.
 """
 
+import io
+import json
+import os
+import struct
 import sys
-from typing import Literal, TypedDict, Union
+import zipfile
+from typing import BinaryIO, Literal, Optional, Tuple, TypedDict, Union
+
 
 if sys.version_info < (3, 10):
-    from typing_extensions import TypeGuard
+    from typing_extensions import TypeGuard, TypeAlias
 else:
-    from typing import TypeGuard
+    from typing import TypeGuard, TypeAlias
+
+import semver
+
+from .compile import compile_file, save_script
+from .tools.checksum import crc32_checksum, sum_complement
 
 
 class FirmwareMetadataV100(
@@ -76,7 +87,7 @@ AnyFirmwareV1Metadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
 Type for data contained in ``firmware.metadata.json`` files of any 1.x version.
 """
 
-AnyFirmwareV2Metadata = FirmwareMetadataV200
+AnyFirmwareV2Metadata: TypeAlias = FirmwareMetadataV200
 """
 Type for data contained in ``firmware.metadata.json`` files of any 2.x version.
 """
@@ -87,13 +98,161 @@ Type for data contained in ``firmware.metadata.json`` files of any version.
 """
 
 
-def firmware_metadata_is_v1(
+def _firmware_metadata_is_v1(
     metadata: AnyFirmwareMetadata,
 ) -> TypeGuard[AnyFirmwareV1Metadata]:
     return metadata["metadata-version"].startswith("1.")
 
 
-def firmware_metadata_is_v2(
+def _firmware_metadata_is_v2(
     metadata: AnyFirmwareMetadata,
 ) -> TypeGuard[AnyFirmwareV2Metadata]:
     return metadata["metadata-version"].startswith("2.")
+
+
+async def _create_firmware_v1(
+    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: Optional[str]
+) -> bytearray:
+    base = archive.open("firmware-base.bin").read()
+
+    if "main.py" in archive.namelist():
+        main_py = io.TextIOWrapper(archive.open("main.py"))
+
+        mpy = await compile_file(
+            save_script(main_py.read()),
+            metadata["mpy-abi-version"],
+            metadata["mpy-cross-options"],
+        )
+    else:
+        mpy = b""
+
+    # start with base firmware binary blob
+    firmware = bytearray(base)
+    # pad with 0s until user-mpy-offset
+    firmware.extend(0 for _ in range(metadata["user-mpy-offset"] - len(firmware)))
+    # append 32-bit little-endian main.mpy file size
+    firmware.extend(struct.pack("<I", len(mpy)))
+    # append main.mpy file
+    firmware.extend(mpy)
+    # pad with 0s to align to 4-byte boundary
+    firmware.extend(0 for _ in range(-len(firmware) % 4))
+
+    # Update hub name if given
+    if name:
+        if semver.compare(metadata["metadata-version"], "1.1.0") < 0:
+            raise ValueError(
+                "this firmware image does not support setting the hub name"
+            )
+
+        name = name.encode() + b"\0"
+
+        max_size = metadata["max-hub-name-size"]
+
+        if len(name) > max_size:
+            raise ValueError(
+                f"name is too big - must be < {metadata['max-hub-name-size']} UTF-8 bytes"
+            )
+
+        offset = metadata["hub-name-offset"]
+        firmware[offset : offset + len(name)] = name
+
+    # Get checksum for this firmware
+    if metadata["checksum-type"] == "sum":
+        checksum = sum_complement(io.BytesIO(firmware), metadata["max-firmware-size"])
+    elif metadata["checksum-type"] == "crc32":
+        checksum = crc32_checksum(io.BytesIO(firmware), metadata["max-firmware-size"])
+    else:
+        raise ValueError(f"unsupported checksum type: {metadata['checksum-type']}")
+
+    # Append checksum to the firmware
+    firmware.extend(struct.pack("<I", checksum))
+
+    return firmware
+
+
+async def _create_firmware_v2(
+    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: Optional[str]
+) -> bytearray:
+    base = archive.open("firmware-base.bin").read()
+
+    # start with base firmware binary blob
+    firmware = bytearray(base)
+
+    # Update hub name if given
+    if name:
+        name = name.encode() + b"\0"
+
+        max_size = metadata["hub-name-size"]
+
+        if len(name) > max_size:
+            raise ValueError(
+                f"name is too big - must be < {metadata['hub-name-size']} UTF-8 bytes"
+            )
+
+        offset = metadata["hub-name-offset"]
+        firmware[offset : offset + len(name)] = name
+
+    # Get checksum for this firmware
+    if metadata["checksum-type"] == "sum":
+        checksum = sum_complement(io.BytesIO(firmware), metadata["checksum-size"])
+    elif metadata["checksum-type"] == "crc32":
+        checksum = crc32_checksum(io.BytesIO(firmware), metadata["checksum-size"])
+    else:
+        raise ValueError(f"unsupported checksum type: {metadata['checksum-type']}")
+
+    # Append checksum to the firmware
+    firmware.extend(struct.pack("<I", checksum))
+
+    return firmware
+
+
+async def create_firmware_blob(
+    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
+) -> Tuple[bytes, AnyFirmwareMetadata, str]:
+    """Creates a firmware blob from base firmware and an optional custom name.
+
+    .. note:: The firmware.zip file must contain the following files::
+
+            firmware-base.bin
+            firmware.metadata.json
+            ReadMe_OSS.txt
+
+
+        v1.x also supports an optional ``main.py`` file that is appended to
+        the firmware.
+
+
+    Arguments:
+        firmware_zip:
+            Path to the firmware zip file or a file-like object.
+        name:
+            A custom name for the hub.
+
+    Returns:
+        Tuple of composite binary blob for flashing, the metadata, and the
+        license text.
+
+    Raises:
+        ValueError:
+            A name is given but the firmware does not support it or the name
+            exceeds the alloted space in the firmware.
+
+    """
+
+    with zipfile.ZipFile(firmware_zip) as archive:
+        with archive.open("firmware.metadata.json") as f:
+            metadata: AnyFirmwareMetadata = json.load(f)
+
+        with archive.open("ReadMe_OSS.txt") as f:
+            license = f.read().decode()
+
+        if _firmware_metadata_is_v1(metadata):
+            firmware = await _create_firmware_v1(metadata, archive, name)
+        elif _firmware_metadata_is_v2(metadata):
+            firmware = await _create_firmware_v2(metadata, archive, name)
+        else:
+            raise ValueError(
+                f"unsupported metadata version: {metadata['metadata-version']}"
+            )
+
+        return firmware, metadata, license

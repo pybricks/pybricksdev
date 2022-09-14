@@ -40,7 +40,8 @@ from ..ble.pybricks import (
 from ..compile import compile_file
 from ..connections.lego import REPLHub
 from ..dfu import flash_dfu
-from ..flash import BootloaderConnection, create_firmware
+from ..firmware import create_firmware_blob
+from ..flash import BootloaderConnection
 from ..tools import chunk
 from ..tools.checksum import xor_bytes
 
@@ -293,7 +294,8 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
 
     print("Creating firmware...")
 
-    firmware, metadata = await create_firmware(firmware_zip, new_name)
+    # REVISIT: require accepting license agreement either interactively or by command line option
+    firmware, metadata, license = await create_firmware_blob(firmware_zip, new_name)
     hub_kind = HubKind(metadata["device-id"])
 
     if hub_kind in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
