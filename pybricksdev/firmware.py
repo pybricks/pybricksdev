@@ -11,7 +11,7 @@ import os
 import struct
 import sys
 import zipfile
-from typing import BinaryIO, Literal, Optional, Tuple, TypedDict, Union
+from typing import BinaryIO, List, Literal, Optional, Tuple, TypedDict, Union
 
 
 if sys.version_info < (3, 10):
@@ -34,7 +34,7 @@ class FirmwareMetadataV100(
             "device-id": Literal[0x40, 0x41, 0x80, 0x81],
             "checksum-type": Literal["sum", "crc32"],
             "mpy-abi-version": int,
-            "mpy-cross-options": list[str],
+            "mpy-cross-options": List[str],
             "user-mpy-offset": int,
             "max-firmware-size": int,
         },

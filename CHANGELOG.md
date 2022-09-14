@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move/renamed `pybricksdev.flash.create_firmware` to `pybricksdev.firmware.create_firmware_blob`.
 - Changed return value of `pybricksdev.firmware.create_firmware_blob` to include license text.
 
+### Fixed
+- Fixed "object is not subscriptable" error in Python 3.8 in `firmware` module.
+
 ## [1.0.0-alpha.30] - 2022-08-26
 
 ### Added
