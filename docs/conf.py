@@ -69,6 +69,7 @@ nitpick_ignore = [
     ("py:class", "bleak.BleakClient"),
     ("py:obj", "typing.Union"),
     ("py:class", "os.PathLike"),
+    ("py:obj", "typing.BinaryIO"),
 ]
 
 add_module_names = False
