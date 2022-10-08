@@ -78,9 +78,7 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
         return mpy
 
 
-async def compile_multi_file(
-    path: str, abi: int, compile_args: Optional[List[str]] = None
-):
+async def compile_multi_file(path: str, abi: int):
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
@@ -106,8 +104,6 @@ async def compile_multi_file(
             Path to script that is to be compiled.
         abi:
             Expected MPY ABI version.
-        compile_args:
-            Extra arguments for ``mpy-cross``.
 
     Returns:
         Concatenation of all compiled files in the format given above.
@@ -160,15 +156,7 @@ async def compile_multi_file(
     # Subtract the (builtin or missing) modules we won't upload.
     dependencies = dependencies.difference(not_found)
 
-    print("Uploading:", path)
-    # If there are no dependencies, it is an old-style single file script.
-    # For backwards compatibility, upload just the mpy data. Once the new
-    # firmware is stable, we can remove this special case.
-    if not dependencies:
-        return await compile_file(path, abi)
-
     # Get the total tuple of main programs and module
-    print("Included modules:", dependencies)
     modules = [main_module] + sorted(tuple(dependencies))
 
     # Get a data blob with all scripts.

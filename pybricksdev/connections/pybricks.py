@@ -21,14 +21,18 @@ from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from ..ble.pybricks import (
     FW_REV_UUID,
     PNP_ID_UUID,
-    PYBRICKS_CONTROL_UUID,
+    PYBRICKS_COMMAND_EVENT_UUID,
+    PYBRICKS_HUB_CAPABILITIES_UUID,
     PYBRICKS_PROTOCOL_VERSION,
     SW_REV_UUID,
+    Command,
     Event,
+    HubCapabilityFlag,
     StatusFlag,
+    unpack_hub_capabilities,
     unpack_pnp_id,
 )
-from ..compile import compile_multi_file
+from ..compile import compile_file, compile_multi_file
 from ..tools import chunk
 from ..tools.checksum import xor_bytes
 
@@ -47,7 +51,28 @@ class PybricksHub:
 
     _mpy_abi_version: int
     """
-    MPY ABI version of the connected hub or ``0`` if not connected yet.
+    MPY ABI version of the connected hub or ``0`` if not connected yet or if
+    connected to hub with Pybricks profile >= v1.2.0.
+    """
+
+    _max_write_size: int = 20
+    """
+    Maximum characteristic write size in bytes.
+
+    This will be the minium safe write size unless a hub is connected and it has
+    Pybricks profile >= v1.2.0.
+    """
+
+    _capability_flags: HubCapabilityFlag
+    """
+    Hub capability flags of connected hub. ``HubCapabilityFlags(0)`` if the hub
+    has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
+    """
+
+    _max_user_program_size: int
+    """
+    The maximum allowable user program size for the connected hub. ``0`` if the hub
+    has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
     """
 
     def __init__(self):
@@ -59,12 +84,14 @@ class PybricksHub:
         self.print_output = True
         self.fw_version = None
         self._mpy_abi_version = 0
+        self._capability_flags = HubCapabilityFlag(0)
+        self._max_user_program_size = 0
 
         # indicates that the hub is currently connected via BLE
         self.connected = False
 
-        # indicates is we are currently downloading a program
-        self.loading = False
+        # indicates is we are currently downloading a program over NUS (legacy download)
+        self._downloading_via_nus = False
 
         self.hub_kind: HubKind
         self.hub_variant: int
@@ -122,7 +149,7 @@ class PybricksHub:
         self.nus_observable.on_next(data)
 
         # Store incoming data
-        if not self.loading:
+        if not self._downloading_via_nus:
             self.stream_buf += data
             logger.debug("NUS DATA: {0}".format(data))
 
@@ -177,10 +204,6 @@ class PybricksHub:
             fw_version = await self.client.read_gatt_char(FW_REV_UUID)
             self.fw_version = Version(fw_version.decode())
 
-            # HACK: there isn't a proper way to get the MPY ABI version from hub
-            # so we use heuristics on the firmware version
-            self._mpy_abi_version = 6 if self.fw_version >= Version("3.2.0b2") else 5
-
             protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
 
@@ -195,9 +218,23 @@ class PybricksHub:
             pnp_id = await self.client.read_gatt_char(PNP_ID_UUID)
             _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
 
+            if protocol_version >= "1.2.0":
+                caps = await self.client.read_gatt_char(PYBRICKS_HUB_CAPABILITIES_UUID)
+                (
+                    self._max_write_size,
+                    self._capability_flags,
+                    self._max_user_program_size,
+                ) = unpack_hub_capabilities(caps)
+            else:
+                # HACK: prior to profile v1.2.0 isn't a proper way to get the
+                # MPY ABI version from hub so we use heuristics on the firmware version
+                self._mpy_abi_version = (
+                    6 if self.fw_version >= Version("3.2.0b2") else 5
+                )
+
             await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
             await self.client.start_notify(
-                PYBRICKS_CONTROL_UUID, self.pybricks_service_handler
+                PYBRICKS_COMMAND_EVENT_UUID, self.pybricks_service_handler
             )
             self.connected = True
         except:  # noqa: E722
@@ -253,7 +290,17 @@ class PybricksHub:
     async def write(self, data, with_response=False):
         await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
 
-    async def run(self, py_path, wait=True, print_output=True):
+    async def run(
+        self, py_path: str, wait: bool = True, print_output: bool = True
+    ) -> None:
+        """
+        Compiles and runs a user program.
+
+        Args:
+            py_path: The path to the .py file to compile.
+            wait: If true, wait for the user program to stop before returning.
+            print_output: If true, echo stdout of the hub to ``sys.stdout``.
+        """
         if not self.connected:
             raise RuntimeError("not connected")
 
@@ -262,12 +309,79 @@ class PybricksHub:
         self.output = []
         self.print_output = print_output
 
+        # maintain compatibility with older firmware (Pybricks profile < 1.2.0).
+        if self._mpy_abi_version:
+            await self._legacy_run(py_path, wait)
+            return
+
+        # since Pybricks profile v1.2.0, the hub will tell us which file format(s) it supports
+        if not (self._capability_flags & HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6):
+            raise RuntimeError(
+                "Hub is not compatible with any of the supported file formats"
+            )
+
+        mpy = await compile_multi_file(py_path, 6)
+
+        # the hub also tells us the max size of program that is allowed, so we can fail early
+        if len(mpy) > self._max_user_program_size:
+            raise ValueError(
+                f"Compiled program is too big ({len(mpy)} bytes). Hub has limit of {self._max_user_program_size} bytes."
+            )
+
+        # clear user program meta so hub doesn't try to run invalid program
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, 0),
+            response=True,
+        )
+
+        # payload is max size minus header size
+        payload_size = self._max_write_size - 5
+
+        # write program data with progress bar
+        with logging_redirect_tqdm(), tqdm(
+            total=len(mpy), unit="B", unit_scale=True
+        ) as pbar:
+            for i, c in enumerate(chunk(mpy, payload_size)):
+                await self.client.write_gatt_char(
+                    PYBRICKS_COMMAND_EVENT_UUID,
+                    struct.pack(
+                        f"<BI{len(c)}s",
+                        Command.COMMAND_WRITE_USER_RAM,
+                        i * payload_size,
+                        c,
+                    ),
+                    response=True,
+                )
+                pbar.update(len(c))
+
+        # set the metadata to notify that writing was successful
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, len(mpy)),
+            response=True,
+        )
+
+        # now we can run the program
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<B", Command.START_USER_PROGRAM),
+            response=True,
+        )
+
+        if wait:
+            await self._wait_for_user_program_stop()
+
+    async def _legacy_run(self, py_path: str, wait: bool) -> None:
+        """
+        Version of :meth:`run` for compatibility with older firmware ()
+        """
         # Compile the script to mpy format
         self.script_dir, _ = os.path.split(py_path)
-        mpy = await compile_multi_file(py_path, self._mpy_abi_version)
+        mpy = await compile_file(py_path, self._mpy_abi_version)
 
         try:
-            self.loading = True
+            self._downloading_via_nus = True
 
             queue: asyncio.Queue[bytes] = asyncio.Queue()
             subscription = self.nus_observable.subscribe(
@@ -316,46 +430,49 @@ class PybricksHub:
                     pbar.update(len(c))
         finally:
             subscription.dispose()
-            self.loading = False
+            self._downloading_via_nus = False
 
         if wait:
-            user_program_running: asyncio.Queue[bool] = asyncio.Queue()
+            await self._wait_for_user_program_stop()
 
-            with self.status_observable.pipe(
-                op.map(lambda s: bool(s & StatusFlag.USER_PROGRAM_RUNNING)),
-                op.distinct_until_changed(),
-            ).subscribe(lambda s: user_program_running.put_nowait(s)):
+    async def _wait_for_user_program_stop(self):
+        user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
-                # The first item in the queue is the current status. The status
-                # could change before or after the last checksum is received,
-                # so this could be either true or false.
-                is_running = await self.race_disconnect(user_program_running.get())
+        with self.status_observable.pipe(
+            op.map(lambda s: bool(s & StatusFlag.USER_PROGRAM_RUNNING)),
+            op.distinct_until_changed(),
+        ).subscribe(lambda s: user_program_running.put_nowait(s)):
 
-                if not is_running:
-                    # if the program has not already started, wait a short time
-                    # for it to start
-                    try:
-                        await asyncio.wait_for(
-                            self.race_disconnect(user_program_running.get()), 1
-                        )
-                    except asyncio.TimeoutError:
-                        # if it doesn't start, assume it was a very short lived
-                        # program and we just missed the status message
-                        logger.debug(
-                            "timed out waiting for user program to start, assuming it was short lived"
-                        )
-                        return
+            # The first item in the queue is the current status. The status
+            # could change before or after the last checksum is received,
+            # so this could be either true or false.
+            is_running = await self.race_disconnect(user_program_running.get())
 
-                # At this point, we know the user program is running, so the
-                # next item in the queue must indicate that the user program
-                # has stopped.
-                is_running = await self.race_disconnect(user_program_running.get())
+            if not is_running:
+                # if the program has not already started, wait a short time
+                # for it to start
+                try:
+                    await asyncio.wait_for(
+                        self.race_disconnect(user_program_running.get()), 1
+                    )
+                except asyncio.TimeoutError:
+                    # if it doesn't start, assume it was a very short lived
+                    # program and we just missed the status message
+                    logger.debug(
+                        "timed out waiting for user program to start, assuming it was short lived"
+                    )
+                    return
 
-                # maybe catch mistake if the code is changed
-                assert not is_running
+            # At this point, we know the user program is running, so the
+            # next item in the queue must indicate that the user program
+            # has stopped.
+            is_running = await self.race_disconnect(user_program_running.get())
 
-                # sleep is a hack to receive all output from user program since
-                # the firmware currently doesn't flush the buffer before clearing
-                # the user program running status flag
-                # https://github.com/pybricks/support/issues/305
-                await asyncio.sleep(0.3)
+            # maybe catch mistake if the code is changed
+            assert not is_running
+
+            # sleep is a hack to receive all output from user program since
+            # the firmware currently doesn't flush the buffer before clearing
+            # the user program running status flag
+            # https://github.com/pybricks/support/issues/305
+            await asyncio.sleep(0.3)

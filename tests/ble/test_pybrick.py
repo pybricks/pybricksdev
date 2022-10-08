@@ -1,7 +1,7 @@
 from pybricksdev.ble.pybricks import (
     DI_SERVICE_UUID,
     FW_REV_UUID,
-    PYBRICKS_CONTROL_UUID,
+    PYBRICKS_COMMAND_EVENT_UUID,
     PYBRICKS_SERVICE_UUID,
     SW_REV_UUID,
 )
@@ -12,7 +12,7 @@ def test_pybricks_service_uuid():
 
 
 def test_pybricks_control_characteristic_uuid():
-    assert PYBRICKS_CONTROL_UUID == "c5f50002-8280-46da-89f4-6d8051e4aeef"
+    assert PYBRICKS_COMMAND_EVENT_UUID == "c5f50002-8280-46da-89f4-6d8051e4aeef"
 
 
 def test_device_information_service_uuid():

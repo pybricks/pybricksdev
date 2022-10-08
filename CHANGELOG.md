@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added support for Pybricks Profile v1.2.0 (BLE).
+
 ## [1.0.0-alpha.31] - 2022-09-14
 
 ### Added
