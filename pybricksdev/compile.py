@@ -4,9 +4,7 @@
 import asyncio
 import logging
 import os
-import re
-
-from pathlib import Path
+from modulefinder import ModuleFinder
 from typing import List, Optional
 
 import mpy_cross_v5
@@ -114,61 +112,24 @@ async def compile_multi_file(path: str, abi: int):
         subprocess.CalledProcessError: if executing the ``mpy-cross` tool failed.
     """
 
-    # Make the build directory
-    make_build_dir()
+    # compile files using Python to find imports contained within the same directory as path
+    finder = ModuleFinder([os.path.dirname(path)])
+    finder.run_script(path)
 
-    # Directory where main and dependencies are located
-    source_dir = Path(path).parent
-
-    # Set of all dependencies
-    dependencies = set()
-    not_found = set()
-
-    # Find all dependencies recursively
-    def find_dependencies(module_name):
-        try:
-            path = source_dir / Path(*module_name.split(".")).with_suffix(".py")
-            with open(path) as source:
-                # Search non-recursively through current module
-                local_dependencies = set()
-                for line in source:
-                    # from my_module import thing1, thing2 ---> my_module
-                    if result := re.search("from (.*) import (.*)", line):
-                        local_dependencies.add(result.group(1))
-                    # import my_module ---> my_module
-                    elif result := re.search("import (.*)", line):
-                        local_dependencies.add(result.group(1))
-
-                # Add each file that wasn't already done, and find its
-                # dependencies.
-                for dep in local_dependencies.difference(dependencies):
-                    if dep not in dependencies:
-                        dependencies.add(dep)
-                        find_dependencies(dep)
-        # Some modules are stored on the hub so we can't find them here.
-        except FileNotFoundError:
-            not_found.add(module_name)
-
-    # Start searching from the top level.
-    main_module = Path(path).stem
-    find_dependencies(main_module)
-
-    # Subtract the (builtin or missing) modules we won't upload.
-    dependencies = dependencies.difference(not_found)
-
-    # Get the total tuple of main programs and module
-    modules = [main_module] + sorted(tuple(dependencies))
+    # we expect missing modules, namely builtin MicroPython packages like pybricks.*
+    logger.debug("missing modules: %r", finder.any_missing())
 
     # Get a data blob with all scripts.
-    blob = bytearray([])
-    for module in modules:
-        name = module.encode() + b"\x00"
-        mpy = await compile_file(
-            source_dir / Path(*module.split(".")).with_suffix(".py"), abi
-        )
-        size = len(mpy).to_bytes(4, "little")
-        blob += size + name + mpy
-    return blob
+    parts: List[bytes] = []
+
+    for name, module in finder.modules.items():
+        mpy = await compile_file(module.__file__, abi)
+
+        parts.append(len(mpy).to_bytes(4, "little"))
+        parts.append(name.encode() + b"\x00")
+        parts.append(mpy)
+
+    return b"".join(parts)
 
 
 def save_script(py_string):
