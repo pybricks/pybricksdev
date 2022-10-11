@@ -308,6 +308,7 @@ class PybricksHub:
         self.log_file = None
         self.output = []
         self.print_output = print_output
+        self.script_dir, _ = os.path.split(py_path)
 
         # maintain compatibility with older firmware (Pybricks profile < 1.2.0).
         if self._mpy_abi_version:
@@ -377,7 +378,6 @@ class PybricksHub:
         Version of :meth:`run` for compatibility with older firmware ()
         """
         # Compile the script to mpy format
-        self.script_dir, _ = os.path.split(py_path)
         mpy = await compile_file(py_path, self._mpy_abi_version)
 
         try:
