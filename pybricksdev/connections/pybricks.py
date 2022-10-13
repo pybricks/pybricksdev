@@ -79,6 +79,7 @@ class PybricksHub:
         self.disconnect_observable = AsyncSubject()
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self.nus_observable = Subject()
+        self.output_observable = Subject()
         self.stream_buf = bytearray()
         self.output = []
         self.print_output = True
@@ -135,15 +136,19 @@ class PybricksHub:
             self.log_file = None
             return
 
+        decoded_line = line.decode()
+
         # If we are processing datalog, save current line to the open file.
         if self.log_file is not None:
-            print(line.decode(), file=self.log_file)
+            print(decoded_line, file=self.log_file)
             return
 
-        # If there is nothing special about this line, print it if requested.
+        # If there is nothing special about this line, make it accessible to
+        # users and print it if requested.
         self.output.append(line)
+        self.output_observable.on_next(decoded_line)
         if self.print_output:
-            print(line.decode())
+            print(decoded_line)
 
     def nus_handler(self, sender, data):
         self.nus_observable.on_next(data)
