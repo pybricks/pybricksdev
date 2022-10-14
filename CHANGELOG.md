@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.32] - 2022-10-14
+
 ### Added
 - Added support for Pybricks Profile v1.2.0 (BLE).
 
@@ -285,7 +287,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32..HEAD
+[1.0.0-alpha.32]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31...v1.0.0-alpha.32
 [1.0.0-alpha.31]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.30...v1.0.0-alpha.31
 [1.0.0-alpha.30]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.29...v1.0.0-alpha.30
 [1.0.0-alpha.29]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.28...v1.0.0-alpha.29
