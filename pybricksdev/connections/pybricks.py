@@ -6,6 +6,7 @@ import logging
 import os
 import struct
 from typing import Awaitable, Optional, TypeVar
+from contextlib import asynccontextmanager
 
 import rx.operators as op
 import semver
@@ -174,6 +175,22 @@ class PybricksHub:
             # decode the payload
             (flags,) = struct.unpack_from("<I", data, 1)
             self.status_observable.on_next(StatusFlag(flags))
+
+    @asynccontextmanager
+    async def connection(self, device: BLEDevice):
+        """Context manager to handle a connection to a device discovered with
+        :meth:`pybricksdev.ble.find_device`. When used in an ``async with`` block,
+        the device is connected at the start. When the block finishes or an
+        exception is thrown, the device is disconnected.
+
+        Args:
+            device: The device to connect to.
+        """
+        await self.connect(device)
+        try:
+            yield
+        finally:
+            await self.disconnect()
 
     async def connect(self, device: BLEDevice):
         """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
