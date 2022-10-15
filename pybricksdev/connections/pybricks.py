@@ -255,7 +255,7 @@ class PybricksHub:
             )
             self.connected = True
         except:  # noqa: E722
-            self.disconnect()
+            await self.disconnect()
             raise
 
     async def disconnect(self):
