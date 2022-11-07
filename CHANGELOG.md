@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated Bleak dependency to v0.19.4.
+
 ## [1.0.0-alpha.32] - 2022-10-14
 
 ### Added
