@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.33] - 2022-11-06
+
 ### Changed
 - Updated Bleak dependency to v0.19.4.
 
@@ -290,7 +292,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33..HEAD
+[1.0.0-alpha.33]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32...v1.0.0-alpha.33
 [1.0.0-alpha.32]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31...v1.0.0-alpha.32
 [1.0.0-alpha.31]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.30...v1.0.0-alpha.31
 [1.0.0-alpha.30]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.29...v1.0.0-alpha.30
