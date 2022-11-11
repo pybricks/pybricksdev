@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import struct
 import sys
 import zipfile
 from tempfile import NamedTemporaryFile
@@ -34,7 +35,10 @@ from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from ..ble.pybricks import (
     FW_REV_UUID,
     PNP_ID_UUID,
+    PYBRICKS_COMMAND_EVENT_UUID,
     PYBRICKS_SERVICE_UUID,
+    SW_REV_UUID,
+    Command,
     unpack_pnp_id,
 )
 from ..compile import compile_file
@@ -66,7 +70,7 @@ def match_hub(hub_kind: HubKind, adv: AdvertisementData) -> bool:
 
     Args:
         hub_kind: The hub type ID to match.
-        adv: The advertisemet data to check.
+        adv: The advertisement data to check.
 
     Returns:
         ``True`` if *adv* matches the criteria, otherwise ``False``.
@@ -217,11 +221,36 @@ async def reboot_pybricks_to_bootloader(hub_kind: HubKind, device: BLEDevice) ->
 
         print("Rebooting in update mode...")
 
-        # HACK: there isn't a proper way to get the MPY ABI version from hub
-        # so we use heuristics on the firmware version
-        abi = 6 if Version(fw_ver) >= Version("3.2.0b2") else 5
+        profile_ver = await client.read_gatt_char(SW_REV_UUID)
 
-        await download_and_run(client, REBOOT_SCRIPT, abi)
+        if Version(profile_ver.decode()) >= Version("1.2.0"):
+            try:
+                await client.write_gatt_char(
+                    PYBRICKS_COMMAND_EVENT_UUID,
+                    struct.pack(
+                        "<B", Command.PBIO_PYBRICKS_COMMAND_REBOOT_TO_UPDATE_MODE
+                    ),
+                    response=True,
+                )
+                # This causes the hub to become disconnected before completing
+                # the write request, so we expect an exception here.
+            except Exception:
+                # REVISIT: Should probably check for more specific exception.
+                # However, OK for now since code will just timeout later while
+                # scanning for bootloader.
+                pass
+            else:
+                raise RuntimeError("hub did not reset")
+
+        else:
+            # older protocol doesn't support this command, so we have to
+            # download and run a program
+
+            # HACK: there isn't a proper way to get the MPY ABI version from hub
+            # so we use heuristics on the firmware version
+            abi = 6 if Version(fw_ver) >= Version("3.2.0b2") else 5
+
+            await download_and_run(client, REBOOT_SCRIPT, abi)
 
 
 async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
