@@ -113,6 +113,17 @@ class Command(IntEnum):
     .. availability:: Since Pybricks protocol v1.2.0.
     """
 
+    PBIO_PYBRICKS_COMMAND_REBOOT_TO_UPDATE_MODE = 5
+    """
+    Requests for the hub to reboot in firmware update mode.
+
+    If this command was successful, the hub will reboot immediately, which
+    means the GATT write request will fail because Bluetooth became
+    disconnected.
+
+    .. availability:: Since Pybricks protocol v1.2.0.
+    """
+
 
 class CommandError(IntEnum):
     """
