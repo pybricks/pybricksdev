@@ -14,7 +14,8 @@ from typing import BinaryIO, ContextManager
 
 from usb.core import NoBackendError, USBError
 
-from . import _dfu_upload, _dfu_create, resources
+from . import resources
+from ._vendored import dfu_upload, dfu_create
 from .ble.lwp3.bytecodes import HubKind
 
 FIRMWARE_ADDRESS = 0x08008000
@@ -167,7 +168,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
         try:
             # Determine correct product ID
 
-            devices = _dfu_upload.get_dfu_devices(idVendor=LEGO_VID)
+            devices = dfu_upload.get_dfu_devices(idVendor=LEGO_VID)
             if not devices:
                 print(
                     "No DFU devices found.",
@@ -187,22 +188,22 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
 
             # Create dfu file
             device = "0x{0:04x}:0x{1:04x}".format(LEGO_VID, product_id)
-            _dfu_create.build(outfile, [[target]], device)
+            dfu_create.build(outfile, [[target]], device)
 
             # Init dfu tool
-            _dfu_upload.__VID = LEGO_VID
-            _dfu_upload.__PID = product_id
-            _dfu_upload.init()
-            elements = _dfu_upload.read_dfu_file(outfile)
+            dfu_upload.__VID = LEGO_VID
+            dfu_upload.__PID = product_id
+            dfu_upload.init()
+            elements = dfu_upload.read_dfu_file(outfile)
 
             # Erase flash
             print("Erasing flash...")
-            _dfu_upload.mass_erase()
+            dfu_upload.mass_erase()
 
             # Upload dfu file
             print("Writing new firmware...")
-            _dfu_upload.write_elements(elements, True, _dfu_upload.cli_progress)
-            _dfu_upload.exit_dfu()
+            dfu_upload.write_elements(elements, True, dfu_upload.cli_progress)
+            dfu_upload.exit_dfu()
             print("Done.")
         except USBError as e:
             if e.errno != errno.EACCES or platform.system() != "Linux":
@@ -225,7 +226,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
 
                 dev_id = _get_vid_pid(dfu_util)
 
-                _dfu_create.build(outfile, [[target]], dev_id)
+                dfu_create.build(outfile, [[target]], dev_id)
 
                 exit(
                     call(
