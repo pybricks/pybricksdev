@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2022 The Pybricks Authors
+# Copyright (c) 2019-2023 The Pybricks Authors
 
 import asyncio
 import hashlib
@@ -312,9 +312,49 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
     await updater.flash(firmware, metadata)
 
 
+async def flash_nxt(firmware: bytes) -> None:
+    """
+    Flashes firmware to NXT using the Samba bootloader.
+
+    Args:
+        firmware:
+            A firmware blob with the NxOS header appended to the end.
+    """
+    from .._vendored.pynxt.samba import SambaBrick, SambaOpenError
+    from .._vendored.pynxt.firmware import Firmware
+    from .._vendored.pynxt.flash import FlashController
+
+    # parse the header
+    info = Firmware(firmware)
+
+    if info.samba:
+        raise ValueError("Firmware is not suitable for flashing.")
+
+    s = SambaBrick()
+
+    try:
+        print("Looking for the NXT in SAM-BA mode...")
+        s.open(timeout=5)
+        print("Brick found!")
+    except SambaOpenError as e:
+        print(e)
+        sys.exit(1)
+
+    print("Flashing firmware...")
+    f = FlashController(s)
+    f.flash(firmware)
+
+    print("Flashing complete, jumping to 0x100000...")
+    f._wait_for_flash()
+    s.jump(0x100000)
+
+    print("Firmware started.")
+    s.close()
+
+
 async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> None:
     """
-    Command line tool for flasing firmware.
+    Command line tool for flashing firmware.
 
     Args:
         firmware_zip: The path to the ``firmware.zip`` file.
@@ -364,5 +404,9 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
         except OSError:
             print("Could not find hub in standard firmware mode. Trying DFU.")
             flash_dfu(firmware, metadata)
-    else:
+    elif hub_kind in [HubKind.BOOST, HubKind.CITY, HubKind.TECHNIC]:
         await flash_ble(hub_kind, firmware, metadata)
+    elif hub_kind == HubKind.NXT:
+        await flash_nxt(firmware)
+    else:
+        raise ValueError(f"unsupported hub kind: {hub_kind}")

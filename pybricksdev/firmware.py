@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2022 The Pybricks Authors
+# Copyright (c) 2022-2023 The Pybricks Authors
 
 """
 Utilities for working with Pybricks ``firmware.zip`` files.
@@ -15,9 +15,9 @@ from typing import BinaryIO, List, Literal, Optional, Tuple, TypedDict, Union
 
 
 if sys.version_info < (3, 10):
-    from typing_extensions import TypeGuard, TypeAlias
+    from typing_extensions import TypeGuard
 else:
-    from typing import TypeGuard, TypeAlias
+    from typing import TypeGuard
 
 import semver
 
@@ -69,7 +69,7 @@ class FirmwareMetadataV200(
         {
             "metadata-version": Literal["2.0.0"],
             "firmware-version": str,
-            "device-id": Literal[0x40, 0x41, 0x80, 0x81, 83],
+            "device-id": Literal[0x40, 0x41, 0x80, 0x81, 0x83],
             "checksum-type": Literal["sum", "crc32"],
             "checksum-size": int,
             "hub-name-offset": int,
@@ -82,12 +82,29 @@ class FirmwareMetadataV200(
     """
 
 
+class FirmwareMetadataV210(
+    FirmwareMetadataV200,
+    TypedDict(
+        "V210",
+        {
+            # changed
+            "metadata-version": Literal["2.1.0"],
+            "device-id": Literal[0x40, 0x41, 0x80, 0x81, 0x83, 0xE0, 0xE1, 0xE2],
+            "checksum-type": Literal["sum", "crc32", "none"],
+        },
+    ),
+):
+    """
+    Type for data contained in v2.1.0 ``firmware.metadata.json`` files.
+    """
+
+
 AnyFirmwareV1Metadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
 """
 Type for data contained in ``firmware.metadata.json`` files of any 1.x version.
 """
 
-AnyFirmwareV2Metadata: TypeAlias = FirmwareMetadataV200
+AnyFirmwareV2Metadata = Union[FirmwareMetadataV200, FirmwareMetadataV210]
 """
 Type for data contained in ``firmware.metadata.json`` files of any 2.x version.
 """
@@ -180,6 +197,9 @@ async def _create_firmware_v2(
 
     # Update hub name if given
     if name:
+        if not metadata["hub-name-offset"]:
+            raise ValueError("this firmware does not support changing the hub name")
+
         name = name.encode() + b"\0"
 
         max_size = metadata["hub-name-size"]
@@ -197,6 +217,11 @@ async def _create_firmware_v2(
         checksum = sum_complement(io.BytesIO(firmware), metadata["checksum-size"])
     elif metadata["checksum-type"] == "crc32":
         checksum = crc32_checksum(io.BytesIO(firmware), metadata["checksum-size"])
+    elif (
+        semver.compare(metadata["metadata-version"], "2.1.0") >= 0
+        and metadata["checksum-type"] == "none"
+    ):
+        return firmware
     else:
         raise ValueError(f"unsupported checksum type: {metadata['checksum-type']}")
 

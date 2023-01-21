@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021 The Pybricks Authors
+# Copyright (c) 2021-2023 The Pybricks Authors
 # Some portions of the documentation:
 # Copyright (c) 2018 LEGO System A/S
 
@@ -162,6 +162,9 @@ class SystemKind(IntEnum):
     TECHNIC = 4 << 5
     """LEGO Technic"""
 
+    LEGACY = 7 << 5
+    """Pre-Powered Up (unofficial Pybricks addition)"""
+
 
 @unique
 class HubKind(IntEnum):
@@ -200,6 +203,15 @@ class HubKind(IntEnum):
 
     TECHNIC_SMALL = 0x83
     """LEGO SPIKE Essential Hub."""
+
+    RCX = 0xE0
+    """LEGO MINDSTORMS RCX brick. (unofficial Pybricks addition)"""
+
+    NXT = 0xE1
+    """LEGO MINDSTORMS NXT brick. (unofficial Pybricks addition)"""
+
+    EV3 = 0xE2
+    """LEGO MINDSTORMS EV3 brick. (unofficial Pybricks addition)"""
 
     @property
     def system(self) -> SystemKind:

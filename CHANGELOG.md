@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added `pybricksdev.ble.pybricks.Command.PBIO_PYBRICKS_COMMAND_REBOOT_TO_UPDATE_MODE`.
+- Added support for Pybricks firmware metadata v2.1.0.
+- Added support for flashing firmware to LEGO MINDSTORMS NXT bricks.
 
 ### Fixed
 - Fixed reboot in update mode for Pybricks Profile >= 1.2.0 in `pybricksdev flash` CLI.
