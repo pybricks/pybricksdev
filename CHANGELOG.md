@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.34] - 2023-01-21
+
 ### Added
 - Added `pybricksdev.ble.pybricks.Command.PBIO_PYBRICKS_COMMAND_REBOOT_TO_UPDATE_MODE`.
 - Added support for Pybricks firmware metadata v2.1.0.
@@ -300,7 +302,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.34..HEAD
+[1.0.0-alpha.34]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33...v1.0.0-alpha.34
 [1.0.0-alpha.33]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32...v1.0.0-alpha.33
 [1.0.0-alpha.32]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31...v1.0.0-alpha.32
 [1.0.0-alpha.31]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.30...v1.0.0-alpha.31
