@@ -4,7 +4,7 @@
 # Copyright (c) 2018 LEGO System A/S
 
 """
-The LWP3 :mod:`.bytecodes` module contains enums for interperting binary values
+The LWP3 :mod:`.bytecodes` module contains enums for interpreting binary values
 used in the `LWP3 protocol`_.
 
 .. _LWP3 protocol: https://lego.github.io/lego-ble-wireless-protocol-docs/
@@ -261,7 +261,7 @@ class LastNetwork(IntEnum):
     """Not locked (default 2)."""
 
     RSSI = 253
-    """RSSI depedenant (default 3)."""
+    """RSSI dependant (default 3)."""
 
     DISABLE_HW_NET = 254
     """Disable hardware network (default 4)."""
@@ -324,7 +324,7 @@ class MessageKind(IntEnum):
     """Messages that perform a hub action."""
 
     HUB_ALERT = 0x03
-    """Messages to subscribe or retreive hub alerts."""
+    """Messages to subscribe or retrieve hub alerts."""
 
     HUB_ATTACHED_IO = 0x04
     """Messages received when an I/O device is attached."""
@@ -339,7 +339,7 @@ class MessageKind(IntEnum):
     """Message to put the hub in firmware update mode."""
 
     FW_LOCK = 0x011
-    """Message to lock the bootloader flash memory (factort use)."""
+    """Message to lock the bootloader flash memory (factory use)."""
 
     FW_LOCK_STATUS_REQ = 0x12
     """Message to request the bootloader flash memory lock state."""
@@ -846,7 +846,7 @@ class HwNetCmd(IntEnum):
     """
     The timing of the user CONNECTION PRESS may be stretched (timer reset) when
     connecting in a Bluetooth active environment. I.e. the LONG PRESS normally
-    is used for powering down a device, but also used for gating keypresses to
+    is used for powering down a device, but also used for gating key presses to
     the Central in a connection sequence (allowing a longer connection time
     without powering down.
     """
