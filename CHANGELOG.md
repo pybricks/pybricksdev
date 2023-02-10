@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.35] - 2023-02-10
+
 ### Added
 - Added support for Python 3.11.
 
@@ -305,7 +307,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.34..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.35..HEAD
+[1.0.0-alpha.35]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.34...v1.0.0-alpha.35
 [1.0.0-alpha.34]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33...v1.0.0-alpha.34
 [1.0.0-alpha.33]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32...v1.0.0-alpha.33
 [1.0.0-alpha.32]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.31...v1.0.0-alpha.32
