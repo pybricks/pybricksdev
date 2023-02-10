@@ -1508,7 +1508,6 @@ class PortOutputCommandFeedbackMessage(AbstractMessage):
         port3: Optional[PortID] = None,
         feedback3: Optional[Feedback] = None,
     ) -> None:
-
         length = 5
 
         if port2 is not None:

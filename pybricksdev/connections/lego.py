@@ -209,7 +209,6 @@ class REPLHub:
 
         # Look for output while the program runs
         while not self.is_idle():
-
             # Keep parsing hub data.
             self.parse_input()
 
@@ -250,7 +249,6 @@ class REPLHub:
 
         # Write file chunk by chunk.
         for data in chunk(contents, FILE_PACKET_SIZE):
-
             # Send a chunk and wait for acknowledgement of receipt
             buffer_now = len(self.buffer)
             progress += self.serial.write(data)

@@ -167,7 +167,6 @@ async def reboot_official_to_bootloader(hub_kind: HubKind, device: BLEDevice) ->
     reboot in firmware update mode.
     """
     async with BleakClient(device) as client:
-
         # give bluetooth stack time to settle
         await asyncio.sleep(1)
 

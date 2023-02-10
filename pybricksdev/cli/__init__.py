@@ -62,7 +62,6 @@ def _get_script_path(file: TextIO) -> ContextManager[PathLike]:
     The context manager will delete the temporary file, if applicable.
     """
     if file is sys.stdin:
-
         # Have to close the temp file so that mpy-cross can read it, so we
         # create our own context manager to delete the file when we are done
         # using it.

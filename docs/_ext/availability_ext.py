@@ -6,7 +6,6 @@ from docutils.parsers.rst import Directive
 
 
 class Availability(Directive):
-
     has_content = False
     required_arguments = 1
     optional_arguments = 0

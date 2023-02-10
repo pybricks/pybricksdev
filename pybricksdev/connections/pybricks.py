@@ -442,7 +442,6 @@ class PybricksHub:
             op.map(lambda s: bool(s & StatusFlag.USER_PROGRAM_RUNNING)),
             op.distinct_until_changed(),
         ).subscribe(lambda s: user_program_running.put_nowait(s)):
-
             # The first item in the queue is the current status. The status
             # could change before or after the last checksum is received,
             # so this could be either true or false.

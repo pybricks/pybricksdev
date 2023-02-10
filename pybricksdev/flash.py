@@ -169,7 +169,6 @@ class BootloaderConnection(BLERequestsConnection):
             return request.parse_reply(reply)
 
     async def flash(self, firmware, metadata):
-
         # Firmware information
         firmware_io = io.BytesIO(firmware)
         firmware_size = len(firmware)

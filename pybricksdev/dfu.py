@@ -95,7 +95,6 @@ def backup_dfu(file: BinaryIO) -> None:
         # if libusb was not found, try using dfu-util command line tool
 
         with _get_dfu_util() as dfu_util:
-
             file.close()
 
             # dfu-util won't overwrite existing files so we have to do that first
@@ -138,7 +137,6 @@ def restore_dfu(file: BinaryIO) -> None:
         # if libusb was not found, try using dfu-util command line tool
 
         with _get_dfu_util() as dfu_util:
-
             file.close()
 
             exit(
@@ -223,7 +221,6 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
             # if libusb was not found, try using dfu-util command line tool
 
             with _get_dfu_util() as dfu_util:
-
                 dev_id = _get_vid_pid(dfu_util)
 
                 dfu_create.build(outfile, [[target]], dev_id)
