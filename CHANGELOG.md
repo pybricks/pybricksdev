@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.36] - 2023-02-18
+
 ### Changed
 - Changed EV3 script runner to just copy the script instead of replicating
   the local directory structure on the brick.
@@ -311,7 +313,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.35..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.36..HEAD
+[1.0.0-alpha.36]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.35...v1.0.0-alpha.36
 [1.0.0-alpha.35]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.34...v1.0.0-alpha.35
 [1.0.0-alpha.34]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33...v1.0.0-alpha.34
 [1.0.0-alpha.33]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.32...v1.0.0-alpha.33
