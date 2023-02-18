@@ -2,9 +2,9 @@
 # Copyright (c) 2021-2022 The Pybricks Authors
 
 import asyncio
-import os
-
 import asyncssh
+import os
+import pathlib
 
 
 class EV3Connection:
@@ -56,23 +56,10 @@ class EV3Connection:
         Arguments:
             local_path (str):
                 Path to the file to be downloaded. Relative to current working
-                directory. This same tree will be created on the EV3 if it
-                does not already exist.
+                directory.
         """
-        # Compute paths
-        dirs, file_name = os.path.split(local_path)
-
-        # Make sure same directory structure exists on EV3
-        if not await self.client.sftp.exists(self.abs_path(dirs)):
-            # If not, make the folders one by one
-            total = ""
-            for name in dirs.split(os.sep):
-                total = os.path.join(total, name)
-                if not await self.client.sftp.exists(self.abs_path(total)):
-                    await self.client.sftp.mkdir(self.abs_path(total))
-
         # Send script to EV3
-        remote_path = self.abs_path(local_path)
+        remote_path = self.abs_path(pathlib.Path(local_path).name)
         await self.client.sftp.put(local_path, remote_path)
         return remote_path
 

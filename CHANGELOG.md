@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Changed EV3 script runner to just copy the script instead of replicating
+  the local directory structure on the brick.
+
 ## [1.0.0-alpha.35] - 2023-02-10
 
 ### Added
