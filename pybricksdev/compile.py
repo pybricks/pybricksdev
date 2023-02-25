@@ -113,8 +113,8 @@ async def compile_multi_file(path: str, abi: int):
     """
 
     # compile files using Python to find imports contained within the same directory as path
-    searchpath = [os.path.dirname(path)]
-    finder = ModuleFinder(searchpath)
+    search_path = [os.path.dirname(path)]
+    finder = ModuleFinder(search_path)
     finder.run_script(path)
 
     # we expect missing modules, namely builtin MicroPython packages like pybricks.*
@@ -134,7 +134,7 @@ async def compile_multi_file(path: str, abi: int):
 
     # look for .mpy modules
     for name in finder.any_missing():
-        for spath in searchpath:
+        for spath in search_path:
             try:
                 with open(os.path.join(spath, f"{name}.mpy"), "rb") as f:
                     mpy = f.read()
