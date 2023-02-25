@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import os
+import sys
 from modulefinder import ModuleFinder
 from typing import List, Optional
 
@@ -123,11 +124,25 @@ async def compile_multi_file(path: str, abi: int):
     parts: List[bytes] = []
 
     for name, module in finder.modules.items():
+        if not module.__file__:
+            continue  # system module
         mpy = await compile_file(module.__file__, abi)
 
         parts.append(len(mpy).to_bytes(4, "little"))
         parts.append(name.encode() + b"\x00")
         parts.append(mpy)
+
+    # look for .mpy modules
+    for name in finder.any_missing():
+        for path in sys.path:
+            try:
+                with open(os.path.join(path, f"{name}.mpy"), "rb") as f:
+                    mpy = f.read()
+                parts.append(len(mpy).to_bytes(4, "little"))
+                parts.append(name.encode() + b"\x00")
+                parts.append(mpy)
+            except IOError:
+                continue
 
     return b"".join(parts)
 
