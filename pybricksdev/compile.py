@@ -140,7 +140,7 @@ async def compile_multi_file(path: str, abi: int):
                     mpy = f.read()
                 if mpy[1] != abi:
                     raise ValueError(
-                        f"{name} has abi version {mpy[1]} while {abi} is required"
+                        f"{name}.mpy has abi version {mpy[1]} while {abi} is required"
                     )
                 parts.append(len(mpy).to_bytes(4, "little"))
                 parts.append(name.encode() + b"\x00")
