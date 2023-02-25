@@ -4,7 +4,6 @@
 import asyncio
 import logging
 import os
-import sys
 from modulefinder import ModuleFinder
 from typing import List, Optional
 
@@ -114,7 +113,8 @@ async def compile_multi_file(path: str, abi: int):
     """
 
     # compile files using Python to find imports contained within the same directory as path
-    finder = ModuleFinder([os.path.dirname(path)])
+    searchpath = [os.path.dirname(path)]
+    finder = ModuleFinder(searchpath)
     finder.run_script(path)
 
     # we expect missing modules, namely builtin MicroPython packages like pybricks.*
@@ -125,7 +125,7 @@ async def compile_multi_file(path: str, abi: int):
 
     for name, module in finder.modules.items():
         if not module.__file__:
-            continue  # system module
+            continue
         mpy = await compile_file(module.__file__, abi)
 
         parts.append(len(mpy).to_bytes(4, "little"))
@@ -134,9 +134,9 @@ async def compile_multi_file(path: str, abi: int):
 
     # look for .mpy modules
     for name in finder.any_missing():
-        for path in sys.path:
+        for spath in searchpath:
             try:
-                with open(os.path.join(path, f"{name}.mpy"), "rb") as f:
+                with open(os.path.join(spath, f"{name}.mpy"), "rb") as f:
                     mpy = f.read()
                 parts.append(len(mpy).to_bytes(4, "little"))
                 parts.append(name.encode() + b"\x00")
