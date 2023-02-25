@@ -141,7 +141,7 @@ async def compile_multi_file(path: str, abi: int):
                 parts.append(len(mpy).to_bytes(4, "little"))
                 parts.append(name.encode() + b"\x00")
                 parts.append(mpy)
-            except IOError:
+            except OSError:
                 continue
 
     return b"".join(parts)
