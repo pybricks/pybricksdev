@@ -5,7 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Add support for including precompiled .mpy libraries
+
+## [1.0.0-alpha.37] - 2023-02-27
+
+### Added
+- Added support for including precompiled .mpy libraries.
 
 ## [1.0.0-alpha.36] - 2023-02-18
 
@@ -314,7 +318,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.36..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.37..HEAD
+[1.0.0-alpha.37]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.36...v1.0.0-alpha.37
 [1.0.0-alpha.36]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.35...v1.0.0-alpha.36
 [1.0.0-alpha.35]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.34...v1.0.0-alpha.35
 [1.0.0-alpha.34]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.33...v1.0.0-alpha.34
