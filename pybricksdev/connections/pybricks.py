@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021-2022 The Pybricks Authors
+# Copyright (c) 2021-2023 The Pybricks Authors
 
 import asyncio
+import contextlib
 import logging
 import os
 import struct
@@ -12,7 +13,7 @@ import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from packaging.version import Version
-from rx.subject import AsyncSubject, BehaviorSubject, Subject
+from rx.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -35,6 +36,7 @@ from ..ble.pybricks import (
 from ..compile import compile_file, compile_multi_file
 from ..tools import chunk
 from ..tools.checksum import xor_bytes
+from . import ConnectionState
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ class PybricksHub:
     """
 
     def __init__(self):
-        self.disconnect_observable = AsyncSubject()
+        self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self.nus_observable = Subject()
         self.stream_buf = bytearray()
@@ -86,9 +88,6 @@ class PybricksHub:
         self._mpy_abi_version = 0
         self._capability_flags = HubCapabilityFlag(0)
         self._max_user_program_size = 0
-
-        # indicates that the hub is currently connected via BLE
-        self.connected = False
 
         # indicates is we are currently downloading a program over NUS (legacy download)
         self._downloading_via_nus = False
@@ -188,17 +187,28 @@ class PybricksHub:
         """
         logger.info(f"Connecting to {device.name}")
 
-        def handle_disconnect(client: BleakClient):
-            logger.info("Disconnected!")
-            self.disconnect_observable.on_next(True)
-            self.disconnect_observable.on_completed()
-            self.connected = False
+        if self.connection_state_observable.value != ConnectionState.DISCONNECTED:
+            raise RuntimeError(
+                f"attempting to connect with invalid state: {self.connection_state_observable.value}"
+            )
 
-        self.client = BleakClient(device, disconnected_callback=handle_disconnect)
+        async with contextlib.AsyncExitStack() as stack:
+            self.connection_state_observable.on_next(ConnectionState.CONNECTING)
 
-        await self.client.connect()
+            stack.callback(
+                self.connection_state_observable.on_next, ConnectionState.DISCONNECTED
+            )
 
-        try:
+            def handle_disconnect(_: BleakClient):
+                logger.info("Disconnected!")
+                self.connection_state_observable.on_next(ConnectionState.DISCONNECTED)
+
+            self.client = BleakClient(device, disconnected_callback=handle_disconnect)
+
+            await self.client.connect()
+
+            stack.push_async_callback(self.disconnect)
+
             logger.info("Connected successfully!")
 
             fw_version = await self.client.read_gatt_char(FW_REV_UUID)
@@ -236,17 +246,24 @@ class PybricksHub:
             await self.client.start_notify(
                 PYBRICKS_COMMAND_EVENT_UUID, self.pybricks_service_handler
             )
-            self.connected = True
-        except:  # noqa: E722
-            self.disconnect()
-            raise
+
+            self.connection_state_observable.on_next(ConnectionState.CONNECTED)
+
+            # don't unwind on success
+            stack.pop_all()
 
     async def disconnect(self):
-        if self.connected:
-            logger.info("Disconnecting...")
+        logger.info("Disconnecting...")
+
+        if self.connection_state_observable.value == ConnectionState.CONNECTED:
+            self.connection_state_observable.on_next(ConnectionState.DISCONNECTING)
             await self.client.disconnect()
+            # ConnectionState.DISCONNECTED should be set by disconnect callback
+            assert (
+                self.connection_state_observable.value == ConnectionState.DISCONNECTED
+            )
         else:
-            logger.debug("already disconnected")
+            logger.debug("skipping disconnect because not connected")
 
     async def race_disconnect(self, awaitable: Awaitable[T]) -> T:
         """
@@ -273,7 +290,11 @@ class PybricksHub:
         disconnect_event = asyncio.Event()
         disconnect_task = asyncio.ensure_future(disconnect_event.wait())
 
-        with self.disconnect_observable.subscribe(lambda _: disconnect_event.set()):
+        def handle_disconnect(state: ConnectionState):
+            if state == ConnectionState.DISCONNECTED:
+                disconnect_event.set()
+
+        with self.connection_state_observable.subscribe(handle_disconnect):
             done, pending = await asyncio.wait(
                 {awaitable_task, disconnect_task},
                 return_when=asyncio.FIRST_COMPLETED,
@@ -301,7 +322,7 @@ class PybricksHub:
             wait: If true, wait for the user program to stop before returning.
             print_output: If true, echo stdout of the hub to ``sys.stdout``.
         """
-        if not self.connected:
+        if self.connection_state_observable.value != ConnectionState.CONNECTED:
             raise RuntimeError("not connected")
 
         # Reset output buffer

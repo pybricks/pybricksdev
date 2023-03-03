@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `pybricksdev.connections.ConnectionState` enum class.
+- Added `pybricksdev.connections.pybricks.PybricksHub.connection_state_observable` attribute.
+
+### Fixed
+- Fixed `pybricksdev.connections.pybricks.PybricksHub` disconnect state not reset after reconnect ([support#971]).
+
+### Removed
+- Removed `pybricksdev.connections.pybricks.PybricksHub.disconnect_observable` attribute.
+- Removed `pybricksdev.connections.pybricks.PybricksHub.connected` attribute.
+
 ## [1.0.0-alpha.37] - 2023-02-27
 
 ### Added
