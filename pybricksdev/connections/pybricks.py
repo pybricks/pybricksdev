@@ -8,12 +8,12 @@ import os
 import struct
 from typing import Awaitable, Optional, TypeVar
 
-import rx.operators as op
+import reactivex.operators as op
 import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from packaging.version import Version
-from rx.subject import BehaviorSubject, Subject
+from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
