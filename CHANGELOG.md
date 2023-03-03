@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `pybricksdev.connections.pybricks.PybricksHub.disconnect_observable` attribute.
 - Removed `pybricksdev.connections.pybricks.PybricksHub.connected` attribute.
 
+
+[support#971]: https://github.com/pybricks/support/issues/971
+
 ## [1.0.0-alpha.37] - 2023-02-27
 
 ### Added
