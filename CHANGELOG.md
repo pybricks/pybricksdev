@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed Python 3.11 compatibility of vendored `dfu_upload` module ([support#973]).
+
+[support#973]: https://github.com/pybricks/support/issues/973
+
 ## [1.0.0-alpha.38] - 2023-03-03
 
 ### Added
