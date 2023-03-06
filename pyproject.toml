@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pybricksdev"
-version = "1.0.0-alpha.38"
+version = "1.0.0-alpha.39"
 description = "Pybricks developer tools"
 authors = ["The Pybricks Authors <dev@pybricks.com>"]
 maintainers = ["Laurens Valk <laurens@pybricks.com>", "David Lechner <david@pybricks.com>" ]
