@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.41] - 2023-03-26
+
 ### Fixed
 - Fixed `pybricks.ble.find_device()` returning with `name is None` on Windows ([support#1010]).
 
@@ -351,7 +353,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.40..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.41..HEAD
+[1.0.0-alpha.41]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.40...v1.0.0-alpha.41
 [1.0.0-alpha.40]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.39...v1.0.0-alpha.40
 [1.0.0-alpha.39]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.38...v1.0.0-alpha.39
 [1.0.0-alpha.38]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.37...v1.0.0-alpha.38
