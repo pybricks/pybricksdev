@@ -27,7 +27,8 @@ async def find_device(
         name:
             The device name. This can also be the Bluetooth address on non-Apple
             platforms or a UUID on Apple platforms. If ``name`` is ``None`` then
-            it is not used as part of the matching criteria.
+            it is not used as part of the matching criteria. The name matching
+            is not case-sensitive.
         service:
             The service UUID that is advertized.
         timeout:
@@ -45,11 +46,16 @@ async def find_device(
         if service not in adv.service_uuids:
             return False
 
+        if adv.local_name is None:
+            # have not received SCAN_RSP yet
+            return False
+
         if (
             name is not None
             and adv.local_name != name
             and device.address.upper() != name.upper()
         ):
+            # filtering by name but name does not match
             return False
 
         return True
