@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed Bleak `FutureWarning` about using `BLEDevice.metadata`.
+
 ## [1.0.0-alpha.41] - 2023-03-26
 
 ### Fixed

@@ -9,7 +9,7 @@ import struct
 import sys
 import zipfile
 from tempfile import NamedTemporaryFile
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Dict, Optional
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -267,11 +267,22 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
 
     print(f"Searching for {hub_kind.name} hub...")
 
+    # TODO: add upstream feature to Bleak to allow getting device, adv tuple
+    # as return value from find_device_by_filter()
+    # https://github.com/hbldh/bleak/issues/1277
+
+    device_adv_map: Dict[str, AdvertisementData] = {}
+
+    def map_and_match(device: BLEDevice, adv: AdvertisementData):
+        # capture the adv data for later use
+        device_adv_map[device.address] = adv
+        return match_hub(hub_kind, adv)
+
     # scan for hubs in bootloader mode, running official LEGO firmware or
     # running Pybricks firmware
 
     device = await BleakScanner.find_device_by_filter(
-        lambda _d, a: match_hub(hub_kind, a),
+        map_and_match,
         service_uuids=[
             LWP3_BOOTLOADER_SERVICE_UUID,
             LWP3_HUB_SERVICE_UUID,
@@ -283,16 +294,18 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
         print("timed out", file=sys.stderr)
         return
 
+    adv_data = device_adv_map[device.address]
+
     # if not already in bootlaoder mode, we need to reboot into bootloader mode
-    if LWP3_HUB_SERVICE_UUID in device.metadata["uuids"]:
+    if LWP3_HUB_SERVICE_UUID in adv_data.service_uuids:
         print("Found hub running official LEGO firmware.")
         await reboot_official_to_bootloader(hub_kind, device)
-    elif PYBRICKS_SERVICE_UUID in device.metadata["uuids"]:
+    elif PYBRICKS_SERVICE_UUID in adv_data.service_uuids:
         print("Found hub running Pybricks firmware.")
         await reboot_pybricks_to_bootloader(hub_kind, device)
 
     # if not previously in bootlaoder mode, scan again, this time only for bootloader
-    if LWP3_BOOTLOADER_SERVICE_UUID not in device.metadata["uuids"]:
+    if LWP3_BOOTLOADER_SERVICE_UUID not in adv_data.service_uuids:
         device = await BleakScanner.find_device_by_filter(
             lambda _d, a: match_hub(hub_kind, a),
             service_uuids=[
