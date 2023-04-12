@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.42] - 2023-04-12
+
 ### Fixed
 - Fixed Bleak `FutureWarning` about using `BLEDevice.metadata`.
 
@@ -356,7 +358,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.41..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.42..HEAD
+[1.0.0-alpha.42]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.41...v1.0.0-alpha.42
 [1.0.0-alpha.41]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.40...v1.0.0-alpha.41
 [1.0.0-alpha.40]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.39...v1.0.0-alpha.40
 [1.0.0-alpha.39]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.38...v1.0.0-alpha.39
