@@ -161,7 +161,7 @@ class REPLHub:
         while not self.is_idle():
             await asyncio.sleep(0.1)
 
-    line_handler = PybricksHub.line_handler
+    line_handler = PybricksHub._line_handler
 
     async def exec_paste_mode(self, code, wait=True, print_output=True):
         """Executes commands via paste mode."""

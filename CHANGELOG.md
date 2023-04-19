@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added support for Pybricks Profile v1.3.0.
 ## [1.0.0-alpha.42] - 2023-04-12
 
 ### Fixed

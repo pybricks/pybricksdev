@@ -124,6 +124,16 @@ class Command(IntEnum):
     .. availability:: Since Pybricks protocol v1.2.0.
     """
 
+    WRITE_STDIN = 6
+    """
+    Requests to write to stdin on the hub.
+
+    Parameters:
+        payload: Variable number of bytes to write  (0 to ``max_char_size`` bytes).
+
+    .. availability:: Since Pybricks protocol v1.3.0.
+    """
+
 
 class CommandError(IntEnum):
     """
@@ -170,12 +180,21 @@ class Event(IntEnum):
     """
 
     STATUS_REPORT = 0
-    """Status report.
+    """Status report event.
 
     The payload is a 32-bit little-endian unsigned integer containing
     :class:`StatusFlag` flags.
 
     .. availability:: Since Pybricks protocol v1.0.0.
+    """
+
+    WRITE_STDOUT = 1
+    """Hub write to stdout event.
+
+    The payload is a variable number of bytes that was written to stdout by
+    the hub.
+
+    .. availability:: Since Pybricks protocol v1.3.0.
     """
 
 

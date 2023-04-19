@@ -81,13 +81,20 @@ class PybricksHub:
         self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self.nus_observable = Subject()
-        self.stream_buf = bytearray()
-        self.output = []
         self.print_output = True
         self.fw_version = None
         self._mpy_abi_version = 0
         self._capability_flags = HubCapabilityFlag(0)
         self._max_user_program_size = 0
+
+        # buffered stdout from the hub for splitting into lines
+        self._stdout_buf = bytearray()
+
+        # REVISIT: this can potentially waste a lot of RAM if not drained
+        self._stdout_line_queue = asyncio.Queue()
+
+        # prior to Pybricks Profile v1.3.0, NUS was used for stdio
+        self._legacy_stdio = False
 
         # indicates is we are currently downloading a program over NUS (legacy download)
         self._downloading_via_nus = False
@@ -98,13 +105,13 @@ class PybricksHub:
         # File handle for logging
         self.log_file = None
 
-    def line_handler(self, line):
-        """Handles new incoming lines. Handle special actions if needed,
+    def _line_handler(self, line: bytes) -> None:
+        """
+        Handles new incoming lines. Handle special actions if needed,
         otherwise just print it as regular lines.
 
         Arguments:
-            line (bytearray):
-                Line to process.
+            line: Line to process.
         """
 
         # The line tells us to open a log file, so do it.
@@ -134,45 +141,60 @@ class PybricksHub:
             self.log_file = None
             return
 
+        line_str = line.decode()
+
         # If we are processing datalog, save current line to the open file.
         if self.log_file is not None:
-            print(line.decode(), file=self.log_file)
+            print(line_str, file=self.log_file)
             return
 
-        # If there is nothing special about this line, print it if requested.
-        self.output.append(line)
         if self.print_output:
-            print(line.decode())
+            print(line_str)
+            return
 
-    def nus_handler(self, sender, data):
-        self.nus_observable.on_next(data)
+        self._stdout_line_queue.put_nowait(line_str)
 
-        # Store incoming data
-        if not self._downloading_via_nus:
-            self.stream_buf += data
-            logger.debug("NUS DATA: {0}".format(data))
+    def _handle_line_data(self, data: bytes) -> None:
+        self._stdout_buf.extend(data)
 
         # Break up data into lines and take those out of the buffer
         lines = []
         while True:
             # Find and split at end of line
-            index = self.stream_buf.find(self.EOL)
+            index = self._stdout_buf.find(self.EOL)
             # If no more line end is found, we are done
             if index < 0:
                 break
             # If we found a line, save it, and take it from the buffer
-            lines.append(self.stream_buf[0:index])
-            del self.stream_buf[0 : index + len(self.EOL)]
+            lines.append(self._stdout_buf[:index])
+            del self._stdout_buf[: index + len(self.EOL)]
 
         # Call handler for each line that we found
         for line in lines:
-            self.line_handler(line)
+            self._line_handler(line)
 
-    def pybricks_service_handler(self, _: int, data: bytes) -> None:
+    def _nus_handler(self, sender, data: bytearray) -> None:
+        self.nus_observable.on_next(data)
+
+        # legacy firmware may use NUS for download and run, in which case
+        # we need to ignore the incoming data
+        if self._downloading_via_nus:
+            return
+
+        logger.debug("NUS DATA: %r", data)
+
+        # support legacy firmware where the Nordic UART service
+        # was used for stdio
+        if self._legacy_stdio:
+            self._handle_line_data(data)
+
+    def _pybricks_service_handler(self, _: int, data: bytes) -> None:
         if data[0] == Event.STATUS_REPORT:
             # decode the payload
             (flags,) = struct.unpack_from("<I", data, 1)
             self.status_observable.on_next(StatusFlag(flags))
+        elif data[0] == Event.WRITE_STDOUT:
+            self._handle_line_data(data[1:])
 
     async def connect(self, device: BLEDevice):
         """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
@@ -242,9 +264,12 @@ class PybricksHub:
                     6 if self.fw_version >= Version("3.2.0b2") else 5
                 )
 
-            await self.client.start_notify(NUS_TX_UUID, self.nus_handler)
+            if protocol_version < "1.3.0":
+                self._legacy_stdio = True
+
+            await self.client.start_notify(NUS_TX_UUID, self._nus_handler)
             await self.client.start_notify(
-                PYBRICKS_COMMAND_EVENT_UUID, self.pybricks_service_handler
+                PYBRICKS_COMMAND_EVENT_UUID, self._pybricks_service_handler
             )
 
             self.connection_state_observable.on_next(ConnectionState.CONNECTED)
@@ -327,7 +352,8 @@ class PybricksHub:
 
         # Reset output buffer
         self.log_file = None
-        self.output = []
+        self._stdout_buf.clear()
+        self._stdout_line_queue = asyncio.Queue()
         self.print_output = print_output
         self.script_dir, _ = os.path.split(py_path)
 
