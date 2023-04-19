@@ -387,6 +387,28 @@ class PybricksHub:
         """
         return await self.race_disconnect(self._stdout_line_queue.get())
 
+    async def start_user_program(self) -> None:
+        """
+        Starts the user program that is already in RAM on the hub.
+
+        Requires hub with Pybricks Profile >= v1.2.0.
+        """
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<B", Command.START_USER_PROGRAM),
+            response=True,
+        )
+
+    async def stop_user_program(self) -> None:
+        """
+        Stops the user program on the hub if it is running.
+        """
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<B", Command.STOP_USER_PROGRAM),
+            response=True,
+        )
+
     async def run(
         self, py_path: str, wait: bool = True, print_output: bool = True
     ) -> None:
@@ -462,11 +484,7 @@ class PybricksHub:
         )
 
         # now we can run the program
-        await self.client.write_gatt_char(
-            PYBRICKS_COMMAND_EVENT_UUID,
-            struct.pack("<B", Command.START_USER_PROGRAM),
-            response=True,
-        )
+        await self.start_user_program()
 
         if wait:
             await self._wait_for_user_program_stop()

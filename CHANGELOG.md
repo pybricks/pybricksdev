@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new `PybricksHub.write_string()` method.
 - Added new `PybricksHub.write_line()` method.
 - Added new `PybricksHub.read_line()` method.
+- Added new `PybricksHub.start_user_program()` method.
+- Added new `PybricksHub.stop_user_program()` method.
 
 ## [1.0.0-alpha.42] - 2023-04-12
 
