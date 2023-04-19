@@ -333,8 +333,59 @@ class PybricksHub:
 
             return awaitable_task.result()
 
-    async def write(self, data, with_response=False):
-        await self.client.write_gatt_char(NUS_RX_UUID, bytearray(data), with_response)
+    async def write(self, data: bytes) -> None:
+        """
+        Writes raw data to stdin on the hub.
+
+        This is a low-level function to send a single write command over
+        Bluetooth. Most users will want to use :meth:`write_string()` or
+        :meth:`write_line()` instead.
+
+        Args:
+            data: Any bytes-like object that will fit in a single BLE packet.
+        """
+        if self._legacy_stdio:
+            await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+        else:
+            msg = bytearray([Command.WRITE_STDIN])
+            msg.extend(data)
+
+            if len(msg) > self._max_write_size:
+                raise ValueError(
+                    f"data is too big, limited to {self._max_write_size - 1} bytes"
+                )
+
+            await self.client.write_gatt_char(PYBRICKS_COMMAND_EVENT_UUID, msg, True)
+
+    async def write_string(self, value: str) -> None:
+        """
+        Writes a string to stdin on the hub.
+
+        Args:
+            value: The string to write.
+        """
+
+        for c in chunk(value.encode(), self._max_write_size - 1):
+            await self.write(c)
+
+    async def write_line(self, value: str) -> None:
+        """
+        Writes a string to stdin on the hub and adds a newline (``\\r\\n``)
+        to the end.
+
+        Args:
+            value: The string to write.
+        """
+        await self.write_string(value + self.EOL.decode())
+
+    async def read_line(self) -> str:
+        """
+        Waits for a line to be read from stdout on the hub.
+
+        Returns:
+            The next line read from stdout (without the newline).
+        """
+        return await self.race_disconnect(self._stdout_line_queue.get())
 
     async def run(
         self, py_path: str, wait: bool = True, print_output: bool = True

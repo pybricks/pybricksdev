@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added support for Pybricks Profile v1.3.0.
+- Added new `PybricksHub.write_string()` method.
+- Added new `PybricksHub.write_line()` method.
+- Added new `PybricksHub.read_line()` method.
+
 ## [1.0.0-alpha.42] - 2023-04-12
 
 ### Fixed
