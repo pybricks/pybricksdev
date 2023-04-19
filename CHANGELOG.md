@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.43] - 2023-04-19
+
 ### Added
 - Added support for Pybricks Profile v1.3.0.
 - Added new `PybricksHub.write_string()` method.
@@ -366,7 +368,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.42..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.43..HEAD
+[1.0.0-alpha.43]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.42...v1.0.0-alpha.43
 [1.0.0-alpha.42]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.41...v1.0.0-alpha.42
 [1.0.0-alpha.41]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.40...v1.0.0-alpha.41
 [1.0.0-alpha.40]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.39...v1.0.0-alpha.40
