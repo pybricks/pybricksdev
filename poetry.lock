@@ -325,14 +325,14 @@ dev = ["Sphinx (==4.3.2)", "black (==22.3.0)", "build (==0.8.0)", "flake8 (==4.0
 
 [[package]]
 name = "bleak"
-version = "0.20.0"
+version = "0.20.2"
 description = "Bluetooth Low Energy platform Agnostic Klient"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "bleak-0.20.0-py3-none-any.whl", hash = "sha256:68e3de7fcde4ef2d206dc3611bf97ad613ae589a6e199129c09debd126e5e05d"},
-    {file = "bleak-0.20.0.tar.gz", hash = "sha256:7f6fe69454ad5d4c0ab05ae4a9aa1aabd6926d7128eab2fac4ef8a58a72999ee"},
+    {file = "bleak-0.20.2-py3-none-any.whl", hash = "sha256:ce3106b7258212d92bb77be06f9301774f51f5bbc9f7cd50976ad794e9514dba"},
+    {file = "bleak-0.20.2.tar.gz", hash = "sha256:6c92a47abe34e6dea8ffc5cea9457cbff6e1be966854839dbc25cddb36b79ee4"},
 ]
 
 [package.dependencies]
@@ -2494,4 +2494,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "ca48c1b028590d48811b7578d2c5e29ccec9014d999fb5e3fbb50abcf8f1201d"
+content-hash = "ad86f765c45d554c95b6f6592034a9d558935eafe8f0fa7de93bf1153cd481f6"
