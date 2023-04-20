@@ -6,7 +6,7 @@ import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, Optional, TypeVar
+from typing import Awaitable, List, Optional, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -93,6 +93,16 @@ class PybricksHub:
         # REVISIT: this can potentially waste a lot of RAM if not drained
         self._stdout_line_queue = asyncio.Queue()
 
+        # REVISIT: It would be better to be able to subscribe to output instead
+        # of always capturing it even if it is not used. This is currently
+        # used in motor test code in pybricks-micropython.
+        self.output: List[bytes] = []
+        """
+        Contains lines printed to stdout of the hub as a a list of bytes.
+
+        List is reset each time :meth:`run()` is called.
+        """
+
         # prior to Pybricks Profile v1.3.0, NUS was used for stdio
         self._legacy_stdio = False
 
@@ -147,6 +157,8 @@ class PybricksHub:
         if self.log_file is not None:
             print(line_str, file=self.log_file)
             return
+
+        self.output.append(line)
 
         if self.print_output:
             print(line_str)
@@ -425,6 +437,7 @@ class PybricksHub:
 
         # Reset output buffer
         self.log_file = None
+        self.output = []
         self._stdout_buf.clear()
         self._stdout_line_queue = asyncio.Queue()
         self.print_output = print_output
