@@ -19,7 +19,11 @@ jobs:
       - run: poetry run flake8 --show-source
         id: flake8
       - run: poetry run black --check --diff .
+        id: black
         if: success() || steps.flake8.conclusion == 'failure'
+      - run: poetry run isort --check --diff .
+        id: isort
+        if: success() || steps.flake8.conclusion == 'failure' || steps.black.conclusion == 'failure'
   test:
     runs-on: ubuntu-22.04
     strategy:
