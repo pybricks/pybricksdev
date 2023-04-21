@@ -4,8 +4,12 @@
 
 	// List of extensions which should be recommended for users of this workspace.
 	"recommendations": [
+		"github.vscode-github-actions",
 		"ms-python.python",
-		"ms-python.vscode-pylance"
+		"ms-python.vscode-pylance",
+		"ms-python.black-formatter",
+		"ms-python.isort",
+		"ms-python.flake8"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [
