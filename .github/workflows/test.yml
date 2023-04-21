@@ -8,7 +8,7 @@ jobs:
     steps:
       - run: pipx install poetry
       - uses: actions/checkout@v3
-      - run: poetry install --only=doc
+      - run: poetry install --only=docs
       - run: poetry run make -C docs/ html
   lint:
     runs-on: ubuntu-22.04
