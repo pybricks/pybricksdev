@@ -389,13 +389,13 @@ class PybricksHub:
 
     async def write_line(self, value: str) -> None:
         """
-        Writes a string to stdin on the hub and adds a newline (``\\r\\n``)
+        Writes a string to stdin on the hub and adds a newline (``\\n``)
         to the end.
 
         Args:
             value: The string to write.
         """
-        await self.write_string(value + self.EOL.decode())
+        await self.write_string(value + "\n")
 
     async def read_line(self) -> str:
         """

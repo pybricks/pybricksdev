@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed endline in `PybricksHub.write_line()`.
+
 ## [1.0.0-alpha.44] - 2023-04-20
 
 ### Fixed
