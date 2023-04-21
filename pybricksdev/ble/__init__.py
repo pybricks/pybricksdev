@@ -5,7 +5,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from bleak import BleakScanner, BleakClient
+from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 

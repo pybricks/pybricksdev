@@ -1,11 +1,12 @@
 import pytest
+
 from pybricksdev.ble.lwp3.bytecodes import (
     BluetoothAddress,
     HwNetExtFamily,
     HwNetFamily,
     HwNetSubfamily,
-    LWPVersion,
     LastNetwork,
+    LWPVersion,
     PortID,
     Version,
 )

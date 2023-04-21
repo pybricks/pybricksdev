@@ -1,6 +1,7 @@
 import inspect
 
 import pytest
+
 from pybricksdev.ble.lwp3.bytecodes import (
     AlertKind,
     AlertOperation,

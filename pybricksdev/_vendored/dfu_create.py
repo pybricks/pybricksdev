@@ -8,11 +8,11 @@
 
 # This file was originally copied from micropython/tools/dfu.py
 
-from optparse import OptionParser
 import os
 import struct
 import sys
 import zlib
+from optparse import OptionParser
 
 DEFAULT_DEVICE = "0x0483:0xdf11"
 

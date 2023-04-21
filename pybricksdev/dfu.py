@@ -5,7 +5,6 @@ import errno
 import os
 import platform
 import sys
-
 from contextlib import nullcontext
 from importlib.resources import path
 from subprocess import DEVNULL, PIPE, call, check_call, run
@@ -15,7 +14,7 @@ from typing import BinaryIO, ContextManager
 from usb.core import NoBackendError, USBError
 
 from . import resources
-from ._vendored import dfu_upload, dfu_create
+from ._vendored import dfu_create, dfu_upload
 from .ble.lwp3.bytecodes import HubKind
 
 FIRMWARE_ADDRESS = 0x08008000

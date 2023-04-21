@@ -7,6 +7,7 @@ import struct
 from tempfile import NamedTemporaryFile
 
 import pytest
+
 from pybricksdev.compile import compile_file
 
 

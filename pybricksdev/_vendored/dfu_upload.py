@@ -23,9 +23,10 @@ import inspect
 import re
 import struct
 import sys
+import zlib
+
 import usb.core
 import usb.util
-import zlib
 
 # VID/PID
 __VID = 0x0483

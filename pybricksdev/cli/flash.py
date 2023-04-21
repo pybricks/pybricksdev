@@ -332,9 +332,9 @@ async def flash_nxt(firmware: bytes) -> None:
         firmware:
             A firmware blob with the NxOS header appended to the end.
     """
-    from .._vendored.pynxt.samba import SambaBrick, SambaOpenError
     from .._vendored.pynxt.firmware import Firmware
     from .._vendored.pynxt.flash import FlashController
+    from .._vendored.pynxt.samba import SambaBrick, SambaOpenError
 
     # parse the header
     info = Firmware(firmware)

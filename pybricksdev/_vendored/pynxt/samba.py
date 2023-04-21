@@ -2,6 +2,7 @@
 # Copyright 2006 David Anderson <david.anderson@calixo.net>
 
 import struct
+
 from . import lowlevel
 
 ATMEL_VENDOR_ID = 0x03EB

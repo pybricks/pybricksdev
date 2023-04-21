@@ -2,7 +2,6 @@
 # Copyright 2006 David Anderson <david.anderson@calixo.net>
 
 import math
-
 from importlib.resources import read_binary
 
 from . import resources

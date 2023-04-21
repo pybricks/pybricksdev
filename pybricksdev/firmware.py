@@ -13,7 +13,6 @@ import sys
 import zipfile
 from typing import BinaryIO, List, Literal, Optional, Tuple, TypedDict, Union
 
-
 if sys.version_info < (3, 10):
     from typing_extensions import TypeGuard
 else:

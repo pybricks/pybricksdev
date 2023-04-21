@@ -7,12 +7,12 @@ for connecting to a device and sending and receiving LWP3 messages.
 """
 
 import asyncio
-from enum import Enum
 import inspect
 import logging
 import os
 import re
 import struct
+from enum import Enum
 from pathlib import Path
 
 from appdirs import user_cache_dir

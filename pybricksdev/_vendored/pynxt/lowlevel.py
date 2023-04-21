@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright 2006 David Anderson <david.anderson@calixo.net>
 
-import usb
 import time
+
+import usb
 
 USB_BULK_OUT_EP = 0x1
 USB_BULK_IN_EP = 0x82

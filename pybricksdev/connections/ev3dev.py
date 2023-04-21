@@ -2,9 +2,10 @@
 # Copyright (c) 2021-2022 The Pybricks Authors
 
 import asyncio
-import asyncssh
 import os
 import pathlib
+
+import asyncssh
 
 
 class EV3Connection:
