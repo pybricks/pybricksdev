@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.45] - 2023-04-21
+
 ### Added
 - Added `PybricksHub.stdout_observable` property ([support#1038]).
 
@@ -383,7 +385,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.44..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.45..HEAD
+[1.0.0-alpha.45]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.44...v1.0.0-alpha.45
 [1.0.0-alpha.44]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.43...v1.0.0-alpha.44
 [1.0.0-alpha.43]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.42...v1.0.0-alpha.43
 [1.0.0-alpha.42]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.41...v1.0.0-alpha.42
