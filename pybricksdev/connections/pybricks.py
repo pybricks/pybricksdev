@@ -87,6 +87,9 @@ class PybricksHub:
         self._capability_flags = HubCapabilityFlag(0)
         self._max_user_program_size = 0
 
+        # whether to enable line handler features or not
+        self._enable_line_handler = False
+
         # buffered stdout from the hub for splitting into lines
         self._stdout_buf = bytearray()
 
@@ -198,7 +201,8 @@ class PybricksHub:
         # support legacy firmware where the Nordic UART service
         # was used for stdio
         if self._legacy_stdio:
-            self._handle_line_data(data)
+            if self._enable_line_handler:
+                self._handle_line_data(data)
 
     def _pybricks_service_handler(self, _: int, data: bytes) -> None:
         if data[0] == Event.STATUS_REPORT:
@@ -206,7 +210,10 @@ class PybricksHub:
             (flags,) = struct.unpack_from("<I", data, 1)
             self.status_observable.on_next(StatusFlag(flags))
         elif data[0] == Event.WRITE_STDOUT:
-            self._handle_line_data(data[1:])
+            payload = data[1:]
+
+            if self._enable_line_handler:
+                self._handle_line_data(payload)
 
     async def connect(self, device: BLEDevice):
         """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
@@ -422,7 +429,11 @@ class PybricksHub:
         )
 
     async def run(
-        self, py_path: str, wait: bool = True, print_output: bool = True
+        self,
+        py_path: str,
+        wait: bool = True,
+        print_output: bool = True,
+        line_handler: bool = True,
     ) -> None:
         """
         Compiles and runs a user program.
@@ -431,6 +442,7 @@ class PybricksHub:
             py_path: The path to the .py file to compile.
             wait: If true, wait for the user program to stop before returning.
             print_output: If true, echo stdout of the hub to ``sys.stdout``.
+            line_handler: If true enable hub stdout line handler features.
         """
         if self.connection_state_observable.value != ConnectionState.CONNECTED:
             raise RuntimeError("not connected")
@@ -442,6 +454,7 @@ class PybricksHub:
         self._stdout_line_queue = asyncio.Queue()
         self.print_output = print_output
         self.script_dir, _ = os.path.split(py_path)
+        self._enable_line_handler = line_handler
 
         # maintain compatibility with older firmware (Pybricks profile < 1.2.0).
         if self._mpy_abi_version:
