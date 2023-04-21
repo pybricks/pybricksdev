@@ -13,6 +13,7 @@ import semver
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from packaging.version import Version
+from reactivex import Observable
 from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -80,6 +81,7 @@ class PybricksHub:
     def __init__(self):
         self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
+        self._stdout_subject = Subject()
         self.nus_observable = Subject()
         self.print_output = True
         self.fw_version = None
@@ -117,6 +119,13 @@ class PybricksHub:
 
         # File handle for logging
         self.log_file = None
+
+    @property
+    def stdout_observable(self) -> Observable[bytes]:
+        """
+        Observable used to subscribe to stdout of the hub.
+        """
+        return self._stdout_subject
 
     def _line_handler(self, line: bytes) -> None:
         """
@@ -201,6 +210,8 @@ class PybricksHub:
         # support legacy firmware where the Nordic UART service
         # was used for stdio
         if self._legacy_stdio:
+            self._stdout_subject.on_next(data)
+
             if self._enable_line_handler:
                 self._handle_line_data(data)
 
@@ -211,6 +222,7 @@ class PybricksHub:
             self.status_observable.on_next(StatusFlag(flags))
         elif data[0] == Event.WRITE_STDOUT:
             payload = data[1:]
+            self._stdout_subject.on_next(payload)
 
             if self._enable_line_handler:
                 self._handle_line_data(payload)
@@ -403,7 +415,17 @@ class PybricksHub:
 
         Returns:
             The next line read from stdout (without the newline).
+
+        Raises:
+            RuntimeError:
+                if line handler is disabled (e.g. :meth:`run` is
+                called with ``line_handler=False``)
+            RuntimeError:
+                if hub becomes disconnected
         """
+        if not self._enable_line_handler:
+            raise RuntimeError("line handler is disabled, method would block forever")
+
         return await self.race_disconnect(self._stdout_line_queue.get())
 
     async def start_user_program(self) -> None:
