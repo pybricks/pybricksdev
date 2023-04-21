@@ -3,6 +3,13 @@ name: CI tests
 on: [push, pull_request]
 
 jobs:
+  docs:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: pipx install poetry
+      - uses: actions/checkout@v3
+      - run: poetry install --only=doc
+      - run: poetry run make -C docs/ html
   lint:
     runs-on: ubuntu-22.04
     steps:
@@ -25,8 +32,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: poetry install
       - run: poetry run pytest
-      - run: poetry run make -C docs/ html
-        if: ${{ success() || failure() }}
       - run: poetry run coverage run
       - run: |
           pipx install coveralls
