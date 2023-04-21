@@ -1695,14 +1695,14 @@ files = [
 
 [[package]]
 name = "pybricks"
-version = "3.0.0rc1"
+version = "3.2.0"
 description = "Documentation and user-API stubs for Pybricks MicroPython"
 category = "dev"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "pybricks-3.0.0rc1-py3-none-any.whl", hash = "sha256:2cefbcf817f6c36910c00199f343b308c3b1fd99fa3b5ea5d9b4dd83b277a695"},
-    {file = "pybricks-3.0.0rc1.tar.gz", hash = "sha256:f9858c474388cf99fd43d3b9291e36b1c2913ceeb400626139dad31d78b45441"},
+    {file = "pybricks-3.2.0-py3-none-any.whl", hash = "sha256:e50d41f9caf3d26eedcb09d87bd9d14c11abfd517600bf773a2c20241fe8e9d7"},
+    {file = "pybricks-3.2.0.tar.gz", hash = "sha256:7c3e6fe44eeb5cb60efd7dab86f6dc26f07fade630b34f5ad106ca55115d0a6a"},
 ]
 
 [[package]]
@@ -2587,4 +2587,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.12"
-content-hash = "5ef5c20fdf92f175fb8c6a773b56313a6452d433ac65c161196de947e09426d9"
+content-hash = "30ba78fdf30c3213c2dc7f2e626d9b43f6fa8b41a5989a6d453f856520ec3790"
