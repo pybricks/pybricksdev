@@ -3,6 +3,15 @@ name: CI tests
 on: [push, pull_request]
 
 jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: pipx install poetry
+      - uses: actions/checkout@v3
+      - run: poetry install --only=lint
+      - run: poetry run flake8 --show-source
+      - run: poetry run black --check --diff .
+        if: ${{ success() || failure() }}
   test:
     runs-on: ubuntu-22.04
     strategy:
@@ -16,10 +25,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: poetry install
       - run: poetry run pytest
-      - run: poetry run flake8 --show-source
-        if: ${{ success() || failure() }}
-      - run: poetry run black --check --diff .
-        if: ${{ success() || failure() }}
       - run: poetry run make -C docs/ html
         if: ${{ success() || failure() }}
       - run: poetry run coverage run
