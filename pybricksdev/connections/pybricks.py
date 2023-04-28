@@ -428,6 +428,63 @@ class PybricksHub:
 
         return await self.race_disconnect(self._stdout_line_queue.get())
 
+    async def download_user_program(self, program: bytes) -> None:
+        """
+        Downloads user program to user RAM on the hub and indicates progress
+        using tqdm.
+
+        This is a somewhat low-level function. It verifies that the size of the
+        program is not too big but it does not verify that the program data
+        is valid or can be run on the hub. Also see :meth:`run`.
+
+        Requires hub with Pybricks Profile >= v1.2.0.
+
+        Args:
+            program: The raw program data.
+
+        Raises:
+            ValueError: if program is too large to fit on the hub
+        """
+        # the hub tells us the max size of program that is allowed, so we can fail early
+        if len(program) > self._max_user_program_size:
+            raise ValueError(
+                f"program is too big ({len(program)} bytes). Hub has limit of {self._max_user_program_size} bytes."
+            )
+
+        # clear user program meta so hub doesn't try to run invalid program
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, 0),
+            response=True,
+        )
+
+        # payload is max size minus header size
+        payload_size = self._max_write_size - 5
+
+        # write program data with progress bar
+        with logging_redirect_tqdm(), tqdm(
+            total=len(program), unit="B", unit_scale=True
+        ) as pbar:
+            for i, c in enumerate(chunk(program, payload_size)):
+                await self.client.write_gatt_char(
+                    PYBRICKS_COMMAND_EVENT_UUID,
+                    struct.pack(
+                        f"<BI{len(c)}s",
+                        Command.COMMAND_WRITE_USER_RAM,
+                        i * payload_size,
+                        c,
+                    ),
+                    response=True,
+                )
+                pbar.update(len(c))
+
+        # set the metadata to notify that writing was successful
+        await self.client.write_gatt_char(
+            PYBRICKS_COMMAND_EVENT_UUID,
+            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, len(program)),
+            response=True,
+        )
+
     async def start_user_program(self) -> None:
         """
         Starts the user program that is already in RAM on the hub.
@@ -491,47 +548,7 @@ class PybricksHub:
 
         mpy = await compile_multi_file(py_path, 6)
 
-        # the hub also tells us the max size of program that is allowed, so we can fail early
-        if len(mpy) > self._max_user_program_size:
-            raise ValueError(
-                f"Compiled program is too big ({len(mpy)} bytes). Hub has limit of {self._max_user_program_size} bytes."
-            )
-
-        # clear user program meta so hub doesn't try to run invalid program
-        await self.client.write_gatt_char(
-            PYBRICKS_COMMAND_EVENT_UUID,
-            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, 0),
-            response=True,
-        )
-
-        # payload is max size minus header size
-        payload_size = self._max_write_size - 5
-
-        # write program data with progress bar
-        with logging_redirect_tqdm(), tqdm(
-            total=len(mpy), unit="B", unit_scale=True
-        ) as pbar:
-            for i, c in enumerate(chunk(mpy, payload_size)):
-                await self.client.write_gatt_char(
-                    PYBRICKS_COMMAND_EVENT_UUID,
-                    struct.pack(
-                        f"<BI{len(c)}s",
-                        Command.COMMAND_WRITE_USER_RAM,
-                        i * payload_size,
-                        c,
-                    ),
-                    response=True,
-                )
-                pbar.update(len(c))
-
-        # set the metadata to notify that writing was successful
-        await self.client.write_gatt_char(
-            PYBRICKS_COMMAND_EVENT_UUID,
-            struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, len(mpy)),
-            response=True,
-        )
-
-        # now we can run the program
+        await self.download_user_program(mpy)
         await self.start_user_program()
 
         if wait:

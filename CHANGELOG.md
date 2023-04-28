@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `PybricksHub.download_user_program()` method ([support#284]).
+
+[support#284]: https://github.com/pybricks/support/issues/284
+
 ## [1.0.0-alpha.45] - 2023-04-21
 
 ### Added
@@ -14,14 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed endline in `PybricksHub.write_line()`.
 
-[support#1038]: https://github.com/orgs/pybricks/discussions/1038
+[support#1038]: https://github.com/pybricks/support/issues/1038
 
 ## [1.0.0-alpha.44] - 2023-04-20
 
 ### Fixed
 - Restored `PybricksHub.output` attribute ([support#1037]).
 
-[support#1037]: https://github.com/orgs/pybricks/discussions/1037
+[support#1037]: https://github.com/pybricks/support/issues/1037
 
 ## [1.0.0-alpha.43] - 2023-04-19
 
