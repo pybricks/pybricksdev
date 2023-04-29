@@ -44,6 +44,7 @@ mpy-cross-v6 = "^1.0.0"
 packaging = "^22"
 typing-extensions = "^4.3.0"
 reactivex = "^4.0.4"
+hidapi = "^0.13.1"
 
 [tool.poetry.group.notebook.dependencies]
 ipykernel = "^5.3.1"

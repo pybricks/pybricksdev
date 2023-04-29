@@ -8,6 +8,7 @@ import logging
 import struct
 import sys
 import zipfile
+import zlib
 from tempfile import NamedTemporaryFile
 from typing import BinaryIO, Dict, Optional
 
@@ -15,6 +16,8 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from packaging.version import Version
+from tqdm.auto import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from ..ble.lwp3 import (
     LEGO_CID,
@@ -364,6 +367,55 @@ async def flash_nxt(firmware: bytes) -> None:
     s.close()
 
 
+async def flash_ev3(firmware: bytes) -> None:
+    """
+    Flashes firmware to EV3.
+
+    Args:
+        firmware:
+            A firmware blob.
+    """
+    from ..connections.ev3 import EV3Bootloader
+
+    # TODO: nice error message and exit(1) if EV3 is not found
+    with EV3Bootloader() as bootloader:
+        fw, hw = await bootloader.get_version()
+        print(f"hwid: {hw}")
+
+        ERASE_TICKS = 60
+
+        # Erasing doesn't have any feedback so we just use time for the progress
+        # bar. The operation runs on the EV3, so the time is the same for everyone.
+        async def tick(callback):
+            for _ in range(ERASE_TICKS):
+                await asyncio.sleep(1)
+                callback(1)
+
+        print("Erasing memory...")
+        with logging_redirect_tqdm(), tqdm(total=ERASE_TICKS) as pbar:
+            await asyncio.gather(bootloader.erase_chip(), tick(pbar.update))
+
+        print("Downloading firmware...")
+        with logging_redirect_tqdm(), tqdm(
+            total=len(firmware), unit="B", unit_scale=True
+        ) as pbar:
+            await bootloader.download(0, firmware, pbar.update)
+
+        print("Verifying...", end="", flush=True)
+        checksum = await bootloader.get_checksum(0, len(firmware))
+        expected_checksum = zlib.crc32(firmware)
+
+        if checksum != expected_checksum:
+            print("Bad checksum!")
+            exit(1)
+
+        print("OK.")
+
+        print("Restarting EV3...", end="", flush=True)
+        await bootloader.start_app()
+        print("Done.")
+
+
 async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> None:
     """
     Command line tool for flashing firmware.
@@ -420,5 +472,7 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
         await flash_ble(hub_kind, firmware, metadata)
     elif hub_kind == HubKind.NXT:
         await flash_nxt(firmware)
+    elif hub_kind == HubKind.EV3:
+        await flash_ev3(firmware)
     else:
         raise ValueError(f"unsupported hub kind: {hub_kind}")
