@@ -65,4 +65,5 @@ demo/_*.py
 
 # Coveage
 .coverage
+coverage.*
 htmlcov/
