@@ -509,7 +509,7 @@ class PybricksHub:
 
     async def run(
         self,
-        py_path: str,
+        py_path: Optional[str] = None,
         wait: bool = True,
         print_output: bool = True,
         line_handler: bool = True,
@@ -518,7 +518,8 @@ class PybricksHub:
         Compiles and runs a user program.
 
         Args:
-            py_path: The path to the .py file to compile.
+            py_path: The path to the .py file to compile. If None, runs a
+                previously downloaded program.
             wait: If true, wait for the user program to stop before returning.
             print_output: If true, echo stdout of the hub to ``sys.stdout``.
             line_handler: If true enable hub stdout line handler features.
@@ -532,11 +533,17 @@ class PybricksHub:
         self._stdout_buf.clear()
         self._stdout_line_queue = asyncio.Queue()
         self.print_output = print_output
-        self.script_dir, _ = os.path.split(py_path)
         self._enable_line_handler = line_handler
+        self.script_dir = os.getcwd()
+        if py_path is not None:
+            self.script_dir, _ = os.path.split(py_path)
 
         # maintain compatibility with older firmware (Pybricks profile < 1.2.0).
         if self._mpy_abi_version:
+            if py_path is None:
+                raise RuntimeError(
+                    "Hub does not support running stored program. Provide a py_path to run"
+                )
             await self._legacy_run(py_path, wait)
             return
 
@@ -546,9 +553,10 @@ class PybricksHub:
                 "Hub is not compatible with any of the supported file formats"
             )
 
-        mpy = await compile_multi_file(py_path, 6)
+        if py_path is not None:
+            mpy = await compile_multi_file(py_path, 6)
+            await self.download_user_program(mpy)
 
-        await self.download_user_program(mpy)
         await self.start_user_program()
 
         if wait:
