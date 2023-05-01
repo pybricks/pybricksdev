@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.46] - 2023-05-01
+
 ### Added
 - Added `PybricksHub.download_user_program()` method ([support#284]).
 - Added support for flashing EV3 firmware.
@@ -392,7 +394,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.45..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.46..HEAD
+[1.0.0-alpha.46]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.45...v1.0.0-alpha.46
 [1.0.0-alpha.45]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.44...v1.0.0-alpha.45
 [1.0.0-alpha.44]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.43...v1.0.0-alpha.44
 [1.0.0-alpha.43]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.42...v1.0.0-alpha.43
