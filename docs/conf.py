@@ -119,6 +119,5 @@ autodoc_mock_imports = [
     "semver",
     "tqdm",
     "usb",
-    "validators",
 ]
 autoclass_content = "both"

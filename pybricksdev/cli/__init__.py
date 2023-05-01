@@ -8,6 +8,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import socket
 import sys
 from abc import ABC, abstractmethod
 from os import PathLike, path
@@ -15,7 +16,6 @@ from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
 
 import argcomplete
-import validators
 from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME
@@ -183,11 +183,8 @@ class Run(Tool):
                 print("--name is required for SSH connections", file=sys.stderr)
                 exit(1)
 
-            if not validators.ip_address.ipv4(args.name):
-                raise ValueError("Device must be IP address.")
-
             hub = EV3Connection()
-            device_or_address = args.name
+            device_or_address = socket.gethostbyname(args.name)
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
