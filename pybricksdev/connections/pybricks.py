@@ -548,13 +548,28 @@ class PybricksHub:
             return
 
         # since Pybricks profile v1.2.0, the hub will tell us which file format(s) it supports
-        if not (self._capability_flags & HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6):
+        if not (
+            self._capability_flags
+            & (
+                HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6
+                | HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
+            )
+        ):
             raise RuntimeError(
                 "Hub is not compatible with any of the supported file formats"
             )
 
+        # no support for native modules unless one of the flags below is set
+        abi = 6
+
+        if (
+            self._capability_flags
+            & HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
+        ):
+            abi = (6, 1)
+
         if py_path is not None:
-            mpy = await compile_multi_file(py_path, 6)
+            mpy = await compile_multi_file(py_path, abi)
             await self.download_user_program(mpy)
 
         await self.start_user_program()

@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2022 The Pybricks Authors
+# Copyright (c) 2019-2023 The Pybricks Authors
 
 import asyncio
 import logging
 import os
 from modulefinder import ModuleFinder
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 import mpy_cross_v5
 import mpy_cross_v6
@@ -76,7 +76,7 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
         return mpy
 
 
-async def compile_multi_file(path: str, abi: int):
+async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
@@ -101,7 +101,8 @@ async def compile_multi_file(path: str, abi: int):
         path:
             Path to script that is to be compiled.
         abi:
-            Expected MPY ABI version.
+            Expected MPY ABI version. Can be major version (int) if no native
+            .mpy modules or tuple of major, minor version.
 
     Returns:
         Concatenation of all compiled files in the format given above.
@@ -123,10 +124,12 @@ async def compile_multi_file(path: str, abi: int):
     # Get a data blob with all scripts.
     parts: List[bytes] = []
 
+    abi_major, abi_minor = (abi, None) if isinstance(abi, int) else abi
+
     for name, module in finder.modules.items():
         if not module.__file__:
             continue
-        mpy = await compile_file(module.__file__, abi)
+        mpy = await compile_file(module.__file__, abi_major)
 
         parts.append(len(mpy).to_bytes(4, "little"))
         parts.append(name.encode() + b"\x00")
@@ -138,9 +141,19 @@ async def compile_multi_file(path: str, abi: int):
             try:
                 with open(os.path.join(spath, f"{name}.mpy"), "rb") as f:
                     mpy = f.read()
-                if mpy[1] != abi:
+                if mpy[1] != abi_major:
                     raise ValueError(
-                        f"{name}.mpy has abi version {mpy[1]} while {abi} is required"
+                        f"{name}.mpy has abi major version {mpy[1]} while {abi_major} is required"
+                    )
+                if (
+                    abi_minor is not None  # hub indicated a minor version
+                    and (mpy[2] >> 2)  # mpy has native arch
+                    # TODO: How to validate native arch? For now just gets runtime error on hub.
+                    and (mpy[2] & 0x3)
+                    != abi_minor  # mpy minor version does not match hub minor version
+                ):
+                    raise ValueError(
+                        f"{name}.mpy has abi minor version {mpy[2] & 0x3} while {abi_minor} is required"
                     )
                 parts.append(len(mpy).to_bytes(4, "little"))
                 parts.append(name.encode() + b"\x00")

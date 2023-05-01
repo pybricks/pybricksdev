@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021 The Pybricks Authors
+# Copyright (c) 2021-2023 The Pybricks Authors
 
 """
 This module is used for Bluetooth Low Energy communications with devices
@@ -272,7 +272,17 @@ class HubCapabilityFlag(IntFlag):
     """
     Hub supports user programs using a multi-file blob with MicroPython MPY (ABI V6) files.
 
+    Native module support is not implied by this flag but may be indicated by additional flags.
+
     .. availability:: Since Pybricks protocol v1.2.0.
+    """
+
+    USER_PROG_MULTI_FILE_MPY6_1_NATIVE = 2 << 1
+    """
+    Hub supports user programs using a multi-file blob with MicroPython MPY (ABI V6.1) files
+    including native module support.
+
+    .. availability:: Since Pybricks protocol v1.3.0.
     """
 
 

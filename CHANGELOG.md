@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added `PybricksHub.download_user_program()` method ([support#284]).
 - Added support for flashing EV3 firmware.
+- Added support for MPY ABI v6.1.
 
 [support#284]: https://github.com/pybricks/support/issues/284
 
