@@ -183,22 +183,21 @@ class Run(Tool):
                 print("--name is required for SSH connections", file=sys.stderr)
                 exit(1)
 
-            hub = EV3Connection()
             device_or_address = socket.gethostbyname(args.name)
+            hub = EV3Connection(device_or_address)
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
-            hub = PybricksHub()
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
             device_or_address = await find_device(args.name)
+            hub = PybricksHub(device_or_address)
 
         elif args.conntype == "usb":
             hub = REPLHub()
-            device_or_address = None
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
         # Connect to the address and run the script
-        await hub.connect(device_or_address)
+        await hub.connect()
         try:
             with _get_script_path(args.file) as script_path:
                 await hub.run(script_path, args.wait)

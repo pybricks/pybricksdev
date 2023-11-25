@@ -78,7 +78,7 @@ class PybricksHub:
     has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
     """
 
-    def __init__(self):
+    def __init__(self, device: BLEDevice):
         self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self._stdout_subject = Subject()
@@ -119,6 +119,11 @@ class PybricksHub:
 
         # File handle for logging
         self.log_file = None
+
+        def handle_disconnect(_: BleakClient):
+            self._handle_disconnect()
+
+        self.client = BleakClient(device, disconnected_callback=handle_disconnect)
 
     @property
     def stdout_observable(self) -> Observable[bytes]:
@@ -227,18 +232,20 @@ class PybricksHub:
             if self._enable_line_handler:
                 self._handle_line_data(payload)
 
-    async def connect(self, device: BLEDevice):
-        """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
+    def _handle_disconnect(self):
+        logger.info("Disconnected!")
+        self.connection_state_observable.on_next(ConnectionState.DISCONNECTED)
 
-        Args:
-            device: The device to connect to.
+    async def connect(self):
+        """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
 
         Raises:
             BleakError: if connecting failed (or old firmware without Device
                 Information Service)
             RuntimeError: if Pybricks Protocol version is not supported
         """
-        logger.info(f"Connecting to {device.name}")
+        # TODO: Fix this
+        # logger.info(f"Connecting to {device.name}")
 
         if self.connection_state_observable.value != ConnectionState.DISCONNECTED:
             raise RuntimeError(
@@ -251,12 +258,6 @@ class PybricksHub:
             stack.callback(
                 self.connection_state_observable.on_next, ConnectionState.DISCONNECTED
             )
-
-            def handle_disconnect(_: BleakClient):
-                logger.info("Disconnected!")
-                self.connection_state_observable.on_next(ConnectionState.DISCONNECTED)
-
-            self.client = BleakClient(device, disconnected_callback=handle_disconnect)
 
             await self.client.connect()
 
