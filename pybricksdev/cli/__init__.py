@@ -171,10 +171,11 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
-        from ..ble import find_device
+        from ..ble import find_device as find_ble
         from ..connections.ev3dev import EV3Connection
         from ..connections.lego import REPLHub
-        from ..connections.pybricks import PybricksHubBLE
+        from ..connections.pybricks import PybricksHubBLE, PybricksHubUSB
+        from usb.core import find as find_usb
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -185,14 +186,20 @@ class Run(Tool):
 
             device_or_address = socket.gethostbyname(args.name)
             hub = EV3Connection(device_or_address)
+
         elif args.conntype == "ble":
             # It is a Pybricks Hub with BLE. Device name or address is given.
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
-            device_or_address = await find_device(args.name)
+            device_or_address = await find_ble(args.name)
             hub = PybricksHubBLE(device_or_address)
 
         elif args.conntype == "usb":
-            hub = REPLHub()
+            device_or_address = find_usb(idVendor=0x0483, idProduct=0x5740)
+
+            if device_or_address is not None and device_or_address.product == "Pybricks Hub":
+                hub = PybricksHubUSB(device_or_address)
+            else:
+                hub = REPLHub()
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 

@@ -18,6 +18,10 @@ from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from typing import Callable
+from uuid import UUID
+from usb.core import Device as USBDevice, Endpoint
+from usb.control import get_descriptor
+from usb.util import *
 
 from ..ble.lwp3.bytecodes import HubKind
 from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
@@ -703,3 +707,72 @@ class PybricksHubBLE(PybricksHub):
 
     async def start_notify(self, uuid: str, callback: Callable) -> None:
         return await self._client.start_notify(uuid, callback)
+
+class PybricksHubUSB(PybricksHub):
+    _device: USBDevice
+    _ep_in: Endpoint
+    _ep_out: Endpoint
+    _notify_callbacks = {}
+
+    def __init__(self, device: USBDevice):
+        super().__init__()
+        self._device = device
+
+    async def _client_connect(self) -> bool:
+        self._device.set_configuration()
+
+        # Save input and output endpoints
+        cfg = self._device.get_active_configuration()
+        intf = cfg[(0,0)]
+        self._ep_in = find_descriptor(intf, custom_match = lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN)
+        self._ep_out = find_descriptor(intf, custom_match = lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT)
+
+        # Set write size to endpoint packet size minus length of UUID
+        self._max_write_size = self._ep_out.wMaxPacketSize - 16
+
+        # Get length of BOS descriptor
+        bos_descriptor = get_descriptor(self._device, 5, 0x0F, 0)
+        (ofst, _, bos_len, _) = struct.unpack("<BBHB", bos_descriptor)
+
+        # Get full BOS descriptor
+        bos_descriptor = get_descriptor(self._device, bos_len, 0x0F, 0)
+
+        while ofst < bos_len:
+            (len, desc_type, cap_type) = struct.unpack_from("<BBB", bos_descriptor, offset=ofst)
+
+            if desc_type != 0x10:
+                logger.error("Expected Device Capability descriptor")
+                exit(1)
+
+            # Look for platform descriptors
+            if cap_type == 0x05:
+                uuid_bytes = bos_descriptor[ofst + 4 : ofst + 4 + 16]
+                uuid_str = str(UUID(bytes_le = bytes(uuid_bytes)))
+
+                if uuid_str == FW_REV_UUID:
+                    fw_version = bytearray(bos_descriptor[ofst + 20 : ofst + len - 1]) # Remove null-terminator
+                    self.fw_version = Version(fw_version.decode())
+
+                elif uuid_str == SW_REV_UUID:
+                    self._protocol_version = bytearray(bos_descriptor[ofst + 20 : ofst + len - 1]) # Remove null-terminator
+
+                elif uuid_str == PYBRICKS_HUB_CAPABILITIES_UUID:
+                    caps = bytearray(bos_descriptor[ofst + 20 : ofst + len])
+                    (_, self._capability_flags, self._max_user_program_size) = unpack_hub_capabilities(caps)
+
+            ofst += len
+
+        return True
+
+    async def _client_disconnect(self) -> bool:
+        self._handle_disconnect()
+
+    async def read_gatt_char(self, uuid: str) -> bytearray:
+        return None
+
+    async def write_gatt_char(self, uuid: str, data, response: bool) -> None:
+        self._ep_out.write(UUID(uuid).bytes_le + data)
+        # TODO: Handle response
+
+    async def start_notify(self, uuid: str, callback: Callable) -> None:
+        self._notify_callbacks[uuid] = callback
