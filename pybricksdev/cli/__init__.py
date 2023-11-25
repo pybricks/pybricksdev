@@ -174,7 +174,7 @@ class Run(Tool):
         from pybricksdev.ble import find_device
         from pybricksdev.connections.ev3dev import EV3Connection
         from pybricksdev.connections.lego import REPLHub
-        from pybricksdev.connections.pybricks import PybricksHub
+        from pybricksdev.connections.pybricks import PybricksHubBLE
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -189,7 +189,7 @@ class Run(Tool):
             # It is a Pybricks Hub with BLE. Device name or address is given.
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
             device_or_address = await find_device(args.name)
-            hub = PybricksHub(device_or_address)
+            hub = PybricksHubBLE(device_or_address)
 
         elif args.conntype == "usb":
             hub = REPLHub()

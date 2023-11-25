@@ -6,7 +6,7 @@ import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, List, Optional, TypeVar
+from typing import Awaitable, Callable, List, Optional, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -78,7 +78,7 @@ class PybricksHub:
     has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
     """
 
-    def __init__(self, device: BLEDevice):
+    def __init__(self):
         self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
         self._stdout_subject = Subject()
@@ -119,11 +119,6 @@ class PybricksHub:
 
         # File handle for logging
         self.log_file = None
-
-        def handle_disconnect(_: BleakClient):
-            self._handle_disconnect()
-
-        self.client = BleakClient(device, disconnected_callback=handle_disconnect)
 
     @property
     def stdout_observable(self) -> Observable[bytes]:
@@ -237,16 +232,6 @@ class PybricksHub:
         self.connection_state_observable.on_next(ConnectionState.DISCONNECTED)
 
     async def connect(self):
-        """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
-
-        Raises:
-            BleakError: if connecting failed (or old firmware without Device
-                Information Service)
-            RuntimeError: if Pybricks Protocol version is not supported
-        """
-        # TODO: Fix this
-        # logger.info(f"Connecting to {device.name}")
-
         if self.connection_state_observable.value != ConnectionState.DISCONNECTED:
             raise RuntimeError(
                 f"attempting to connect with invalid state: {self.connection_state_observable.value}"
@@ -259,48 +244,12 @@ class PybricksHub:
                 self.connection_state_observable.on_next, ConnectionState.DISCONNECTED
             )
 
-            await self.client.connect()
+            await self._client_connect()
 
             stack.push_async_callback(self.disconnect)
 
-            logger.info("Connected successfully!")
-
-            fw_version = await self.client.read_gatt_char(FW_REV_UUID)
-            self.fw_version = Version(fw_version.decode())
-
-            protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
-            protocol_version = semver.VersionInfo.parse(protocol_version.decode())
-
-            if (
-                protocol_version < PYBRICKS_PROTOCOL_VERSION
-                or protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
-            ):
-                raise RuntimeError(
-                    f"Unsupported Pybricks protocol version: {protocol_version}"
-                )
-
-            pnp_id = await self.client.read_gatt_char(PNP_ID_UUID)
-            _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
-
-            if protocol_version >= "1.2.0":
-                caps = await self.client.read_gatt_char(PYBRICKS_HUB_CAPABILITIES_UUID)
-                (
-                    self._max_write_size,
-                    self._capability_flags,
-                    self._max_user_program_size,
-                ) = unpack_hub_capabilities(caps)
-            else:
-                # HACK: prior to profile v1.2.0 isn't a proper way to get the
-                # MPY ABI version from hub so we use heuristics on the firmware version
-                self._mpy_abi_version = (
-                    6 if self.fw_version >= Version("3.2.0b2") else 5
-                )
-
-            if protocol_version < "1.3.0":
-                self._legacy_stdio = True
-
-            await self.client.start_notify(NUS_TX_UUID, self._nus_handler)
-            await self.client.start_notify(
+            await self.start_notify(NUS_TX_UUID, self._nus_handler)
+            await self.start_notify(
                 PYBRICKS_COMMAND_EVENT_UUID, self._pybricks_service_handler
             )
 
@@ -314,7 +263,7 @@ class PybricksHub:
 
         if self.connection_state_observable.value == ConnectionState.CONNECTED:
             self.connection_state_observable.on_next(ConnectionState.DISCONNECTING)
-            await self.client.disconnect()
+            await self._client_disconnect()
             # ConnectionState.DISCONNECTED should be set by disconnect callback
             assert (
                 self.connection_state_observable.value == ConnectionState.DISCONNECTED
@@ -453,7 +402,7 @@ class PybricksHub:
             )
 
         # clear user program meta so hub doesn't try to run invalid program
-        await self.client.write_gatt_char(
+        await self.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, 0),
             response=True,
@@ -467,7 +416,7 @@ class PybricksHub:
             total=len(program), unit="B", unit_scale=True
         ) as pbar:
             for i, c in enumerate(chunk(program, payload_size)):
-                await self.client.write_gatt_char(
+                await self.write_gatt_char(
                     PYBRICKS_COMMAND_EVENT_UUID,
                     struct.pack(
                         f"<BI{len(c)}s",
@@ -480,7 +429,7 @@ class PybricksHub:
                 pbar.update(len(c))
 
         # set the metadata to notify that writing was successful
-        await self.client.write_gatt_char(
+        await self.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, len(program)),
             response=True,
@@ -492,7 +441,7 @@ class PybricksHub:
 
         Requires hub with Pybricks Profile >= v1.2.0.
         """
-        await self.client.write_gatt_char(
+        await self.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<B", Command.START_USER_PROGRAM),
             response=True,
@@ -502,7 +451,7 @@ class PybricksHub:
         """
         Stops the user program on the hub if it is running.
         """
-        await self.client.write_gatt_char(
+        await self.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<B", Command.STOP_USER_PROGRAM),
             response=True,
@@ -682,3 +631,79 @@ class PybricksHub:
             # the user program running status flag
             # https://github.com/pybricks/support/issues/305
             await asyncio.sleep(0.3)
+
+
+class PybricksHubBLE(PybricksHub):
+    _device: BLEDevice
+    _client: BleakClient
+
+    def __init__(self, device: BLEDevice):
+        super().__init__()
+
+        self._device = device
+
+        def handle_disconnect(_: BleakClient):
+            self._handle_disconnect()
+
+        self._client = BleakClient(
+            self._device, disconnected_callback=handle_disconnect
+        )
+
+    async def _client_connect(self) -> bool:
+        """Connects to a device that was discovered with :meth:`pybricksdev.ble.find_device`
+
+        Raises:
+            BleakError: if connecting failed (or old firmware without Device
+                Information Service)
+            RuntimeError: if Pybricks Protocol version is not supported
+        """
+
+        logger.info(f"Connecting to {self._device.name}")
+        await self._client.connect()
+        logger.info("Connected successfully!")
+
+        fw_version = await self.read_gatt_char(FW_REV_UUID)
+        self.fw_version = Version(fw_version.decode())
+
+        protocol_version = await self.read_gatt_char(SW_REV_UUID)
+        protocol_version = semver.VersionInfo.parse(protocol_version.decode())
+
+        if (
+            protocol_version < PYBRICKS_PROTOCOL_VERSION
+            or protocol_version >= PYBRICKS_PROTOCOL_VERSION.bump_major()
+        ):
+            raise RuntimeError(
+                f"Unsupported Pybricks protocol version: {protocol_version}"
+            )
+
+        pnp_id = await self.read_gatt_char(PNP_ID_UUID)
+        _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
+
+        if protocol_version >= "1.2.0":
+            caps = await self.read_gatt_char(PYBRICKS_HUB_CAPABILITIES_UUID)
+            (
+                self._max_write_size,
+                self._capability_flags,
+                self._max_user_program_size,
+            ) = unpack_hub_capabilities(caps)
+        else:
+            # HACK: prior to profile v1.2.0 isn't a proper way to get the
+            # MPY ABI version from hub so we use heuristics on the firmware version
+            self._mpy_abi_version = 6 if self.fw_version >= Version("3.2.0b2") else 5
+
+        if protocol_version < "1.3.0":
+            self._legacy_stdio = True
+
+        return True
+
+    async def _client_disconnect(self) -> bool:
+        return await self._client.disconnect()
+
+    async def read_gatt_char(self, uuid: str) -> bytearray:
+        return await self._client.read_gatt_char(uuid)
+
+    async def write_gatt_char(self, uuid: str, data, response: bool) -> None:
+        return await self._client.write_gatt_char(uuid, data, response)
+
+    async def start_notify(self, uuid: str, callback: Callable) -> None:
+        return await self._client.start_notify(uuid, callback)
