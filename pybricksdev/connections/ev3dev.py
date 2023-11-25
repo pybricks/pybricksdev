@@ -18,10 +18,13 @@ class EV3Connection:
     _USER = "robot"
     _PASSWORD = "maker"
 
+    def __init__(self, address: str):
+        self._address = address
+
     def abs_path(self, path):
         return os.path.join(self._HOME, path)
 
-    async def connect(self, address):
+    async def connect(self):
         """Connects to ev3dev using SSH with a known IP address.
 
         Arguments:
@@ -33,9 +36,9 @@ class EV3Connection:
                 Connect failed.
         """
 
-        print("Connecting to", address, "...", end=" ")
+        print("Connecting to", self._address, "...", end=" ")
         self.client = await asyncssh.connect(
-            address, username=self._USER, password=self._PASSWORD
+            self._address, username=self._USER, password=self._PASSWORD
         )
         print("Connected.", end=" ")
         self.client.sftp = await self.client.start_sftp_client()
