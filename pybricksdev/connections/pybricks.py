@@ -7,6 +7,7 @@ import logging
 import os
 import struct
 from typing import Awaitable, Callable, List, Optional, TypeVar
+from uuid import UUID
 
 import reactivex.operators as op
 import semver
@@ -17,6 +18,10 @@ from reactivex import Observable
 from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
+from usb.control import get_descriptor
+from usb.core import Device as USBDevice
+from usb.core import Endpoint, USBTimeoutError
+from usb.util import ENDPOINT_IN, ENDPOINT_OUT, endpoint_direction, find_descriptor
 
 from pybricksdev.ble.lwp3.bytecodes import HubKind
 from pybricksdev.ble.nus import NUS_RX_UUID, NUS_TX_UUID
@@ -38,6 +43,10 @@ from pybricksdev.compile import compile_file, compile_multi_file
 from pybricksdev.connections import ConnectionState
 from pybricksdev.tools import chunk
 from pybricksdev.tools.checksum import xor_bytes
+from pybricksdev.usb.pybricks import (
+    PybricksUsbInEpMessageType,
+    PybricksUsbOutEpMessageType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -707,3 +716,142 @@ class PybricksHubBLE(PybricksHub):
 
     async def start_notify(self, uuid: str, callback: Callable) -> None:
         return await self._client.start_notify(uuid, callback)
+
+
+class PybricksHubUSB(PybricksHub):
+    _device: USBDevice
+    _ep_in: Endpoint
+    _ep_out: Endpoint
+    _notify_callbacks: dict[str, Callable] = {}
+    _monitor_task: asyncio.Task
+
+    def __init__(self, device: USBDevice):
+        super().__init__()
+        self._device = device
+        self._response_queue = asyncio.Queue[bytes]()
+
+    async def _client_connect(self) -> bool:
+        # Reset is essential to ensure endpoints are in a good state.
+        self._device.reset()
+        self._device.set_configuration()
+
+        # Save input and output endpoints
+        cfg = self._device.get_active_configuration()
+        intf = cfg[(0, 0)]
+        self._ep_in = find_descriptor(
+            intf,
+            custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+            == ENDPOINT_IN,
+        )
+        self._ep_out = find_descriptor(
+            intf,
+            custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+            == ENDPOINT_OUT,
+        )
+
+        # There is 1 byte overhead for PybricksUsbMessageType
+        self._max_write_size = self._ep_out.wMaxPacketSize - 1
+
+        # Get length of BOS descriptor
+        bos_descriptor = get_descriptor(self._device, 5, 0x0F, 0)
+        (ofst, _, bos_len, _) = struct.unpack("<BBHB", bos_descriptor)
+
+        # Get full BOS descriptor
+        bos_descriptor = get_descriptor(self._device, bos_len, 0x0F, 0)
+
+        while ofst < bos_len:
+            (len, desc_type, cap_type) = struct.unpack_from(
+                "<BBB", bos_descriptor, offset=ofst
+            )
+
+            if desc_type != 0x10:
+                logger.error("Expected Device Capability descriptor")
+                exit(1)
+
+            # Look for platform descriptors
+            if cap_type == 0x05:
+                uuid_bytes = bos_descriptor[ofst + 4 : ofst + 4 + 16]
+                uuid_str = str(UUID(bytes_le=bytes(uuid_bytes)))
+
+                if uuid_str == FW_REV_UUID:
+                    fw_version = bytearray(bos_descriptor[ofst + 20 : ofst + len])
+                    self.fw_version = Version(fw_version.decode())
+
+                elif uuid_str == SW_REV_UUID:
+                    self._protocol_version = bytearray(
+                        bos_descriptor[ofst + 20 : ofst + len]
+                    )
+
+                elif uuid_str == PYBRICKS_HUB_CAPABILITIES_UUID:
+                    caps = bytearray(bos_descriptor[ofst + 20 : ofst + len])
+                    (
+                        _,
+                        self._capability_flags,
+                        self._max_user_program_size,
+                    ) = unpack_hub_capabilities(caps)
+
+            ofst += len
+
+        self._monitor_task = asyncio.create_task(self._monitor_usb())
+
+        return True
+
+    async def _client_disconnect(self) -> bool:
+        self._monitor_task.cancel()
+        self._handle_disconnect()
+
+    async def read_gatt_char(self, uuid: str) -> bytearray:
+        # Most stuff is available via other properties due to reading BOS
+        # descriptor during connect.
+        raise NotImplementedError
+
+    async def write_gatt_char(self, uuid: str, data, response: bool) -> None:
+        if uuid.lower() != PYBRICKS_COMMAND_EVENT_UUID:
+            raise ValueError("Only Pybricks command event UUID is supported")
+
+        if not response:
+            raise ValueError("Response is required for USB")
+
+        self._ep_out.write(bytes([PybricksUsbOutEpMessageType.COMMAND]) + data)
+        # FIXME: This needs to race with hub disconnect, and could also use a
+        # timeout, otherwise it blocks forever. Pyusb doesn't currently seem to
+        # have any disconnect callback.
+        reply = await self._response_queue.get()
+
+        # REVISIT: could look up status error code and convert to string,
+        # although BLE doesn't do that either.
+        if int.from_bytes(reply[:4], "little") != 0:
+            raise RuntimeError(f"Write failed: {reply[0]}")
+
+    async def start_notify(self, uuid: str, callback: Callable) -> None:
+        # TODO: need to send subscribe message over USB
+        self._notify_callbacks[uuid] = callback
+
+    async def _monitor_usb(self):
+        loop = asyncio.get_running_loop()
+
+        while True:
+            msg = await loop.run_in_executor(None, self._read_usb)
+
+            if msg is None:
+                continue
+
+            if len(msg) == 0:
+                logger.warning("Empty USB message")
+                continue
+
+            if msg[0] == PybricksUsbInEpMessageType.RESPONSE:
+                self._response_queue.put_nowait(msg[1:])
+            elif msg[0] == PybricksUsbInEpMessageType.EVENT:
+                callback = self._notify_callbacks.get(PYBRICKS_COMMAND_EVENT_UUID)
+                if callback:
+                    callback(None, msg[1:])
+            else:
+                logger.warning("Unknown USB message type: %d", msg[0])
+
+    def _read_usb(self) -> bytes | None:
+        try:
+            msg = self._ep_in.read(self._ep_in.wMaxPacketSize)
+            return msg
+        except USBTimeoutError:
+            return None

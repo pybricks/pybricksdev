@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Partial/experimental support for `pybricksdev run usb`.
+
 ### Fixed
 - Fix crash when running `pybricksdev run ble -` (bug introduced in alpha.49).
 

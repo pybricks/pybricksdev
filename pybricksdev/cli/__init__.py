@@ -171,13 +171,11 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
-        from pybricksdev.ble import find_device
-        from pybricksdev.connections.ev3dev import EV3Connection
-        from pybricksdev.connections.lego import REPLHub
-        from pybricksdev.connections.pybricks import PybricksHubBLE
 
         # Pick the right connection
         if args.conntype == "ssh":
+            from pybricksdev.connections.ev3dev import EV3Connection
+
             # So it's an ev3dev
             if args.name is None:
                 print("--name is required for SSH connections", file=sys.stderr)
@@ -186,13 +184,46 @@ class Run(Tool):
             device_or_address = socket.gethostbyname(args.name)
             hub = EV3Connection(device_or_address)
         elif args.conntype == "ble":
+            from pybricksdev.ble import find_device as find_ble
+            from pybricksdev.connections.pybricks import PybricksHubBLE
+
             # It is a Pybricks Hub with BLE. Device name or address is given.
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
-            device_or_address = await find_device(args.name)
+            device_or_address = await find_ble(args.name)
             hub = PybricksHubBLE(device_or_address)
-
         elif args.conntype == "usb":
-            hub = REPLHub()
+            from usb.core import find as find_usb
+
+            from pybricksdev.connections.pybricks import PybricksHubUSB
+            from pybricksdev.usb import (
+                LEGO_USB_VID,
+                MINDSTORMS_INVENTOR_USB_PID,
+                SPIKE_ESSENTIAL_USB_PID,
+                SPIKE_PRIME_USB_PID,
+            )
+
+            def is_pybricks_usb(dev):
+                return (
+                    (dev.idVendor == LEGO_USB_VID)
+                    and (
+                        dev.idProduct
+                        in [
+                            SPIKE_PRIME_USB_PID,
+                            SPIKE_ESSENTIAL_USB_PID,
+                            MINDSTORMS_INVENTOR_USB_PID,
+                        ]
+                    )
+                    and dev.product.endswith("Pybricks")
+                )
+
+            device_or_address = find_usb(custom_match=is_pybricks_usb)
+
+            if device_or_address is not None:
+                hub = PybricksHubUSB(device_or_address)
+            else:
+                from pybricksdev.connections.lego import REPLHub
+
+                hub = REPLHub()
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
