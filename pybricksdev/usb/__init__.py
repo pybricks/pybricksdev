@@ -1,0 +1,23 @@
+"""
+Common USB definitions.
+"""
+
+import enum as _enum
+
+LEGO_USB_VID = 0x0694
+NXT_SAMBA_VID = 0x03EB
+NXT_SAMBA_PID = 0x6124
+
+
+class LegoUsbPid(_enum.IntEnum):
+    RCX_IR_TOWER = 0x0001
+    NXT = 0x0002
+    WEDO = 0x0003
+    EV3 = 0x0005
+    EV3_FW_UPDATE = 0x0006
+    SPIKE_PRIME_DFU = 0x0008
+    SPIKE_PRIME = 0x0009
+    SPIKE_ESSENTIAL_DFU = 0x000C
+    SPIKE_ESSENTIAL = 0x000D
+    ROBOT_INVENTOR = 0x0010
+    ROBOT_INVENTOR_DFU = 0x0011
