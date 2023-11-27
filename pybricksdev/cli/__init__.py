@@ -20,6 +20,12 @@ from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME
 from .. import __version__ as MODULE_VERSION
+from ..usb import (
+    LEGO_USB_VID,
+    PYBRICKS_USB_DEVICE_CLASS,
+    PYBRICKS_USB_DEVICE_PROTOCOL,
+    PYBRICKS_USB_DEVICE_SUBCLASS,
+)
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -171,9 +177,10 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
+        from usb.core import find as find_usb
+
         from ..ble import find_device as find_ble
         from ..connections.ev3dev import EV3Connection
-        from ..connections.lego import REPLHub
         from ..connections.pybricks import PybricksHub
 
         # Pick the right connection
@@ -192,8 +199,17 @@ class Run(Tool):
             device_or_address = await find_ble(args.name)
 
         elif args.conntype == "usb":
-            hub = REPLHub()
-            device_or_address = None
+            hub = PybricksHub()
+            device_or_address = find_usb(
+                idVendor=LEGO_USB_VID,
+                bDeviceClass=PYBRICKS_USB_DEVICE_CLASS,
+                bDeviceSubClass=PYBRICKS_USB_DEVICE_SUBCLASS,
+                bDeviceProtocol=PYBRICKS_USB_DEVICE_PROTOCOL,
+            )
+            if device_or_address is None:
+                print("No Pybricks USB device found.", file=sys.stderr)
+                exit(1)
+
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
