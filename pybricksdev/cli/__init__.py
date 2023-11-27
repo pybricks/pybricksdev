@@ -20,6 +20,12 @@ from argcomplete.completers import FilesCompleter
 
 from .. import __name__ as MODULE_NAME
 from .. import __version__ as MODULE_VERSION
+from ..usb import (
+    LEGO_USB_VID,
+    PYBRICKS_USB_DEVICE_CLASS,
+    PYBRICKS_USB_DEVICE_PROTOCOL,
+    PYBRICKS_USB_DEVICE_SUBCLASS,
+)
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -171,11 +177,11 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
+        from usb.core import find as find_usb
+
         from ..ble import find_device as find_ble
         from ..connections.ev3dev import EV3Connection
-        from ..connections.lego import REPLHub
         from ..connections.pybricks import PybricksHubBLE, PybricksHubUSB
-        from usb.core import find as find_usb
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -194,12 +200,17 @@ class Run(Tool):
             hub = PybricksHubBLE(device_or_address)
 
         elif args.conntype == "usb":
-            device_or_address = find_usb(idVendor=0x0483, idProduct=0x5740)
+            usb_device = find_usb(
+                idVendor=LEGO_USB_VID,
+                bDeviceClass=PYBRICKS_USB_DEVICE_CLASS,
+                bDeviceSubClass=PYBRICKS_USB_DEVICE_SUBCLASS,
+                bDeviceProtocol=PYBRICKS_USB_DEVICE_PROTOCOL,
+            )
+            if usb_device is None:
+                print("No Pybricks USB device found.", file=sys.stderr)
+                exit(1)
 
-            if device_or_address is not None and device_or_address.product == "Pybricks Hub":
-                hub = PybricksHubUSB(device_or_address)
-            else:
-                hub = REPLHub()
+            hub = PybricksHubUSB(usb_device)
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
