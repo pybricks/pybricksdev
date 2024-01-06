@@ -171,7 +171,7 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
-        from ..ble import find_device
+        from ..ble import find_device as find_ble
         from ..connections.ev3dev import EV3Connection
         from ..connections.lego import REPLHub
         from ..connections.pybricks import PybricksHub
@@ -189,7 +189,7 @@ class Run(Tool):
             # It is a Pybricks Hub with BLE. Device name or address is given.
             hub = PybricksHub()
             print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
-            device_or_address = await find_device(args.name)
+            device_or_address = await find_ble(args.name)
 
         elif args.conntype == "usb":
             hub = REPLHub()
