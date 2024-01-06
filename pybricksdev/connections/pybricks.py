@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021-2023 The Pybricks Authors
+# Copyright (c) 2021-2024 The Pybricks Authors
 
+import abc
 import asyncio
 import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, List, Optional, TypeVar
+from typing import Awaitable, Callable, List, Optional, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -44,6 +45,59 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+class _Transport(abc.ABC):
+    @abc.abstractmethod
+    async def connect(self, disconnected_callback: Callable) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def disconnect(self) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def read_gatt_char(self, uuid: str) -> bytearray:
+        pass
+
+    @abc.abstractmethod
+    async def write_gatt_char(self, uuid: str, data, response: bool) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def start_notify(self, uuid: str, callback: Callable) -> None:
+        pass
+
+
+class _BLETransport(_Transport):
+    _device: BLEDevice
+    _client: BleakClient
+
+    def __init__(self, device: BLEDevice):
+        self._device = device
+
+    async def connect(self, disconnected_callback: Callable) -> None:
+        def handle_disconnect(_: BleakClient):
+            disconnected_callback()
+
+        self._client = BleakClient(
+            self._device, disconnected_callback=handle_disconnect
+        )
+
+        logger.info(f"Connecting to {self._device.name}")
+        await self._client.connect()
+
+    async def disconnect(self) -> None:
+        await self._client.disconnect()
+
+    async def read_gatt_char(self, uuid: str) -> bytearray:
+        return await self._client.read_gatt_char(uuid)
+
+    async def write_gatt_char(self, uuid: str, data, response: bool) -> None:
+        await self._client.write_gatt_char(uuid, data, response)
+
+    async def start_notify(self, uuid: str, callback: Callable) -> None:
+        await self._client.start_notify(uuid, callback)
+
+
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
@@ -76,6 +130,11 @@ class PybricksHub:
     """
     The maximum allowable user program size for the connected hub. ``0`` if the hub
     has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
+    """
+
+    _transport: _Transport
+    """
+    Transport implementation
     """
 
     def __init__(self):
@@ -238,7 +297,6 @@ class PybricksHub:
                 Information Service)
             RuntimeError: if Pybricks Protocol version is not supported
         """
-        logger.info(f"Connecting to {device.name}")
 
         if self.connection_state_observable.value != ConnectionState.DISCONNECTED:
             raise RuntimeError(
@@ -252,22 +310,22 @@ class PybricksHub:
                 self.connection_state_observable.on_next, ConnectionState.DISCONNECTED
             )
 
-            def handle_disconnect(_: BleakClient):
+            self._transport = _BLETransport(device)
+
+            def handle_disconnect():
                 logger.info("Disconnected!")
                 self.connection_state_observable.on_next(ConnectionState.DISCONNECTED)
 
-            self.client = BleakClient(device, disconnected_callback=handle_disconnect)
-
-            await self.client.connect()
+            await self._transport.connect(handle_disconnect)
 
             stack.push_async_callback(self.disconnect)
 
             logger.info("Connected successfully!")
 
-            fw_version = await self.client.read_gatt_char(FW_REV_UUID)
+            fw_version = await self._transport.read_gatt_char(FW_REV_UUID)
             self.fw_version = Version(fw_version.decode())
 
-            protocol_version = await self.client.read_gatt_char(SW_REV_UUID)
+            protocol_version = await self._transport.read_gatt_char(SW_REV_UUID)
             protocol_version = semver.VersionInfo.parse(protocol_version.decode())
 
             if (
@@ -278,11 +336,13 @@ class PybricksHub:
                     f"Unsupported Pybricks protocol version: {protocol_version}"
                 )
 
-            pnp_id = await self.client.read_gatt_char(PNP_ID_UUID)
+            pnp_id = await self._transport.read_gatt_char(PNP_ID_UUID)
             _, _, self.hub_kind, self.hub_variant = unpack_pnp_id(pnp_id)
 
             if protocol_version >= "1.2.0":
-                caps = await self.client.read_gatt_char(PYBRICKS_HUB_CAPABILITIES_UUID)
+                caps = await self._transport.read_gatt_char(
+                    PYBRICKS_HUB_CAPABILITIES_UUID
+                )
                 (
                     self._max_write_size,
                     self._capability_flags,
@@ -298,8 +358,8 @@ class PybricksHub:
             if protocol_version < "1.3.0":
                 self._legacy_stdio = True
 
-            await self.client.start_notify(NUS_TX_UUID, self._nus_handler)
-            await self.client.start_notify(
+            await self._transport.start_notify(NUS_TX_UUID, self._nus_handler)
+            await self._transport.start_notify(
                 PYBRICKS_COMMAND_EVENT_UUID, self._pybricks_service_handler
             )
 
@@ -313,7 +373,7 @@ class PybricksHub:
 
         if self.connection_state_observable.value == ConnectionState.CONNECTED:
             self.connection_state_observable.on_next(ConnectionState.DISCONNECTING)
-            await self.client.disconnect()
+            await self._transport.disconnect()
             # ConnectionState.DISCONNECTED should be set by disconnect callback
             assert (
                 self.connection_state_observable.value == ConnectionState.DISCONNECTED
@@ -376,7 +436,7 @@ class PybricksHub:
             data: Any bytes-like object that will fit in a single BLE packet.
         """
         if self._legacy_stdio:
-            await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+            await self._transport.write_gatt_char(NUS_RX_UUID, data, False)
         else:
             msg = bytearray([Command.WRITE_STDIN])
             msg.extend(data)
@@ -386,7 +446,9 @@ class PybricksHub:
                     f"data is too big, limited to {self._max_write_size - 1} bytes"
                 )
 
-            await self.client.write_gatt_char(PYBRICKS_COMMAND_EVENT_UUID, msg, True)
+            await self._transport.write_gatt_char(
+                PYBRICKS_COMMAND_EVENT_UUID, msg, True
+            )
 
     async def write_string(self, value: str) -> None:
         """
@@ -452,7 +514,7 @@ class PybricksHub:
             )
 
         # clear user program meta so hub doesn't try to run invalid program
-        await self.client.write_gatt_char(
+        await self._transport.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, 0),
             response=True,
@@ -466,7 +528,7 @@ class PybricksHub:
             total=len(program), unit="B", unit_scale=True
         ) as pbar:
             for i, c in enumerate(chunk(program, payload_size)):
-                await self.client.write_gatt_char(
+                await self._transport.write_gatt_char(
                     PYBRICKS_COMMAND_EVENT_UUID,
                     struct.pack(
                         f"<BI{len(c)}s",
@@ -479,7 +541,7 @@ class PybricksHub:
                 pbar.update(len(c))
 
         # set the metadata to notify that writing was successful
-        await self.client.write_gatt_char(
+        await self._transport.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<BI", Command.WRITE_USER_PROGRAM_META, len(program)),
             response=True,
@@ -491,7 +553,7 @@ class PybricksHub:
 
         Requires hub with Pybricks Profile >= v1.2.0.
         """
-        await self.client.write_gatt_char(
+        await self._transport.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<B", Command.START_USER_PROGRAM),
             response=True,
@@ -501,7 +563,7 @@ class PybricksHub:
         """
         Stops the user program on the hub if it is running.
         """
-        await self.client.write_gatt_char(
+        await self._transport.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
             struct.pack("<B", Command.STOP_USER_PROGRAM),
             response=True,
@@ -606,9 +668,9 @@ class PybricksHub:
                     # BOOST Move hub has fixed MTU of 23 so we can only send 20
                     # bytes at a time
                     for c in chunk(data, 20):
-                        await self.client.write_gatt_char(NUS_RX_UUID, c, False)
+                        await self._transport.write_gatt_char(NUS_RX_UUID, c, False)
                 else:
-                    await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+                    await self._transport.write_gatt_char(NUS_RX_UUID, data, False)
 
                 msg = await asyncio.wait_for(
                     self.race_disconnect(queue.get()), timeout=0.5
