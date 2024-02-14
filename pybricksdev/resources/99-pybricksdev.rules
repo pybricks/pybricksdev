@@ -18,7 +18,7 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0006", MODE="666",
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0008", MODE="666", TAG+="uaccess"
 
 # SPIKE Prime hub
-SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0009, MODE="666"", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="0009", MODE="666", TAG+="uaccess"
 
 # SPIKE Essential hub in firmware update mode (DFU mode)
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0694", ATTRS{idProduct}=="000c", MODE="666", TAG+="uaccess"
