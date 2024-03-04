@@ -112,10 +112,10 @@ class Compile(Tool):
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
-        from ..compile import compile_file, print_mpy
+        from ..compile import compile_multi_file, print_mpy
 
         with _get_script_path(args.file) as script_path:
-            mpy = await compile_file(script_path, args.abi)
+            mpy = await compile_multi_file(script_path, args.abi)
         print_mpy(mpy)
 
 

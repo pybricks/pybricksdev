@@ -191,7 +191,7 @@ def print_mpy(data):
     # ports without usable I/O, REPL or otherwise.
     WIDTH = 8
     print()
-    print(f"// MPY file. Version: {data[1]}. Size: {len(data)} bytes")
+    print(f"// MPY file. Size: {len(data)} bytes")
     print("const uint8_t script[] = {")
 
     for c in chunk(data, WIDTH):
