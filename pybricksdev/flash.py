@@ -198,9 +198,12 @@ class BootloaderConnection(BLERequestsConnection):
             # have a few hacks to special case this. City hub further complicates
             # things by having a buggy Bluetooth implementation in its bootloader.
             response = await self.bootloader_request(
-                self.ERASE_FLASH_CITY_HUB
-                if info.type_id == HubKind.CITY and not platform.system() == "Windows"
-                else self.ERASE_FLASH,
+                (
+                    self.ERASE_FLASH_CITY_HUB
+                    if info.type_id == HubKind.CITY
+                    and not platform.system() == "Windows"
+                    else self.ERASE_FLASH
+                ),
                 timeout=5,
             )
             logger.debug(response)
@@ -238,6 +241,7 @@ class BootloaderConnection(BLERequestsConnection):
                 # for this as a hack. This throttles the speed of sending data
                 # to a rate that can be handled by both the sender and the hub.
                 if i % 10 == 9:
+                    await asyncio.sleep(0.5)
                     result = await self.bootloader_request(
                         self.GET_CHECKSUM, timeout=0.5
                     )
@@ -255,6 +259,7 @@ class BootloaderConnection(BLERequestsConnection):
                 data = struct.pack(
                     f"<BI{len(payload)}B", len(payload) + 4, address, *payload
                 )
+                await asyncio.sleep(0.1)
                 response = await self.bootloader_request(request, data)
                 logger.debug(response)
                 pbar.update(len(payload))
