@@ -469,6 +469,7 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
             print("Could not find hub in standard firmware mode. Trying DFU.")
             flash_dfu(firmware, metadata)
     elif hub_kind in [HubKind.BOOST, HubKind.CITY, HubKind.TECHNIC]:
+        print("Extra slow flashing about to start. Coffee may be required.")
         await flash_ble(hub_kind, firmware, metadata)
     elif hub_kind == HubKind.NXT:
         await flash_nxt(firmware)
