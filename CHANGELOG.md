@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Allow hostname in `pybricksdev run ssh --name=...`.
+- Updated `bleak` dependency to v0.22.0.
+- Support Python up to 3.12.
 
 ### Fixed
 - Fixed bug in udev rules.
