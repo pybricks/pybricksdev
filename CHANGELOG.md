@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated `hidapi` dependency to v0.14.0.
+
+### Fixed
+- Fixed installing on Windows due to failed `hidapi` installation.
+
 ## [1.0.0-alpha.46] - 2024-05-04
 
 ### Changed
