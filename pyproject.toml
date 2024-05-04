@@ -53,7 +53,7 @@ notebook = "^6.0.3"
 pybricks = {version = "^3", allow-prereleases = true}
 
 [tool.poetry.group.lint.dependencies]
-black = "^23"
+black = ">=23,<25"
 flake8 = "^6.0.0"
 isort = "^5.12.0"
 
