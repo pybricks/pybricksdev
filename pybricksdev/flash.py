@@ -198,9 +198,12 @@ class BootloaderConnection(BLERequestsConnection):
             # have a few hacks to special case this. City hub further complicates
             # things by having a buggy Bluetooth implementation in its bootloader.
             response = await self.bootloader_request(
-                self.ERASE_FLASH_CITY_HUB
-                if info.type_id == HubKind.CITY and not platform.system() == "Windows"
-                else self.ERASE_FLASH,
+                (
+                    self.ERASE_FLASH_CITY_HUB
+                    if info.type_id == HubKind.CITY
+                    and not platform.system() == "Windows"
+                    else self.ERASE_FLASH
+                ),
                 timeout=5,
             )
             logger.debug(response)
