@@ -129,7 +129,10 @@ async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
     for name, module in finder.modules.items():
         if not module.__file__:
             continue
-        mpy = await compile_file(module.__file__, abi_major)
+
+        relative_file = os.path.relpath(module.__file__, os.path.dirname(path))
+
+        mpy = await compile_file(relative_file, abi_major)
 
         parts.append(len(mpy).to_bytes(4, "little"))
         parts.append(name.encode() + b"\x00")
