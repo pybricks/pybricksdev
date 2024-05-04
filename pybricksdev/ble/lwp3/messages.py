@@ -1478,14 +1478,12 @@ class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessa
 
 class PortOutputCommandFeedbackMessage(AbstractMessage):
     @overload
-    def __init__(self, port: PortID, feedback: Feedback) -> None:
-        ...
+    def __init__(self, port: PortID, feedback: Feedback) -> None: ...
 
     @overload
     def __init__(
         self, port1: PortID, feedback1: Feedback, port2: PortID, feedback2: Feedback
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @overload
     def __init__(
@@ -1496,8 +1494,7 @@ class PortOutputCommandFeedbackMessage(AbstractMessage):
         feedback2: Feedback,
         port3: PortID,
         feedback3: Feedback,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def __init__(
         self,
