@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Allow hostname in `pybricksdev run ssh --name=...`.
 
+### Fixed
+- Fixed bug in udev rules.
+
 ## [1.0.0-alpha.46] - 2023-05-01
 
 ### Added
