@@ -16,8 +16,6 @@ import sys
 
 import toml
 
-ON_RTD = os.environ.get("READTHEDOCS", None) == "True"
-
 # so we have single source of project info
 _pyproject = toml.load("../pyproject.toml")
 
@@ -83,10 +81,7 @@ pygments_style = "xcode"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-if ON_RTD:
-    html_theme = "default"
-else:
-    html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_rtd_theme"
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
