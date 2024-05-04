@@ -6,13 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.48] - 2024-05-04
+
 ### Changed
 - Updated `hidapi` dependency to v0.14.0.
 
 ### Fixed
 - Fixed installing on Windows due to failed `hidapi` installation.
 
-## [1.0.0-alpha.46] - 2024-05-04
+## [1.0.0-alpha.47] - 2024-05-04
 
 ### Changed
 - Allow hostname in `pybricksdev run ssh --name=...`.
@@ -410,8 +412,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.47..HEAD
-[1.0.0-alpha.47]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.47...v1.0.0-alpha.47
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.48..HEAD
+[1.0.0-alpha.48]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.47...v1.0.0-alpha.48
+[1.0.0-alpha.47]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.46...v1.0.0-alpha.47
 [1.0.0-alpha.46]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.45...v1.0.0-alpha.46
 [1.0.0-alpha.45]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.44...v1.0.0-alpha.45
 [1.0.0-alpha.44]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.43...v1.0.0-alpha.44
