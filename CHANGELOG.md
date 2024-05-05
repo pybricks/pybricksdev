@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Use relative paths when compiling multi-file projects.
+- Better error message when hitting Python bug when compiling multi-file projects.
 
 ### Fixed
 - Fixed `pybricksdev` BLE commands not working on Windows when `pythoncom`
