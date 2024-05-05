@@ -116,7 +116,13 @@ async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
     # compile files using Python to find imports contained within the same directory as path
     search_path = [os.path.dirname(path)]
     finder = ModuleFinder(search_path)
-    finder.run_script(path)
+
+    try:
+        finder.run_script(path)
+    except AttributeError as e:
+        raise RuntimeError(
+            "ModuleFinder doesn't currently handle implicit namespace packages. Did you forget to put an __init__.py file in one of your subdirectories? See https://github.com/pybricks/support/issues/1602"
+        ) from e
 
     # we expect missing modules, namely builtin MicroPython packages like pybricks.*
     logger.debug("missing modules: %r", finder.any_missing())
