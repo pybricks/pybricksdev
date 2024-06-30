@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.49] - 2024-06-30
+
 ### Changed
 - Use relative paths when compiling multi-file projects.
 - Better error message when hitting Python bug when compiling multi-file projects.
@@ -420,7 +422,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.48..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.49..HEAD
+[1.0.0-alpha.49]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.48...v1.0.0-alpha.49
 [1.0.0-alpha.48]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.47...v1.0.0-alpha.48
 [1.0.0-alpha.47]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.46...v1.0.0-alpha.47
 [1.0.0-alpha.46]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.45...v1.0.0-alpha.46
