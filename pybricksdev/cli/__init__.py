@@ -343,6 +343,15 @@ class Udev(Tool):
 def main():
     """Runs ``pybricksdev`` command line interface."""
 
+    if sys.platform == "win32":
+        # Hack around bad side-effects of pythoncom on Windows
+        try:
+            from bleak_winrt._winrt import MTA, init_apartment
+        except ImportError:
+            from winrt._winrt import MTA, init_apartment
+
+        init_apartment(MTA)
+
     # Provide main description and help.
     parser = argparse.ArgumentParser(
         prog=PROG_NAME,
