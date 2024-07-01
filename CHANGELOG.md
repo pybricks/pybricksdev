@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Improved `SyntaxError` handling in `lwp3 repl` command.
+- Minimum Python version changed to 3.10.
 
 ### Fixed
 - Fixed `PortID` exception when running `lwp3 repl` command.
