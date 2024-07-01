@@ -22,11 +22,11 @@ choice to run the following:
 
     git clone https://github.com/pybricks/pybricksdev
     cd pybricksdev
-    poetry env use python3.8
+    poetry env use python3.12
     poetry install
     code .
 
-On Windows, you may need to use the full path to `python3.8` (run `py -0p` to find it).
+On Windows, you may need to use the full path to `python3.12` (run `py -0p` to find it).
 
 You will need to tell VS Code to use `.venv` as the Python interpreter. It
 should ask you about this the first time you open the project folder.

@@ -14,11 +14,11 @@ operations from within a Python script.
 
 ### Python Runtime
 
-`pybricksdev` requires Python 3.8 or higher.
+`pybricksdev` requires Python 3.10 or higher.
 
 - For Windows, use the [official Python installer][py-dl] or the [Windows Store][py38-win].
-- For Mac, use the [official Python installer][py-dl] or Homebrew (`brew install python@3.8`).
-- For Linux, use the distro provided `python3.8` or if not available, use a Python
+- For Mac, use the [official Python installer][py-dl] or Homebrew (`brew install python@3.12`).
+- For Linux, use the distro provided `python3.12` or if not available, use a Python
   runtime version manager such as [asdf][asdf] or [pyenv][pyenv].
 
 
@@ -79,7 +79,7 @@ following:
 To install `pybricksdev` as a library, we highly recommend using a virtual
 environment for your project. Our tool of choice for this is [poetry]:
 
-    poetry env use python3.8
+    poetry env use python3.12
     poetry add pybricksdev
 
 Of course you can always use `pip` as well:
