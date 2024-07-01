@@ -84,6 +84,8 @@ class _CommandCompleter(Completer):
             )
             if cls and issubclass(cls, Enum):
                 for m in cls:
+                    if m.name.startswith("_"):
+                        continue
                     yield Completion(m.name)
         elif document.find_enclosing_bracket_left("(", ")") is not None:
             # if we are inside of "(...)", list the enums and other parameter types

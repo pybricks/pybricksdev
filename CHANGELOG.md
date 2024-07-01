@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed `PortID` exception when running `lwp3 repl` command.
+
 ## [1.0.0-alpha.49] - 2024-06-30
 
 ### Changed
