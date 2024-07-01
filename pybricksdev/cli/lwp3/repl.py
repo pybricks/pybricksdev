@@ -183,8 +183,15 @@ async def repl() -> None:
                     msg = eval(result, _eval_pool)
                     if not isinstance(msg, AbstractMessage):
                         raise ValueError("not a message object")
+                except SyntaxError as ex:
+                    logger.error(
+                        "%s\n\n    %s\n   %s",
+                        ex.msg,
+                        ex.text,
+                        " " * ex.offset + "^" * (ex.end_offset - ex.offset),
+                    )
                 except Exception:
-                    logger.exception("bad input:")
+                    logger.exception("unexpected error:")
                 else:
                     logger.info("sending: %s", msg)
                     await client.write_gatt_char(
