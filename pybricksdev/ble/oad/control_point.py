@@ -2,12 +2,12 @@
 # Copyright (c) 2024 The Pybricks Authors
 
 import asyncio
-import struct
 from enum import IntEnum
+from typing import AsyncGenerator
 
 from bleak import BleakClient
 
-from ._common import oad_uuid
+from ._common import OADReturn, SoftwareVersion, oad_uuid
 
 __all__ = ["OADControlPoint"]
 
@@ -31,45 +31,11 @@ class CmdId(IntEnum):
     ERASE_ALL_BONDS = 0x13
 
 
-class OADReturn(IntEnum):
-    SUCCESS = 0
-    """OAD succeeded"""
-    CRC_ERR = 1
-    """The downloaded image’s CRC doesn’t match the one expected from the metadata"""
-    FLASH_ERR = 2
-    """Flash function failure such as flashOpen/flashRead/flash write/flash erase"""
-    BUFFER_OFL = 3
-    """The block number of the received packet doesn’t match the one requested, an overflow has occurred."""
-    ALREADY_STARTED = 4
-    """OAD start command received, while OAD is already is progress"""
-    NOT_STARTED = 5
-    """OAD data block received with OAD start process"""
-    DL_NOT_COMPLETE = 6
-    """OAD enable command received without complete OAD image download"""
-    NO_RESOURCES = 7
-    """Memory allocation fails/ used only for backward compatibility"""
-    IMAGE_TOO_BIG = 8
-    """Image is too big"""
-    INCOMPATIBLE_IMAGE = 9
-    """Stack and flash boundary mismatch, program entry mismatch"""
-    INVALID_FILE = 10
-    """Invalid image ID received"""
-    INCOMPATIBLE_FILE = 11
-    """BIM/image header/firmware version mismatch"""
-    AUTH_FAIL = 12
-    """Start OAD process / Image Identify message/image payload authentication/validation fail"""
-    EXT_NOT_SUPPORTED = 13
-    """Data length extension or OAD control point characteristic not supported"""
-    DL_COMPLETE = 14
-    """OAD image payload download complete"""
-    CCCD_NOT_ENABLED = 15
-    """Internal (target side) error code used to halt the process if a CCCD has not been enabled"""
-    IMG_ID_TIMEOUT = 16
-    """OAD Image ID has been tried too many times and has timed out. Device will disconnect."""
+OAD_LEGO_MARIO_DEVICE_TYPE = 0xFF150409
+"""Device type for LEGO Mario and friends."""
 
-
-def _decode_version(v: int) -> int:
-    return (v >> 4) * 10 + (v & 0x0F)
+OAD_LEGO_TECHNIC_MOVE_DEVICE_TYPE = 0xFF160409
+"""Device type for LEGO Technic Move Hub."""
 
 
 class OADControlPoint:
@@ -91,7 +57,7 @@ class OADControlPoint:
 
     async def _send_command(self, cmd_id: CmdId, payload: bytes = b""):
         await self._client.write_gatt_char(
-            OAD_CONTROL_POINT_CHAR_UUID, bytes([cmd_id]) + payload
+            OAD_CONTROL_POINT_CHAR_UUID, bytes([cmd_id]) + payload, response=False
         )
         rsp = await self._queue.get()
 
@@ -129,18 +95,28 @@ class OADControlPoint:
 
         return OADReturn(rsp[0])
 
-    async def start_oad_process(self) -> int:
+    async def start_oad_process(self) -> AsyncGenerator[tuple[OADReturn, int], None]:
         """
         Start the OAD process.
 
         Returns: Block Number
         """
-        rsp = await self._send_command(CmdId.START_OAD_PROCESS)
+        await self._client.write_gatt_char(
+            OAD_CONTROL_POINT_CHAR_UUID,
+            bytes([CmdId.START_OAD_PROCESS]),
+            response=False,
+        )
 
-        if len(rsp) != 4:
-            raise RuntimeError(f"Unexpected response: {rsp.hex(':')}")
+        while True:
+            rsp = await self._queue.get()
 
-        return int.from_bytes(rsp, "little")
+            if len(rsp) != 6 or rsp[0] != CmdId.IMAGE_BLOCK_WRITE_CHAR:
+                raise RuntimeError(f"Unexpected response: {rsp.hex(':')}")
+
+            status = OADReturn(rsp[1])
+            block_num = int.from_bytes(rsp[2:], "little")
+
+            yield status, block_num
 
     async def enable_oad_image(self) -> OADReturn:
         """
@@ -182,7 +158,7 @@ class OADControlPoint:
 
         return OADReturn(rsp[0])
 
-    async def get_software_version(self) -> tuple[tuple[int, int], tuple[int, int]]:
+    async def get_software_version(self) -> SoftwareVersion:
         """
         Get the software version.
 
@@ -193,10 +169,7 @@ class OADControlPoint:
         if len(rsp) != 4:
             raise RuntimeError(f"Unexpected response: {rsp.hex(':')}")
 
-        return (
-            (_decode_version(rsp[0]), _decode_version(rsp[1])),
-            (_decode_version(rsp[2]), _decode_version(rsp[3])),
-        )
+        return SoftwareVersion.from_bytes(rsp)
 
     async def get_oad_image_status(self) -> OADReturn:
         """
@@ -236,21 +209,6 @@ class OADControlPoint:
             raise RuntimeError(f"Unexpected response: {rsp.hex(':')}")
 
         return int.from_bytes(rsp, "little")
-
-    async def image_block_write(self, prev_status: int, block_num: int) -> None:
-        """
-        Write an image block.
-
-        Args:
-            prev_status: Status of the previous block received
-            block_num: Block number
-        """
-        rsp = await self._send_command(
-            CmdId.IMAGE_BLOCK_WRITE_CHAR, struct.pack("<BI", prev_status, block_num)
-        )
-
-        if len(rsp) != 0:
-            raise RuntimeError(f"Unexpected response: {rsp.hex(':')}")
 
     async def erase_all_bonds(self) -> OADReturn:
         """

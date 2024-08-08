@@ -290,6 +290,26 @@ class DFU(Tool):
         return self.subparsers.choices[args.action].tool.run(args)
 
 
+class OADFlash(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "flash",
+            help="update firmware on a LEGO Powered Up device using TI OAD",
+        )
+        parser.tool = self
+        parser.add_argument(
+            "firmware",
+            metavar="<firmware-file>",
+            type=argparse.FileType(mode="rb"),
+            help="the firmware .oda file",
+        ).completer = FilesCompleter(allowednames=(".oda",))
+
+    async def run(self, args: argparse.Namespace):
+        from .oad import flash_oad_image
+
+        await flash_oad_image(args.firmware)
+
+
 class OADInfo(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
@@ -315,7 +335,7 @@ class OAD(Tool):
             metavar="<action>", dest="action", help="the action to perform"
         )
 
-        for tool in (OADInfo(),):
+        for tool in OADFlash(), OADInfo():
             tool.add_parser(self.subparsers)
 
     def run(self, args: argparse.Namespace):
