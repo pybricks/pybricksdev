@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2021-2023 The Pybricks Authors
+# Copyright (c) 2021-2024 The Pybricks Authors
 # Some portions of the documentation:
 # Copyright (c) 2018 LEGO System A/S
 
@@ -195,6 +195,9 @@ class HubKind(IntEnum):
     LUIGI = 0x44
     """LEGO Luigi Hub."""
 
+    PEACH = 0x45
+    """LEGO Peach Hub."""
+
     TECHNIC = 0x80
     """LEGO 4-port Technic Hub."""
 
@@ -203,6 +206,9 @@ class HubKind(IntEnum):
 
     TECHNIC_SMALL = 0x83
     """LEGO SPIKE Essential Hub."""
+
+    TECHNIC_MOVE = 0x84
+    """LEGO Technic Move Hub."""
 
     RCX = 0xE0
     """LEGO MINDSTORMS RCX brick. (unofficial Pybricks addition)"""
