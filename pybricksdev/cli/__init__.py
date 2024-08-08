@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2022 The Pybricks Authors
+# Copyright (c) 2019-2024 The Pybricks Authors
 
 """Command line wrapper around pybricksdev library."""
 
@@ -290,6 +290,43 @@ class DFU(Tool):
         return self.subparsers.choices[args.action].tool.run(args)
 
 
+class OADInfo(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        parser = subparsers.add_parser(
+            "info",
+            help="get information about firmware on a LEGO Powered Up device using TI OAD",
+        )
+        parser.tool = self
+
+    async def run(self, args: argparse.Namespace):
+        from .oad import dump_oad_info
+
+        await dump_oad_info()
+
+
+class OAD(Tool):
+    def add_parser(self, subparsers: argparse._SubParsersAction):
+        self.parser = subparsers.add_parser(
+            "oad",
+            help="update firmware on a LEGO Powered Up device using TI OAD",
+        )
+        self.parser.tool = self
+        self.subparsers = self.parser.add_subparsers(
+            metavar="<action>", dest="action", help="the action to perform"
+        )
+
+        for tool in (OADInfo(),):
+            tool.add_parser(self.subparsers)
+
+    def run(self, args: argparse.Namespace):
+        if args.action not in self.subparsers.choices:
+            self.parser.error(
+                f'Missing name of action: {"|".join(self.subparsers.choices.keys())}'
+            )
+
+        return self.subparsers.choices[args.action].tool.run(args)
+
+
 class LWP3Repl(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
@@ -372,7 +409,7 @@ def main():
         help="the tool to use",
     )
 
-    for tool in Compile(), Run(), Flash(), DFU(), LWP3(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), OAD(), LWP3(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
