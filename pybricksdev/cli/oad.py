@@ -119,16 +119,19 @@ async def flash_oad_image(firmware: BinaryIO) -> None:
 
                         elif status == OADReturn.DL_COMPLETE:
                             break
+                        elif status == OADReturn.CRC_ERR:
+                            raise RuntimeError("Failed CRC check")
                         else:
-                            print(
+                            raise RuntimeError(
                                 f"Block {block_num} with unhandled status: {status.name}"
                             )
                 except BaseException:
                     await control_point.cancel_oad()
                     raise
 
-                # This causes hub to reset and disconnect
-                await control_point.enable_oad_image()
+        # This causes hub to reset and disconnect
+        await control_point.enable_oad_image()
+        print("Done.")
 
 
 async def dump_oad_info():
