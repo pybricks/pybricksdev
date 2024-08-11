@@ -62,10 +62,17 @@ async def flash_oad_image(firmware: BinaryIO) -> None:
         print("No OAD device found")
         return
 
+    disconnect_event = asyncio.Event()
+
+    def on_disconnect(_):
+        disconnect_event.set()
+
     # long timeout in case pairing is needed
-    async with asyncio.timeout(60), BleakClient(device) as client, OADImageIdentify(
+    async with asyncio.timeout(60), BleakClient(
+        device, on_disconnect
+    ) as client, OADImageIdentify(client) as image_identify, OADControlPoint(
         client
-    ) as image_identify, OADControlPoint(client) as control_point:
+    ) as control_point:
         image_block = OADImageBlock(client)
 
         print(f"Connected to {device.name}")
@@ -132,6 +139,10 @@ async def flash_oad_image(firmware: BinaryIO) -> None:
         # This causes hub to reset and disconnect
         await control_point.enable_oad_image()
         print("Done.")
+
+        # avoid race condition of requesting disconnect while hub is initiating
+        # disconnect itself - this can leave BlueZ in a a bad state
+        await disconnect_event.wait()
 
 
 async def dump_oad_info():

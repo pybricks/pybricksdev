@@ -11,6 +11,7 @@ import asyncio
 import struct
 
 from bleak import BleakClient
+from bleak.exc import BleakError
 
 from ._common import ImageInfo, OADReturn, SoftwareVersion, oad_uuid
 
@@ -35,7 +36,11 @@ class OADImageIdentify:
         return self
 
     async def __aexit__(self, *exc_info):
-        await self._client.stop_notify(OAD_IMAGE_IDENTIFY_CHAR_UUID)
+        try:
+            await self._client.stop_notify(OAD_IMAGE_IDENTIFY_CHAR_UUID)
+        except BleakError:
+            # ignore if already disconnected
+            pass
 
     async def validate(
         self,

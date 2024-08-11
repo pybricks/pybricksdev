@@ -6,6 +6,7 @@ from enum import IntEnum
 from typing import AsyncGenerator
 
 from bleak import BleakClient
+from bleak.exc import BleakError
 
 from ._common import OADReturn, SoftwareVersion, oad_uuid
 
@@ -50,7 +51,11 @@ class OADControlPoint:
         return self
 
     async def __aexit__(self, *exc_info):
-        await self._client.stop_notify(OAD_CONTROL_POINT_CHAR_UUID)
+        try:
+            await self._client.stop_notify(OAD_CONTROL_POINT_CHAR_UUID)
+        except BleakError:
+            # ignore if already disconnected
+            pass
 
     def _notification_handler(self, sender, data):
         self._queue.put_nowait(data)
