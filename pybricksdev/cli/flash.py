@@ -382,24 +382,28 @@ async def flash_ev3(firmware: bytes) -> None:
         fw, hw = await bootloader.get_version()
         print(f"hwid: {hw}")
 
-        ERASE_TICKS = 60
-
         # Erasing doesn't have any feedback so we just use time for the progress
         # bar. The operation runs on the EV3, so the time is the same for everyone.
         async def tick(callback):
-            for _ in range(ERASE_TICKS):
-                await asyncio.sleep(1)
-                callback(1)
+            CHUNK = 8000
+            SPEED = 256000
+            for _ in range(len(firmware) // CHUNK):
+                await asyncio.sleep(CHUNK / SPEED)
+                callback(CHUNK)
 
-        print("Erasing memory...")
-        with logging_redirect_tqdm(), tqdm(total=ERASE_TICKS) as pbar:
-            await asyncio.gather(bootloader.erase_chip(), tick(pbar.update))
+        print("Erasing memory and preparing firmware download...")
+        with logging_redirect_tqdm(), tqdm(
+            total=len(firmware), unit="B", unit_scale=True
+        ) as pbar:
+            await asyncio.gather(
+                bootloader.erase_and_begin_download(len(firmware)), tick(pbar.update)
+            )
 
         print("Downloading firmware...")
         with logging_redirect_tqdm(), tqdm(
             total=len(firmware), unit="B", unit_scale=True
         ) as pbar:
-            await bootloader.download(0, firmware, pbar.update)
+            await bootloader.download(firmware, pbar.update)
 
         print("Verifying...", end="", flush=True)
         checksum = await bootloader.get_checksum(0, len(firmware))
