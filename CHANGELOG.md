@@ -6,9 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-alpha.51] - 2024-11-01
+
 ### Added
 - Added `pybricksdev oad info` command.
 - Added `pybricksdev oad flash` command.
+
+### Fixed
+- Fixed EV3 firmware flashing on USB 3.0 systems.
 
 ## [1.0.0-alpha.50] - 2024-07-01
 
