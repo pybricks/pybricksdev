@@ -328,6 +328,12 @@ DI_SERVICE_UUID = _standard_uuid(0x180A)
 .. availability:: Since Pybricks protocol v1.0.0.
 """
 
+DEVICE_NAME_UUID = _standard_uuid(0x2A00)
+"""Standard Device Name UUID
+
+.. availability:: Since Pybricks protocol v1.0.0.
+"""
+
 FW_REV_UUID = _standard_uuid(0x2A26)
 """Standard Firmware Revision String characteristic UUID
 
