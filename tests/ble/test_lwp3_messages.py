@@ -945,6 +945,8 @@ class TestPortInfoMessages:
                 assert (
                     repr(msg)
                     == "PortInfoModeInfoMessage(<PortID.1: 1>, <ModeCapabilities.INPUT|OUTPUT: 3>, 5, [0, 1, 2], [3, 4])"
+                    or repr(msg)
+                    == "PortInfoModeInfoMessage(<PortID.1: 1>, <ModeCapabilities.OUTPUT|INPUT: 3>, 5, [0, 1, 2], [3, 4])"
                 )
 
             def test_parse_message(self):
@@ -1174,6 +1176,8 @@ class TestPortInfoMessages:
                 assert (
                     repr(msg)
                     == "PortModeInfoCapabilitiesMessage(<PortID.1: 1>, 2, <IODeviceCapabilities.1: 1>)"
+                    or repr(msg)
+                    == "PortModeInfoCapabilitiesMessage(<PortID.1: 1>, 2, <IODeviceCapabilities: 1>)"
                 )
 
             def test_parse_message(self):
