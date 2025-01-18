@@ -10,10 +10,7 @@ from typing import Callable, Optional, Tuple
 import hid
 
 from pybricksdev.tools import chunk
-
-LEGO_VENDOR_ID = 0x0694
-EV3_PRODUCT_ID = 0x0005
-EV3_BOOTLOADER_PRODUCT_ID = 0x0006
+from pybricksdev.usb import EV3_BOOTLOADER_USB_PID, LEGO_USB_VID
 
 
 class MessageType(enum.IntEnum):
@@ -70,9 +67,7 @@ class EV3Bootloader:
         """
         Opens an HID connection to the EV3 bootloader.
         """
-        self._device.open(
-            vendor_id=LEGO_VENDOR_ID, product_id=EV3_BOOTLOADER_PRODUCT_ID
-        )
+        self._device.open(vendor_id=LEGO_USB_VID, product_id=EV3_BOOTLOADER_USB_PID)
 
     def close(self) -> None:
         """

@@ -16,20 +16,23 @@ from usb.core import NoBackendError, USBError
 from pybricksdev import resources
 from pybricksdev._vendored import dfu_create, dfu_upload
 from pybricksdev.ble.lwp3.bytecodes import HubKind
+from pybricksdev.usb import (
+    LEGO_USB_VID,
+    MINDSTORMS_INVENTOR_DFU_USB_PID,
+    SPIKE_ESSENTIAL_DFU_USB_PID,
+    SPIKE_PRIME_DFU_USB_PID,
+)
 
 FIRMWARE_ADDRESS = 0x08008000
 FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB
-LEGO_VID = 0x0694
-SPIKE_PRIME_PID = 0x0008
-SPIKE_ESSENTIAL_PID = 0x000C
-MINDSTORMS_INVENTOR_PID = 0x0011
+
 
 ALL_PIDS = {
-    MINDSTORMS_INVENTOR_PID: HubKind.TECHNIC_LARGE,
-    SPIKE_ESSENTIAL_PID: HubKind.TECHNIC_SMALL,
-    SPIKE_PRIME_PID: HubKind.TECHNIC_LARGE,
+    MINDSTORMS_INVENTOR_DFU_USB_PID: HubKind.TECHNIC_LARGE,
+    SPIKE_ESSENTIAL_DFU_USB_PID: HubKind.TECHNIC_SMALL,
+    SPIKE_PRIME_DFU_USB_PID: HubKind.TECHNIC_LARGE,
 }
-ALL_DEVICES = [f"{LEGO_VID:04x}:{pid:04x}" for pid in ALL_PIDS.keys()]
+ALL_DEVICES = [f"{LEGO_USB_VID:04x}:{pid:04x}" for pid in ALL_PIDS.keys()]
 
 
 def _get_dfu_util() -> ContextManager[os.PathLike]:
@@ -165,7 +168,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
         try:
             # Determine correct product ID
 
-            devices = dfu_upload.get_dfu_devices(idVendor=LEGO_VID)
+            devices = dfu_upload.get_dfu_devices(idVendor=LEGO_USB_VID)
             if not devices:
                 print(
                     "No DFU devices found.",
@@ -184,11 +187,11 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
                 exit(1)
 
             # Create dfu file
-            device = "0x{0:04x}:0x{1:04x}".format(LEGO_VID, product_id)
+            device = "0x{0:04x}:0x{1:04x}".format(LEGO_USB_VID, product_id)
             dfu_create.build(outfile, [[target]], device)
 
             # Init dfu tool
-            dfu_upload.__VID = LEGO_VID
+            dfu_upload.__VID = LEGO_USB_VID
             dfu_upload.__PID = product_id
             dfu_upload.init()
             elements = dfu_upload.read_dfu_file(outfile)

@@ -78,6 +78,7 @@ target-version = ['py38']
 [tool.isort]
 profile = "black"
 src_paths = ["demo", "pybricksdev", "tests"]
+known_third_party = ["usb"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
