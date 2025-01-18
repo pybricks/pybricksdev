@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fix crash when running `pybricksdev run ble -` (bug introduced in alpha.49).
+
 ## [1.0.0-alpha.52] - 2024-11-29
 
 ### Added

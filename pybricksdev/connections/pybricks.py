@@ -582,7 +582,9 @@ class PybricksHub:
         Version of :meth:`run` for compatibility with older firmware ()
         """
         # Compile the script to mpy format
-        mpy = await compile_file(py_path, self._mpy_abi_version)
+        mpy = await compile_file(
+            os.path.dirname(py_path), os.path.basename(py_path), self._mpy_abi_version
+        )
 
         try:
             self._downloading_via_nus = True
