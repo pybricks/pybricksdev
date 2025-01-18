@@ -189,18 +189,18 @@ files = [
 
 [[package]]
 name = "asyncssh"
-version = "2.14.2"
+version = "2.19.0"
 description = "AsyncSSH: Asynchronous SSHv2 client and server library"
 optional = false
-python-versions = ">= 3.6"
+python-versions = ">=3.6"
 files = [
-    {file = "asyncssh-2.14.2-py3-none-any.whl", hash = "sha256:6ff9923389a16bda4f681c1fc253386cc4e1f19fb74fd0684dd0d31943ebe5e4"},
-    {file = "asyncssh-2.14.2.tar.gz", hash = "sha256:e956bf8988d07a06ba3305f6604e261f4ca014c4a232f0873f1c7692fbe3cfc2"},
+    {file = "asyncssh-2.19.0-py3-none-any.whl", hash = "sha256:bb82ac30ff0cb4393fbaf1114e606ad7a4f13d6c4bdaed423c033ee26b455228"},
+    {file = "asyncssh-2.19.0.tar.gz", hash = "sha256:723dead4d068b558708dc66a4ca7e7a93a813aa9416036eccb9af4c03ae2cf30"},
 ]
 
 [package.dependencies]
 cryptography = ">=39.0"
-typing-extensions = ">=3.6"
+typing_extensions = ">=4.0.0"
 
 [package.extras]
 bcrypt = ["bcrypt (>=3.1.3)"]
