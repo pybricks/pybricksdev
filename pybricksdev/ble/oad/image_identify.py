@@ -13,7 +13,7 @@ import struct
 from bleak import BleakClient
 from bleak.exc import BleakError
 
-from ._common import ImageInfo, OADReturn, SoftwareVersion, oad_uuid
+from pybricksdev.ble.oad._common import ImageInfo, OADReturn, SoftwareVersion, oad_uuid
 
 __all__ = ["OADImageIdentify"]
 

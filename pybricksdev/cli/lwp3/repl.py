@@ -25,15 +25,15 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import StdoutProxy, patch_stdout
 
-from ...ble.lwp3 import (
+from pybricksdev.ble.lwp3 import (
     LEGO_CID,
     LWP3_HUB_CHARACTERISTIC_UUID,
     LWP3_HUB_SERVICE_UUID,
     bytecodes,
     messages,
 )
-from ...ble.lwp3.bytecodes import Capabilities, HubKind, LastNetwork, Status
-from ...ble.lwp3.messages import AbstractMessage, parse_message
+from pybricksdev.ble.lwp3.bytecodes import Capabilities, HubKind, LastNetwork, Status
+from pybricksdev.ble.lwp3.messages import AbstractMessage, parse_message
 
 logger = logging.getLogger(__name__)
 history_file = Path(user_cache_dir("pybricksdev"), "lwp3-explorer-history.txt")

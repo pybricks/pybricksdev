@@ -10,7 +10,7 @@ https://software-dl.ti.com/lprf/sdg-latest/html/oad-ble-stack-3.x/oad_profile.ht
 
 from bleak import BleakClient
 
-from ._common import oad_uuid
+from pybricksdev.ble.oad._common import oad_uuid
 
 __all__ = ["OADImageBlock"]
 

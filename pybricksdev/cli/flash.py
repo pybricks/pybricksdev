@@ -19,23 +19,23 @@ from packaging.version import Version
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from ..ble.lwp3 import (
+from pybricksdev.ble.lwp3 import (
     LEGO_CID,
     LWP3_BOOTLOADER_SERVICE_UUID,
     LWP3_HUB_CHARACTERISTIC_UUID,
     LWP3_HUB_SERVICE_UUID,
 )
-from ..ble.lwp3 import AdvertisementData as HubAdvertisementData
-from ..ble.lwp3.bootloader import BootloaderAdvertisementData
-from ..ble.lwp3.bytecodes import HubKind, HubProperty
-from ..ble.lwp3.messages import (
+from pybricksdev.ble.lwp3 import AdvertisementData as HubAdvertisementData
+from pybricksdev.ble.lwp3.bootloader import BootloaderAdvertisementData
+from pybricksdev.ble.lwp3.bytecodes import HubKind, HubProperty
+from pybricksdev.ble.lwp3.messages import (
     FirmwareUpdateMessage,
     HubPropertyRequestUpdate,
     HubPropertyUpdate,
     parse_message,
 )
-from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
-from ..ble.pybricks import (
+from pybricksdev.ble.nus import NUS_RX_UUID, NUS_TX_UUID
+from pybricksdev.ble.pybricks import (
     FW_REV_UUID,
     PNP_ID_UUID,
     PYBRICKS_COMMAND_EVENT_UUID,
@@ -44,13 +44,13 @@ from ..ble.pybricks import (
     Command,
     unpack_pnp_id,
 )
-from ..compile import compile_file
-from ..connections.lego import REPLHub
-from ..dfu import flash_dfu
-from ..firmware import create_firmware_blob
-from ..flash import BootloaderConnection
-from ..tools import chunk
-from ..tools.checksum import xor_bytes
+from pybricksdev.compile import compile_file
+from pybricksdev.connections.lego import REPLHub
+from pybricksdev.dfu import flash_dfu
+from pybricksdev.firmware import create_firmware_blob
+from pybricksdev.flash import BootloaderConnection
+from pybricksdev.tools import chunk
+from pybricksdev.tools.checksum import xor_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -335,9 +335,9 @@ async def flash_nxt(firmware: bytes) -> None:
         firmware:
             A firmware blob with the NxOS header appended to the end.
     """
-    from .._vendored.pynxt.firmware import Firmware
-    from .._vendored.pynxt.flash import FlashController
-    from .._vendored.pynxt.samba import SambaBrick, SambaOpenError
+    from pybricksdev._vendored.pynxt.firmware import Firmware
+    from pybricksdev._vendored.pynxt.flash import FlashController
+    from pybricksdev._vendored.pynxt.samba import SambaBrick, SambaOpenError
 
     # parse the header
     info = Firmware(firmware)
@@ -375,7 +375,7 @@ async def flash_ev3(firmware: bytes) -> None:
         firmware:
             A firmware blob.
     """
-    from ..connections.ev3 import EV3Bootloader
+    from pybricksdev.connections.ev3 import EV3Bootloader
 
     # TODO: nice error message and exit(1) if EV3 is not found
     with EV3Bootloader() as bootloader:

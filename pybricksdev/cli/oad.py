@@ -10,13 +10,18 @@ from bleak.backends.scanner import AdvertisementData
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from ..ble.lwp3 import LEGO_CID, LWP3_HUB_SERVICE_UUID, HubKind
-from ..ble.oad import OADControlPoint, OADImageBlock, OADImageIdentify, OADReturn
-from ..ble.oad.control_point import (
+from pybricksdev.ble.lwp3 import LEGO_CID, LWP3_HUB_SERVICE_UUID, HubKind
+from pybricksdev.ble.oad import (
+    OADControlPoint,
+    OADImageBlock,
+    OADImageIdentify,
+    OADReturn,
+)
+from pybricksdev.ble.oad.control_point import (
     OAD_LEGO_MARIO_DEVICE_TYPE,
     OAD_LEGO_TECHNIC_MOVE_DEVICE_TYPE,
 )
-from ..ble.oad.firmware import parse_oad_header
+from pybricksdev.ble.oad.firmware import parse_oad_header
 
 __all__ = ["dump_oad_info", "flash_oad_image"]
 

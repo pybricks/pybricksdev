@@ -6,7 +6,7 @@ This module and its submodules are used for Bluetooth Low Energy
 communications with devices that provide the LEGO Wireless Protocol v3.
 """
 
-from .bytecodes import Capabilities, HubKind, LastNetwork, Status
+from pybricksdev.ble.lwp3.bytecodes import Capabilities, HubKind, LastNetwork, Status
 
 # LEGO Wireless Protocol v3 is defined at:
 # https://lego.github.io/lego-ble-wireless-protocol-docs/

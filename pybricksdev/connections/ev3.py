@@ -9,7 +9,7 @@ from typing import Callable, Optional, Tuple
 
 import hid
 
-from ..tools import chunk
+from pybricksdev.tools import chunk
 
 LEGO_VENDOR_ID = 0x0694
 EV3_PRODUCT_ID = 0x0005

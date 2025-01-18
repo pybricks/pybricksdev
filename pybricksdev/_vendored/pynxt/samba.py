@@ -3,7 +3,7 @@
 
 import struct
 
-from . import lowlevel
+from pybricksdev._vendored.pynxt import lowlevel
 
 ATMEL_VENDOR_ID = 0x03EB
 SAMBA_PRODUCT_ID = 0x6124

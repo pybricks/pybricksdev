@@ -15,8 +15,7 @@ import struct
 from enum import IntEnum
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union, overload
 
-from ...tools.checksum import xor_bytes
-from .bytecodes import (
+from pybricksdev.ble.lwp3.bytecodes import (
     MAX_NAME_SIZE,
     AlertKind,
     AlertOperation,
@@ -52,6 +51,7 @@ from .bytecodes import (
     Version,
     VirtualPortSetupCommand,
 )
+from pybricksdev.tools.checksum import xor_bytes
 
 
 class AbstractMessage(abc.ABC):
