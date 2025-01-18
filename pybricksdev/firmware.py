@@ -133,9 +133,11 @@ async def _create_firmware_v1(
 
     if "main.py" in archive.namelist():
         main_py = io.TextIOWrapper(archive.open("main.py"))
+        main_py_path = save_script(main_py.read())
 
         mpy = await compile_file(
-            save_script(main_py.read()),
+            os.path.dirname(main_py_path),
+            os.path.basename(main_py_path),
             metadata["mpy-abi-version"],
             metadata["mpy-cross-options"],
         )

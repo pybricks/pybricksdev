@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import struct
 import sys
 import zipfile
@@ -117,7 +118,9 @@ async def download_and_run(client: BleakClient, script: str, abi: int) -> None:
         # file has to be closed so mpy-cross can open it
         temp.file.close()
 
-        mpy = await compile_file(temp.name, abi)
+        mpy = await compile_file(
+            os.path.dirname(temp.name), os.path.basename(temp.name), abi
+        )
 
     recv_queue = asyncio.Queue()
 

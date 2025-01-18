@@ -29,12 +29,17 @@ def make_build_dir():
         raise FileExistsError("A file named build already exists.")
 
 
-async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = None):
+async def compile_file(
+    proj_dir: str, proj_path: str, abi: int, compile_args: Optional[List[str]] = None
+):
     """Compiles a Python file with ``mpy-cross``.
 
     Arguments:
-        path:
-            Path to script that is to be compiled.
+        proj_dir:
+            Path to project containing the script to be compiled
+        proj_path:
+            Path to script that is to be compiled relative to proj_dir. This is
+            the portion of the name that is passed to ``mpy-cross``.
         abi:
             Expected MPY ABI version.
         compile_args:
@@ -50,7 +55,7 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
     """
 
     # Get version info
-    with open(path, "r") as f:
+    with open(os.path.join(proj_dir, proj_path), "r") as f:
         loop = asyncio.get_running_loop()
         script = f.read()
 
@@ -58,14 +63,14 @@ async def compile_file(path: str, abi: int, compile_args: Optional[List[str]] = 
             proc, mpy = await loop.run_in_executor(
                 None,
                 lambda: mpy_cross_v5.mpy_cross_compile(
-                    path, script, no_unicode=True, extra_args=compile_args
+                    proj_path, script, no_unicode=True, extra_args=compile_args
                 ),
             )
         elif abi == 6:
             proc, mpy = await loop.run_in_executor(
                 None,
                 lambda: mpy_cross_v6.mpy_cross_compile(
-                    path, script, extra_args=compile_args
+                    proj_path, script, extra_args=compile_args
                 ),
             )
         else:
@@ -114,7 +119,8 @@ async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
     """
 
     # compile files using Python to find imports contained within the same directory as path
-    search_path = [os.path.dirname(path)]
+    proj_path = os.path.dirname(path)
+    search_path = [proj_path]
     finder = ModuleFinder(search_path)
 
     try:
@@ -136,9 +142,9 @@ async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
         if not module.__file__:
             continue
 
-        relative_file = os.path.relpath(module.__file__, os.path.dirname(path))
-
-        mpy = await compile_file(relative_file, abi_major)
+        mpy = await compile_file(
+            proj_path, os.path.relpath(module.__file__, proj_path), abi_major
+        )
 
         parts.append(len(mpy).to_bytes(4, "little"))
         parts.append(name.encode() + b"\x00")
