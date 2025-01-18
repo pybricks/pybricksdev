@@ -3,7 +3,7 @@
 
 """Main entry point for running pybricksdev as a module."""
 
-from .cli import main
+from pybricksdev.cli import main
 
 if __name__ == "__main__":
     main()

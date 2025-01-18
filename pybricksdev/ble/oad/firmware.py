@@ -4,7 +4,7 @@
 import struct
 from typing import NamedTuple
 
-from ._common import ImageInfo, SoftwareVersion
+from pybricksdev.ble.oad._common import ImageInfo, SoftwareVersion
 
 # More info at:
 # https://github.com/TexasInstruments/simplelink-lowpower-f3-sdk/blob/main/tools/common/oad/oad_image_tool.py

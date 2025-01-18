@@ -13,9 +13,9 @@ from typing import BinaryIO, ContextManager
 
 from usb.core import NoBackendError, USBError
 
-from . import resources
-from ._vendored import dfu_create, dfu_upload
-from .ble.lwp3.bytecodes import HubKind
+from pybricksdev import resources
+from pybricksdev._vendored import dfu_create, dfu_upload
+from pybricksdev.ble.lwp3.bytecodes import HubKind
 
 FIRMWARE_ADDRESS = 0x08008000
 FIRMWARE_SIZE = 1 * 1024 * 1024 - 32 * 1024  # 1MiB - 32KiB

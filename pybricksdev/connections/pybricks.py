@@ -18,9 +18,9 @@ from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from ..ble.lwp3.bytecodes import HubKind
-from ..ble.nus import NUS_RX_UUID, NUS_TX_UUID
-from ..ble.pybricks import (
+from pybricksdev.ble.lwp3.bytecodes import HubKind
+from pybricksdev.ble.nus import NUS_RX_UUID, NUS_TX_UUID
+from pybricksdev.ble.pybricks import (
     FW_REV_UUID,
     PNP_ID_UUID,
     PYBRICKS_COMMAND_EVENT_UUID,
@@ -34,10 +34,10 @@ from ..ble.pybricks import (
     unpack_hub_capabilities,
     unpack_pnp_id,
 )
-from ..compile import compile_file, compile_multi_file
-from ..tools import chunk
-from ..tools.checksum import xor_bytes
-from . import ConnectionState
+from pybricksdev.compile import compile_file, compile_multi_file
+from pybricksdev.connections import ConnectionState
+from pybricksdev.tools import chunk
+from pybricksdev.tools.checksum import xor_bytes
 
 logger = logging.getLogger(__name__)
 

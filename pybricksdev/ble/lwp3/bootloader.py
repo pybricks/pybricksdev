@@ -8,7 +8,7 @@ LWP3 bootloader service and characteristic for flashing firmware on the hub.
 
 from enum import IntEnum
 
-from .bytecodes import Capabilities, HubKind, Version
+from pybricksdev.ble.lwp3.bytecodes import Capabilities, HubKind, Version
 
 # Bootloader characteristic bytecodes
 

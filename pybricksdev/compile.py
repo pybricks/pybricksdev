@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Union
 import mpy_cross_v5
 import mpy_cross_v6
 
-from .tools import chunk
+from pybricksdev.tools import chunk
 
 logger = logging.getLogger(__name__)
 

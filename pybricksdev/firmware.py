@@ -20,8 +20,8 @@ else:
 
 import semver
 
-from .compile import compile_file, save_script
-from .tools.checksum import crc32_checksum, sum_complement
+from pybricksdev.compile import compile_file, save_script
+from pybricksdev.tools.checksum import crc32_checksum, sum_complement
 
 
 class FirmwareMetadataV100(

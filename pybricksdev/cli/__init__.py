@@ -18,8 +18,8 @@ from typing import ContextManager, TextIO
 import argcomplete
 from argcomplete.completers import FilesCompleter
 
-from .. import __name__ as MODULE_NAME
-from .. import __version__ as MODULE_VERSION
+from pybricksdev import __name__ as MODULE_NAME
+from pybricksdev import __version__ as MODULE_VERSION
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -112,7 +112,7 @@ class Compile(Tool):
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
-        from ..compile import compile_multi_file, print_mpy
+        from pybricksdev.compile import compile_multi_file, print_mpy
 
         with _get_script_path(args.file) as script_path:
             mpy = await compile_multi_file(script_path, args.abi)
@@ -171,10 +171,10 @@ class Run(Tool):
             )
 
     async def run(self, args: argparse.Namespace):
-        from ..ble import find_device
-        from ..connections.ev3dev import EV3Connection
-        from ..connections.lego import REPLHub
-        from ..connections.pybricks import PybricksHub
+        from pybricksdev.ble import find_device
+        from pybricksdev.connections.ev3dev import EV3Connection
+        from pybricksdev.connections.lego import REPLHub
+        from pybricksdev.connections.pybricks import PybricksHub
 
         # Pick the right connection
         if args.conntype == "ssh":
@@ -225,7 +225,7 @@ class Flash(Tool):
         )
 
     def run(self, args: argparse.Namespace):
-        from .flash import flash_firmware
+        from pybricksdev.cli.flash import flash_firmware
 
         return flash_firmware(args.firmware, args.name)
 
@@ -242,7 +242,7 @@ class DFUBackup(Tool):
         ).completer = FilesCompleter(allowednames=(".bin",))
 
     async def run(self, args: argparse.Namespace):
-        from ..dfu import backup_dfu
+        from pybricksdev.dfu import backup_dfu
 
         backup_dfu(args.firmware)
 
@@ -262,7 +262,7 @@ class DFURestore(Tool):
         ).completer = FilesCompleter(allowednames=(".bin",))
 
     async def run(self, args: argparse.Namespace):
-        from ..dfu import restore_dfu
+        from pybricksdev.dfu import restore_dfu
 
         restore_dfu(args.firmware)
 
@@ -305,7 +305,7 @@ class OADFlash(Tool):
         ).completer = FilesCompleter(allowednames=(".oda",))
 
     async def run(self, args: argparse.Namespace):
-        from .oad import flash_oad_image
+        from pybricksdev.cli.oad import flash_oad_image
 
         await flash_oad_image(args.firmware)
 
@@ -319,7 +319,7 @@ class OADInfo(Tool):
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
-        from .oad import dump_oad_info
+        from pybricksdev.cli.oad import dump_oad_info
 
         await dump_oad_info()
 
@@ -356,7 +356,7 @@ class LWP3Repl(Tool):
         parser.tool = self
 
     def run(self, args: argparse.Namespace):
-        from .lwp3.repl import repl, setup_repl_logging
+        from pybricksdev.cli.lwp3.repl import repl, setup_repl_logging
 
         setup_repl_logging()
         return repl()
@@ -392,7 +392,7 @@ class Udev(Tool):
     async def run(self, args: argparse.Namespace):
         from importlib.resources import read_text
 
-        from .. import resources
+        from pybricksdev import resources
 
         print(read_text(resources, resources.UDEV_RULES))
 

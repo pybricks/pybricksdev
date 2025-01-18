@@ -12,9 +12,9 @@ from typing import Dict, List, Optional, Tuple
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
-from .ble import BLERequestsConnection
-from .ble.lwp3.bootloader import BootloaderCommand
-from .ble.lwp3.bytecodes import HubKind
+from pybricksdev.ble import BLERequestsConnection
+from pybricksdev.ble.lwp3.bootloader import BootloaderCommand
+from pybricksdev.ble.lwp3.bytecodes import HubKind
 
 logger = logging.getLogger(__name__)
 

@@ -9,8 +9,8 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from ..tools import chunk
-from .pybricks import PYBRICKS_SERVICE_UUID
+from pybricksdev.ble.pybricks import PYBRICKS_SERVICE_UUID
+from pybricksdev.tools import chunk
 
 logger = logging.getLogger(__name__)
 

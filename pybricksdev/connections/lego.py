@@ -7,8 +7,8 @@ import os
 from serial import Serial
 from serial.tools import list_ports
 
-from ..tools import chunk
-from .pybricks import PybricksHub
+from pybricksdev.connections.pybricks import PybricksHub
+from pybricksdev.tools import chunk
 
 FILE_PACKET_SIZE = 1024
 FILE_TRANSFER_SCRIPT = f"""

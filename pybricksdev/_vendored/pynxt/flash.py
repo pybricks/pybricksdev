@@ -4,7 +4,7 @@
 import math
 from importlib.resources import read_binary
 
-from . import resources
+from pybricksdev._vendored.pynxt import resources
 
 # Mnemonics for the addresses of the various registers used by the flash
 # controller.
