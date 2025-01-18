@@ -9,6 +9,7 @@ from serial.tools import list_ports
 
 from pybricksdev.connections.pybricks import PybricksHub
 from pybricksdev.tools import chunk
+from pybricksdev.usb import LEGO_USB_VID
 
 FILE_PACKET_SIZE = 1024
 FILE_TRANSFER_SCRIPT = f"""
@@ -77,7 +78,10 @@ class REPLHub:
         port = None
         devices = list_ports.comports()
         for dev in devices:
-            if dev.product == "LEGO Technic Large Hub in FS Mode" or dev.vid == 0x0694:
+            if (
+                dev.product == "LEGO Technic Large Hub in FS Mode"
+                or dev.vid == LEGO_USB_VID
+            ):
                 port = dev.device
                 break
 
