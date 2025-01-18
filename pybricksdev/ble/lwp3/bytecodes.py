@@ -1008,7 +1008,7 @@ class IODeviceCapabilities(IntFlag):
     Sensor capabilities flags. (48-bit)
     """
 
-    pass
+    names = ()
 
 
 class DataFormat(IntEnum):
