@@ -574,8 +574,7 @@ class PortID(IntEnum):
     All enum members are dynamic. (0 to 49 are external and 50 - 100 are internal)
     """
 
-    # not used - Python requires at least one member
-    _PLACEHOLDER = -1
+    names = ()
 
     @property
     def internal(self) -> bool:
@@ -914,8 +913,7 @@ class HwNetExtFamily(IntEnum):
     a single byte.
     """
 
-    # not used - Python requires at least one member
-    _PLACEHOLDER = -1
+    names = ()
 
     @property
     def family(self) -> HwNetFamily:
