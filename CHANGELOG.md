@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2024-11-29
+
 ### Added
 - Partial/experimental support for `pybricksdev run usb`.
 
@@ -450,8 +452,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.52..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0..HEAD
+[1.0.0]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.52...v1.0.0
 [1.0.0-alpha.52]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.51...v1.0.0-alpha.52
 [1.0.0-alpha.51]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.50...v1.0.0-alpha.51
 [1.0.0-alpha.50]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.49...v1.0.0-alpha.50
