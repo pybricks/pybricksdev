@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Relax version constraints. ([pybricksdev#106])
+
+[pybricksdev#106]: https://github.com/pybricks/pybricksdev/issues/106
+
 ## [1.0.0] - 2024-11-29
 
 ### Added

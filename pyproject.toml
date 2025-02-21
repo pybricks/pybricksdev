@@ -28,45 +28,45 @@ include = [
 pybricksdev = 'pybricksdev.cli:main'
 
 [tool.poetry.dependencies]
-aioserial = "^1.3.0"
-argcomplete = "^1.11.1"
-asyncssh = "^2.2.1"
-bleak = "^0.22.0"
-mpy-cross-v5 = "^1.0.0"
+aioserial = ">=1.3.0"
+argcomplete = ">=1.11.1"
+asyncssh = ">=2.2.1"
+bleak = ">=0.22.0"
+mpy-cross-v5 = ">=1.0.0"
 python = ">=3.10,<3.14"
-tqdm = "^4.62.3"
-pyusb = "^1.0.2"
-semver = "^2.13.0"
-appdirs = "^1.4.4"
-prompt-toolkit = "^3.0.18"
-mpy-cross-v6 = "^1.0.0"
-packaging = "^22"
-typing-extensions = "^4.3.0"
-reactivex = "^4.0.4"
-hidapi = "^0.14.0"
+tqdm = ">=4.62.3"
+pyusb = ">=1.0.2"
+semver = ">=2.13.0"
+appdirs = ">=1.4.4"
+prompt-toolkit = ">=3.0.18"
+mpy-cross-v6 = ">=1.0.0"
+packaging = ">=22"
+typing-extensions = ">=4.3.0"
+reactivex = ">=4.0.4"
+hidapi = ">=0.14.0"
 
 [tool.poetry.group.notebook.dependencies]
-ipykernel = "^5.3.1"
-ipywidgets = "^7.6.3"
-nbstripout = "^0.3.8"
-notebook = "^6.0.3"
-pybricks = {version = "^3", allow-prereleases = true}
+ipykernel = ">=5.3.1"
+ipywidgets = ">=7.6.3"
+nbstripout = ">=0.3.8"
+notebook = ">=6.0.3"
+pybricks = {version = ">=3", allow-prereleases = true}
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23,<25"
-flake8 = "^6.0.0"
-isort = "^5.12.0"
+flake8 = ">=6.0.0"
+isort = ">=5.12.0"
 
 [tool.poetry.group.docs.dependencies]
-sphinx = "^6.1.3"
-sphinx-rtd-theme = "^1.2.0"
-toml = "^0.10.2"
-typing-extensions = "^4.5.0"
+sphinx = ">=6.1.3"
+sphinx-rtd-theme = ">=1.2.0"
+toml = ">=0.10.2"
+typing-extensions = ">=4.5.0"
 
 [tool.poetry.group.test.dependencies]
-coverage = {extras = ["toml"], version = "^7.2.3"}
-pytest = "^7.3.1"
-pytest-asyncio = "^0.21.0"
+coverage = {extras = ["toml"], version = ">=7.2.3"}
+pytest = ">=7.3.1"
+pytest-asyncio = ">=0.21.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
