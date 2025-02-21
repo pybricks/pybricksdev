@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-02-20
+
 ### Fixed
 - Relax version constraints. ([pybricksdev#106])
 
@@ -457,7 +459,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.0..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.0.1..HEAD
+[1.0.1]: https://github.com/pybricks/pybricksdev/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.52...v1.0.0
 [1.0.0-alpha.52]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.51...v1.0.0-alpha.52
 [1.0.0-alpha.51]: https://github.com/pybricks/pybricksdev/compare/v1.0.0-alpha.50...v1.0.0-alpha.51
