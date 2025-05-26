@@ -1,0 +1,297 @@
+"""Tests for the pybricksdev CLI commands."""
+
+import argparse
+import io
+import os
+import tempfile
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+
+import pytest
+
+from pybricksdev.cli import Push, Tool
+
+
+class TestTool:
+    """Tests for the base Tool class."""
+
+    def test_is_abstract(self):
+        """Test that Tool is an abstract base class."""
+        with pytest.raises(TypeError):
+            Tool()
+
+
+class TestPush:
+    """Tests for the Push command."""
+
+    def test_add_parser(self):
+        """Test that the parser is set up correctly."""
+        # Create a subparsers object
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers()
+
+        # Add the push command
+        push = Push()
+        push.add_parser(subparsers)
+
+        # Verify the parser was created with correct arguments
+        assert "push" in subparsers.choices
+        parser = subparsers.choices["push"]
+        assert parser.tool is push
+
+        # Test that required arguments are present
+        mock_file = mock_open(read_data="print('test')")
+        mock_file.return_value.name = "test.py"
+        with patch("builtins.open", mock_file):
+            args = parser.parse_args(["ble", "test.py"])
+            assert args.conntype == "ble"
+            assert args.file.name == "test.py"
+            assert args.name is None
+
+        # Test with optional name argument
+        mock_file = mock_open(read_data="print('test')")
+        mock_file.return_value.name = "test.py"
+        with patch("builtins.open", mock_file):
+            args = parser.parse_args(["ble", "test.py", "-n", "MyHub"])
+            assert args.name == "MyHub"
+
+        # Test that invalid connection type is rejected
+        with pytest.raises(SystemExit):
+            parser.parse_args(["invalid", "test.py"])
+
+    @pytest.mark.asyncio
+    async def test_push_ble(self):
+        """Test running the push command with BLE connection."""
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub._mpy_abi_version = 6
+        mock_hub.download_user_program = AsyncMock()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
+            temp.write("print('test')")
+            temp_path = temp.name
+
+        try:
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=open(temp_path, "r"),
+                name="MyHub",
+            )
+
+            # Mock the compilation
+            mock_mpy = MagicMock()
+            mock_mpy.__bytes__ = lambda self: b"compiled code"
+
+            # Mock the hub creation
+            with patch(
+                "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
+            ) as mock_hub_class:
+                with patch("pybricksdev.ble.find_device", return_value="mock_device"):
+                    with patch(
+                        "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
+                    ):
+                        # Run the command
+                        push = Push()
+                        await push.run(args)
+
+                        # Verify the hub was created and used correctly
+                        mock_hub_class.assert_called_once_with("mock_device")
+                        mock_hub.connect.assert_called_once()
+                        mock_hub.download_user_program.assert_called_once()
+                        mock_hub.disconnect.assert_called_once()
+        finally:
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_push_usb(self):
+        """Test running the push command with USB connection."""
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub._mpy_abi_version = 6
+        mock_hub.download_user_program = AsyncMock()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
+            temp.write("print('test')")
+            temp_path = temp.name
+
+        try:
+            # Create args
+            args = argparse.Namespace(
+                conntype="usb",
+                file=open(temp_path, "r"),
+                name=None,
+            )
+
+            # Mock the compilation
+            mock_mpy = MagicMock()
+            mock_mpy.__bytes__ = lambda self: b"compiled code"
+
+            # Mock the hub creation
+            with patch(
+                "pybricksdev.connections.pybricks.PybricksHubUSB", return_value=mock_hub
+            ) as mock_hub_class:
+                with patch("usb.core.find", return_value="mock_device"):
+                    with patch(
+                        "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
+                    ):
+                        # Run the command
+                        push = Push()
+                        await push.run(args)
+
+                        # Verify the hub was created and used correctly
+                        mock_hub_class.assert_called_once_with("mock_device")
+                        mock_hub.connect.assert_called_once()
+                        mock_hub.download_user_program.assert_called_once()
+                        mock_hub.disconnect.assert_called_once()
+        finally:
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_push_ssh(self):
+        """Test running the push command with SSH connection."""
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub.download = AsyncMock()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
+            temp.write("print('test')")
+            temp_path = temp.name
+
+        try:
+            # Create args
+            args = argparse.Namespace(
+                conntype="ssh",
+                file=open(temp_path, "r"),
+                name="ev3dev.local",
+            )
+
+            # Mock the hub creation
+            with patch(
+                "pybricksdev.connections.ev3dev.EV3Connection", return_value=mock_hub
+            ) as mock_hub_class:
+                with patch("socket.gethostbyname", return_value="192.168.1.1"):
+                    # Run the command
+                    push = Push()
+                    await push.run(args)
+
+                    # Verify the hub was created and used correctly
+                    mock_hub_class.assert_called_once_with("192.168.1.1")
+                    mock_hub.connect.assert_called_once()
+                    mock_hub.download.assert_called_once()
+                    mock_hub.disconnect.assert_called_once()
+        finally:
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_push_ssh_no_name(self):
+        """Test that SSH connection requires a name."""
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
+            temp.write("print('test')")
+            temp_path = temp.name
+
+        try:
+            # Create args without name
+            args = argparse.Namespace(
+                conntype="ssh",
+                file=open(temp_path, "r"),
+                name=None,
+            )
+
+            # Run the command and verify it exits
+            push = Push()
+            with pytest.raises(SystemExit, match="1"):
+                await push.run(args)
+        finally:
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_push_stdin(self):
+        """Test running the push command with stdin input."""
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub._mpy_abi_version = 6
+        mock_hub.download_user_program = AsyncMock()
+
+        # Create a mock stdin
+        mock_stdin = io.StringIO("print('test')")
+        mock_stdin.buffer = io.BytesIO(b"print('test')")
+        mock_stdin.name = "<stdin>"
+
+        # Create args
+        args = argparse.Namespace(
+            conntype="ble",
+            file=mock_stdin,
+            name="MyHub",
+        )
+
+        # Mock the compilation
+        mock_mpy = MagicMock()
+        mock_mpy.__bytes__ = lambda self: b"compiled code"
+
+        # Mock the hub creation and file handling
+        with patch(
+            "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
+        ) as mock_hub_class:
+            with patch("pybricksdev.ble.find_device", return_value="mock_device"):
+                with patch(
+                    "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
+                ):
+                    with patch("tempfile.NamedTemporaryFile") as mock_temp:
+                        mock_temp.return_value.__enter__.return_value.name = (
+                            "/tmp/test.py"
+                        )
+                        # Run the command
+                        push = Push()
+                        await push.run(args)
+
+                        # Verify the hub was created and used correctly
+                        mock_hub_class.assert_called_once_with("mock_device")
+                        mock_hub.connect.assert_called_once()
+                        mock_hub.download_user_program.assert_called_once()
+                        mock_hub.disconnect.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_push_connection_error(self):
+        """Test handling connection errors."""
+        # Create a mock hub that raises an error during connect
+        mock_hub = AsyncMock()
+        mock_hub.connect.side_effect = RuntimeError("Connection failed")
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
+            temp.write("print('test')")
+            temp_path = temp.name
+
+        try:
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=open(temp_path, "r"),
+                name="MyHub",
+            )
+
+            # Mock the compilation
+            mock_mpy = MagicMock()
+            mock_mpy.__bytes__ = lambda self: b"compiled code"
+
+            # Mock the hub creation
+            with patch(
+                "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
+            ):
+                with patch("pybricksdev.ble.find_device", return_value="mock_device"):
+                    with patch(
+                        "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
+                    ):
+                        # Run the command and verify it raises the error
+                        push = Push()
+                        with pytest.raises(RuntimeError, match="Connection failed"):
+                            await push.run(args)
+
+                        # Verify disconnect was not called since connection failed
+                        mock_hub.disconnect.assert_not_called()
+        finally:
+            os.unlink(temp_path)
