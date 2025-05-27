@@ -1,10 +1,11 @@
 """Tests for the pybricksdev CLI commands."""
 
 import argparse
+import contextlib
 import io
 import os
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, mock_open, patch
 
 import pytest
 
@@ -79,20 +80,27 @@ class TestDownload:
                 name="MyHub",
             )
 
-            # Mock the hub creation
-            with patch(
-                "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
-            ) as mock_hub_class:
-                with patch("pybricksdev.ble.find_device", return_value="mock_device"):
-                    # Run the command
-                    download = Download()
-                    await download.run(args)
+            # Set up mocks using ExitStack
+            with contextlib.ExitStack() as stack:
+                mock_hub_class = stack.enter_context(
+                    patch(
+                        "pybricksdev.connections.pybricks.PybricksHubBLE",
+                        return_value=mock_hub,
+                    )
+                )
+                stack.enter_context(
+                    patch("pybricksdev.ble.find_device", return_value="mock_device")
+                )
 
-                    # Verify the hub was created and used correctly
-                    mock_hub_class.assert_called_once_with("mock_device")
-                    mock_hub.connect.assert_called_once()
-                    mock_hub.download.assert_called_once()
-                    mock_hub.disconnect.assert_called_once()
+                # Run the command
+                download = Download()
+                await download.run(args)
+
+                # Verify the hub was created and used correctly
+                mock_hub_class.assert_called_once_with("mock_device")
+                mock_hub.connect.assert_called_once()
+                mock_hub.download.assert_called_once()
+                mock_hub.disconnect.assert_called_once()
         finally:
             os.unlink(temp_path)
 
@@ -117,20 +125,25 @@ class TestDownload:
                 name=None,
             )
 
-            # Mock the hub creation
-            with patch(
-                "pybricksdev.connections.pybricks.PybricksHubUSB", return_value=mock_hub
-            ) as mock_hub_class:
-                with patch("usb.core.find", return_value="mock_device"):
-                    # Run the command
-                    download = Download()
-                    await download.run(args)
+            # Set up mocks using ExitStack
+            with contextlib.ExitStack() as stack:
+                mock_hub_class = stack.enter_context(
+                    patch(
+                        "pybricksdev.connections.pybricks.PybricksHubUSB",
+                        return_value=mock_hub,
+                    )
+                )
+                stack.enter_context(patch("usb.core.find", return_value="mock_device"))
 
-                    # Verify the hub was created and used correctly
-                    mock_hub_class.assert_called_once_with("mock_device")
-                    mock_hub.connect.assert_called_once()
-                    mock_hub.download.assert_called_once()
-                    mock_hub.disconnect.assert_called_once()
+                # Run the command
+                download = Download()
+                await download.run(args)
+
+                # Verify the hub was created and used correctly
+                mock_hub_class.assert_called_once_with("mock_device")
+                mock_hub.connect.assert_called_once()
+                mock_hub.download.assert_called_once()
+                mock_hub.disconnect.assert_called_once()
         finally:
             os.unlink(temp_path)
 
@@ -154,20 +167,27 @@ class TestDownload:
                 name="ev3dev.local",
             )
 
-            # Mock the hub creation
-            with patch(
-                "pybricksdev.connections.ev3dev.EV3Connection", return_value=mock_hub
-            ) as mock_hub_class:
-                with patch("socket.gethostbyname", return_value="192.168.1.1"):
-                    # Run the command
-                    download = Download()
-                    await download.run(args)
+            # Set up mocks using ExitStack
+            with contextlib.ExitStack() as stack:
+                mock_hub_class = stack.enter_context(
+                    patch(
+                        "pybricksdev.connections.ev3dev.EV3Connection",
+                        return_value=mock_hub,
+                    )
+                )
+                stack.enter_context(
+                    patch("socket.gethostbyname", return_value="192.168.1.1")
+                )
 
-                    # Verify the hub was created and used correctly
-                    mock_hub_class.assert_called_once_with("192.168.1.1")
-                    mock_hub.connect.assert_called_once()
-                    mock_hub.download.assert_called_once()
-                    mock_hub.disconnect.assert_called_once()
+                # Run the command
+                download = Download()
+                await download.run(args)
+
+                # Verify the hub was created and used correctly
+                mock_hub_class.assert_called_once_with("192.168.1.1")
+                mock_hub.connect.assert_called_once()
+                mock_hub.download.assert_called_once()
+                mock_hub.disconnect.assert_called_once()
         finally:
             os.unlink(temp_path)
 
@@ -214,22 +234,29 @@ class TestDownload:
             name="MyHub",
         )
 
-        # Mock the hub creation and file handling
-        with patch(
-            "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
-        ) as mock_hub_class:
-            with patch("pybricksdev.ble.find_device", return_value="mock_device"):
-                with patch("tempfile.NamedTemporaryFile") as mock_temp:
-                    mock_temp.return_value.__enter__.return_value.name = "/tmp/test.py"
-                    # Run the command
-                    download = Download()
-                    await download.run(args)
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            mock_hub_class = stack.enter_context(
+                patch(
+                    "pybricksdev.connections.pybricks.PybricksHubBLE",
+                    return_value=mock_hub,
+                )
+            )
+            stack.enter_context(
+                patch("pybricksdev.ble.find_device", return_value="mock_device")
+            )
+            mock_temp = stack.enter_context(patch("tempfile.NamedTemporaryFile"))
+            mock_temp.return_value.__enter__.return_value.name = "/tmp/test.py"
 
-                    # Verify the hub was created and used correctly
-                    mock_hub_class.assert_called_once_with("mock_device")
-                    mock_hub.connect.assert_called_once()
-                    mock_hub.download.assert_called_once()
-                    mock_hub.disconnect.assert_called_once()
+            # Run the command
+            download = Download()
+            await download.run(args)
+
+            # Verify the hub was created and used correctly
+            mock_hub_class.assert_called_once_with("mock_device")
+            mock_hub.connect.assert_called_once()
+            mock_hub.download.assert_called_once()
+            mock_hub.disconnect.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_download_connection_error(self):
@@ -251,24 +278,24 @@ class TestDownload:
                 name="MyHub",
             )
 
-            # Mock the compilation
-            mock_mpy = MagicMock()
-            mock_mpy.__bytes__ = lambda self: b"compiled code"
+            # Set up mocks using ExitStack
+            with contextlib.ExitStack() as stack:
+                stack.enter_context(
+                    patch(
+                        "pybricksdev.connections.pybricks.PybricksHubBLE",
+                        return_value=mock_hub,
+                    )
+                )
+                stack.enter_context(
+                    patch("pybricksdev.ble.find_device", return_value="mock_device")
+                )
 
-            # Mock the hub creation
-            with patch(
-                "pybricksdev.connections.pybricks.PybricksHubBLE", return_value=mock_hub
-            ):
-                with patch("pybricksdev.ble.find_device", return_value="mock_device"):
-                    with patch(
-                        "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
-                    ):
-                        # Run the command and verify it raises the error
-                        download = Download()
-                        with pytest.raises(RuntimeError, match="Connection failed"):
-                            await download.run(args)
+                # Run the command and verify it raises the error
+                download = Download()
+                with pytest.raises(RuntimeError, match="Connection failed"):
+                    await download.run(args)
 
-                        # Verify disconnect was not called since connection failed
-                        mock_hub.disconnect.assert_not_called()
+                # Verify disconnect was not called since connection failed
+                mock_hub.disconnect.assert_not_called()
         finally:
             os.unlink(temp_path)
