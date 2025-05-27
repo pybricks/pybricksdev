@@ -236,10 +236,10 @@ class Run(Tool):
             await hub.disconnect()
 
 
-class Push(Tool):
+class Download(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
-            "push",
+            "download",
             help="upload a Pybricks program without running it",
         )
         parser.tool = self
@@ -339,7 +339,7 @@ class Push(Tool):
                 elif args.conntype == "ssh":
                     await hub.download(script_path)
                 else:
-                    raise RuntimeError("Unsupported hub type for push command")
+                    raise RuntimeError("Unsupported hub type for download command")
         finally:
             await hub.disconnect()
 
@@ -567,7 +567,7 @@ def main():
         help="the tool to use",
     )
 
-    for tool in Compile(), Run(), Push(), Flash(), DFU(), OAD(), LWP3(), Udev():
+    for tool in Compile(), Run(), Download(), Flash(), DFU(), OAD(), LWP3(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)

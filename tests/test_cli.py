@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
 
-from pybricksdev.cli import Push, Tool
+from pybricksdev.cli import Download, Tool
 
 
 class TestTool:
@@ -20,8 +20,8 @@ class TestTool:
             Tool()
 
 
-class TestPush:
-    """Tests for the Push command."""
+class TestDownload:
+    """Tests for the Download command."""
 
     def test_add_parser(self):
         """Test that the parser is set up correctly."""
@@ -29,14 +29,14 @@ class TestPush:
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers()
 
-        # Add the push command
-        push = Push()
-        push.add_parser(subparsers)
+        # Add the download command
+        download = Download()
+        download.add_parser(subparsers)
 
         # Verify the parser was created with correct arguments
-        assert "push" in subparsers.choices
-        parser = subparsers.choices["push"]
-        assert parser.tool is push
+        assert "download" in subparsers.choices
+        parser = subparsers.choices["download"]
+        assert parser.tool is download
 
         # Test that required arguments are present
         mock_file = mock_open(read_data="print('test')")
@@ -59,8 +59,8 @@ class TestPush:
             parser.parse_args(["invalid", "test.py"])
 
     @pytest.mark.asyncio
-    async def test_push_ble(self):
-        """Test running the push command with BLE connection."""
+    async def test_download_ble(self):
+        """Test running the download command with BLE connection."""
         # Create a mock hub
         mock_hub = AsyncMock()
         mock_hub._mpy_abi_version = 6
@@ -92,8 +92,8 @@ class TestPush:
                         "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
                     ):
                         # Run the command
-                        push = Push()
-                        await push.run(args)
+                        download = Download()
+                        await download.run(args)
 
                         # Verify the hub was created and used correctly
                         mock_hub_class.assert_called_once_with("mock_device")
@@ -104,8 +104,8 @@ class TestPush:
             os.unlink(temp_path)
 
     @pytest.mark.asyncio
-    async def test_push_usb(self):
-        """Test running the push command with USB connection."""
+    async def test_download_usb(self):
+        """Test running the download command with USB connection."""
         # Create a mock hub
         mock_hub = AsyncMock()
         mock_hub._mpy_abi_version = 6
@@ -137,8 +137,8 @@ class TestPush:
                         "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
                     ):
                         # Run the command
-                        push = Push()
-                        await push.run(args)
+                        download = Download()
+                        await download.run(args)
 
                         # Verify the hub was created and used correctly
                         mock_hub_class.assert_called_once_with("mock_device")
@@ -149,8 +149,8 @@ class TestPush:
             os.unlink(temp_path)
 
     @pytest.mark.asyncio
-    async def test_push_ssh(self):
-        """Test running the push command with SSH connection."""
+    async def test_download_ssh(self):
+        """Test running the download command with SSH connection."""
         # Create a mock hub
         mock_hub = AsyncMock()
         mock_hub.download = AsyncMock()
@@ -174,8 +174,8 @@ class TestPush:
             ) as mock_hub_class:
                 with patch("socket.gethostbyname", return_value="192.168.1.1"):
                     # Run the command
-                    push = Push()
-                    await push.run(args)
+                    download = Download()
+                    await download.run(args)
 
                     # Verify the hub was created and used correctly
                     mock_hub_class.assert_called_once_with("192.168.1.1")
@@ -186,7 +186,7 @@ class TestPush:
             os.unlink(temp_path)
 
     @pytest.mark.asyncio
-    async def test_push_ssh_no_name(self):
+    async def test_download_ssh_no_name(self):
         """Test that SSH connection requires a name."""
         # Create a temporary file
         with tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False) as temp:
@@ -202,15 +202,15 @@ class TestPush:
             )
 
             # Run the command and verify it exits
-            push = Push()
+            download = Download()
             with pytest.raises(SystemExit, match="1"):
-                await push.run(args)
+                await download.run(args)
         finally:
             os.unlink(temp_path)
 
     @pytest.mark.asyncio
-    async def test_push_stdin(self):
-        """Test running the push command with stdin input."""
+    async def test_download_stdin(self):
+        """Test running the download command with stdin input."""
         # Create a mock hub
         mock_hub = AsyncMock()
         mock_hub._mpy_abi_version = 6
@@ -245,8 +245,8 @@ class TestPush:
                             "/tmp/test.py"
                         )
                         # Run the command
-                        push = Push()
-                        await push.run(args)
+                        download = Download()
+                        await download.run(args)
 
                         # Verify the hub was created and used correctly
                         mock_hub_class.assert_called_once_with("mock_device")
@@ -255,7 +255,7 @@ class TestPush:
                         mock_hub.disconnect.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_push_connection_error(self):
+    async def test_download_connection_error(self):
         """Test handling connection errors."""
         # Create a mock hub that raises an error during connect
         mock_hub = AsyncMock()
@@ -287,9 +287,9 @@ class TestPush:
                         "pybricksdev.compile.compile_multi_file", return_value=mock_mpy
                     ):
                         # Run the command and verify it raises the error
-                        push = Push()
+                        download = Download()
                         with pytest.raises(RuntimeError, match="Connection failed"):
-                            await push.run(args)
+                            await download.run(args)
 
                         # Verify disconnect was not called since connection failed
                         mock_hub.disconnect.assert_not_called()
