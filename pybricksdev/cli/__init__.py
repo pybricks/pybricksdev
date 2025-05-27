@@ -325,21 +325,7 @@ class Download(Tool):
         await hub.connect()
         try:
             with _get_script_path(args.file) as script_path:
-                # For PybricksHub, we use download_user_program to just upload without running
-                if args.conntype in ["ble", "usb"]:
-                    from pybricksdev.compile import compile_multi_file
-
-                    # Compile the script to mpy format
-                    mpy = await compile_multi_file(
-                        script_path, hub._mpy_abi_version or 6
-                    )
-                    # Upload without running
-                    await hub.download_user_program(mpy)
-                # For EV3Connection, we just use download
-                elif args.conntype == "ssh":
-                    await hub.download(script_path)
-                else:
-                    raise RuntimeError("Unsupported hub type for download command")
+                await hub.download(script_path)
         finally:
             await hub.disconnect()
 

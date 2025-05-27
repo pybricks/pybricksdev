@@ -466,6 +466,50 @@ class PybricksHub:
             response=True,
         )
 
+    async def download(self, script_path: str) -> None:
+        """
+        Downloads a script to the hub without running it.
+
+        This method handles both compilation and downloading of the script.
+        For Pybricks hubs, it compiles the script to MPY format and downloads it
+        using the Pybricks protocol.
+
+        Args:
+            script_path: Path to the Python script to download.
+
+        Raises:
+            RuntimeError: If the hub is not connected or if the hub type is not supported.
+            ValueError: If the compiled program is too large to fit on the hub.
+        """
+        if self.connection_state_observable.value != ConnectionState.CONNECTED:
+            raise RuntimeError("not connected")
+
+        # since Pybricks profile v1.2.0, the hub will tell us which file format(s) it supports
+        if not (
+            self._capability_flags
+            & (
+                HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6
+                | HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
+            )
+        ):
+            raise RuntimeError(
+                "Hub is not compatible with any of the supported file formats"
+            )
+
+        # no support for native modules unless one of the flags below is set
+        abi = 6
+
+        if (
+            self._capability_flags
+            & HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
+        ):
+            abi = (6, 1)
+
+        # Compile the script to mpy format
+        mpy = await compile_multi_file(script_path, abi)
+        # Download without running
+        await self.download_user_program(mpy)
+
     async def run(
         self,
         py_path: Optional[str] = None,
@@ -506,31 +550,11 @@ class PybricksHub:
             await self._legacy_run(py_path, wait)
             return
 
-        # since Pybricks profile v1.2.0, the hub will tell us which file format(s) it supports
-        if not (
-            self._capability_flags
-            & (
-                HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6
-                | HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
-            )
-        ):
-            raise RuntimeError(
-                "Hub is not compatible with any of the supported file formats"
-            )
-
-        # no support for native modules unless one of the flags below is set
-        abi = 6
-
-        if (
-            self._capability_flags
-            & HubCapabilityFlag.USER_PROG_MULTI_FILE_MPY6_1_NATIVE
-        ):
-            abi = (6, 1)
-
+        # Download the program if a path is provided
         if py_path is not None:
-            mpy = await compile_multi_file(py_path, abi)
-            await self.download_user_program(mpy)
+            await self.download(py_path)
 
+        # Start the program
         await self.start_user_program()
 
         if wait:
