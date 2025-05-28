@@ -74,7 +74,7 @@ async def compile_file(
                 ),
             )
         else:
-            raise ValueError("mpy_version must be 5")
+            raise ValueError("mpy_version must be 5 or 6")
 
         proc.check_returncode()
 

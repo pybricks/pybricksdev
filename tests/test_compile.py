@@ -31,3 +31,18 @@ async def test_compile_file(abi: int):
             assert int_bits == 31
         finally:
             os.unlink(f.name)
+
+
+@pytest.mark.asyncio
+async def test_compile_file_invalid_abi():
+    with NamedTemporaryFile("w", delete=False) as f:
+        try:
+            f.write("print('test')")
+            f.close()
+
+            with pytest.raises(ValueError, match="mpy_version must be 5 or 6"):
+                await compile_file(
+                    os.path.dirname(f.name), os.path.basename(f.name), abi=4
+                )
+        finally:
+            os.unlink(f.name)
