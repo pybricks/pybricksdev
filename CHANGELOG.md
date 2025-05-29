@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added `pybricksdev download` command to download Python scripts to hubs without running them.
+  Supports BLE, USB, and SSH connections. ([pybricksdev#107])
+
+[pybricksdev#107]: https://github.com/pybricks/pybricksdev/issues/107
+
 ## [1.0.1] - 2025-02-20
 
 ### Fixed
