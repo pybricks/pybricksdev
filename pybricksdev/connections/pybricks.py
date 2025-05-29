@@ -837,10 +837,14 @@ class PybricksHubUSB(PybricksHub):
             raise ValueError("Response is required for USB")
 
         self._ep_out.write(bytes([PybricksUsbOutEpMessageType.COMMAND]) + data)
-        # FIXME: This needs to race with hub disconnect, and could also use a
-        # timeout, otherwise it blocks forever. Pyusb doesn't currently seem to
-        # have any disconnect callback.
-        reply = await self._response_queue.get()
+
+        try:
+            reply = await asyncio.wait_for(
+                self.race_disconnect(self._response_queue.get()),
+                timeout=5.0,  # 5-second timeout
+            )
+        except asyncio.TimeoutError:
+            raise asyncio.TimeoutError("Timeout waiting for USB response")
 
         # REVISIT: could look up status error code and convert to string,
         # although BLE doesn't do that either.
