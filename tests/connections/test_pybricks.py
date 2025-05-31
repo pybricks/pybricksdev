@@ -7,7 +7,7 @@ import tempfile
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
-from reactivex.subject import Subject
+from reactivex.subject import BehaviorSubject, Subject
 
 from pybricksdev.ble.pybricks import PYBRICKS_COMMAND_EVENT_UUID
 from pybricksdev.connections.pybricks import (
@@ -243,26 +243,51 @@ class TestPybricksHubUSB:
         # Make _response_queue.get() block indefinitely
         hub._response_queue.get = AsyncMock(side_effect=asyncio.Event().wait)
 
-        mock_observable = MagicMock(spec=Subject)
-
-        def mock_subscribe_side_effect(on_next_callback, *args, **kwargs):
-            mock_subscription = MagicMock()
-            mock_subscription.dispose = MagicMock()
-            return mock_subscription
-
-        mock_observable.subscribe = MagicMock(side_effect=mock_subscribe_side_effect)
-        type(hub.connection_state_observable).value = PropertyMock(
-            return_value=ConnectionState.CONNECTED
-        )
+        mock_observable = MagicMock(spec=BehaviorSubject)
+        mock_observable.value = ConnectionState.CONNECTED
         hub.connection_state_observable = mock_observable
 
-        # The method has a hardcoded timeout of 5.0s.
-        # We can patch asyncio.wait_for to speed up the test.
+        # Simulate a timeout while the hub is still connected
         with patch(
             "asyncio.wait_for", side_effect=asyncio.TimeoutError("Test-induced timeout")
         ):
             with pytest.raises(
                 asyncio.TimeoutError, match="Timeout waiting for USB response"
+            ):
+                await hub.write_gatt_char(
+                    PYBRICKS_COMMAND_EVENT_UUID, b"test_data", True
+                )
+
+        hub._ep_out.write.assert_called_once_with(
+            bytes([PybricksUsbOutEpMessageType.COMMAND]) + b"test_data"
+        )
+
+    @pytest.mark.asyncio
+    async def test_pybricks_hub_usb_write_gatt_char_timeout_disconnected(self):
+        """Test write_gatt_char when a timeout occurs and hub is already disconnected.
+
+        This test documents the FIXME case where race_disconnect() doesn't work properly
+        for USB connections because pyusb doesn't provide reliable disconnect detection.
+        In this case, we might get a timeout while the hub is already disconnected,
+        but the disconnect event wasn't received in time to cancel the wait operation.
+        """
+        hub = PybricksHubUSB(MagicMock())
+
+        hub._ep_out = MagicMock()
+        hub._response_queue = AsyncMock()
+        # Make _response_queue.get() block indefinitely
+        hub._response_queue.get = AsyncMock(side_effect=asyncio.Event().wait)
+
+        mock_observable = MagicMock(spec=BehaviorSubject)
+        mock_observable.value = ConnectionState.DISCONNECTED
+        hub.connection_state_observable = mock_observable
+
+        # Simulate a timeout while the hub is already disconnected
+        with patch(
+            "asyncio.wait_for", side_effect=asyncio.TimeoutError("Test-induced timeout")
+        ):
+            with pytest.raises(
+                RuntimeError, match="Hub disconnected while waiting for response"
             ):
                 await hub.write_gatt_char(
                     PYBRICKS_COMMAND_EVENT_UUID, b"test_data", True
