@@ -362,7 +362,7 @@ class PybricksHub:
             data: Any bytes-like object that will fit in a single BLE packet.
         """
         if self._legacy_stdio:
-            await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+            await self.write_gatt_char(NUS_RX_UUID, data, False)
         else:
             msg = bytearray([Command.WRITE_STDIN])
             msg.extend(data)
@@ -372,7 +372,7 @@ class PybricksHub:
                     f"data is too big, limited to {self._max_write_size - 1} bytes"
                 )
 
-            await self.client.write_gatt_char(PYBRICKS_COMMAND_EVENT_UUID, msg, True)
+            await self.write_gatt_char(PYBRICKS_COMMAND_EVENT_UUID, msg, True)
 
     async def write_string(self, value: str) -> None:
         """
@@ -622,9 +622,9 @@ class PybricksHub:
                     # BOOST Move hub has fixed MTU of 23 so we can only send 20
                     # bytes at a time
                     for c in chunk(data, 20):
-                        await self.client.write_gatt_char(NUS_RX_UUID, c, False)
+                        await self.write_gatt_char(NUS_RX_UUID, c, False)
                 else:
-                    await self.client.write_gatt_char(NUS_RX_UUID, data, False)
+                    await self.write_gatt_char(NUS_RX_UUID, data, False)
 
                 msg = await asyncio.wait_for(
                     self.race_disconnect(queue.get()), timeout=0.5
