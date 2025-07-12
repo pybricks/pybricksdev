@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added optional user program ID arg to `PybricksHub.start_user_program()`.
+
 ### Fixed
 - Fixed calling `PybricksHub.write()` methods.
 

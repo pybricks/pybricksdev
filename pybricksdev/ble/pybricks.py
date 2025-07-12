@@ -314,6 +314,43 @@ class HubCapabilityFlag(IntFlag):
     """
 
 
+class UserProgramId(IntEnum):
+    """
+    User program identifiers.
+    """
+
+    FIRST_SLOT = 0
+    """
+    The first user program slot.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+    LAST_SLOT = 127
+    """
+    The last user program slot.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+    REPL = 128
+    """
+    The REPL builtin program slot.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+    PORT_VIEW = 129
+    """
+    The port view builtin program slot.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+    IMU_CALIBRATION = 130
+    """
+    The IMU calibration builtin program slot.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+
+
 def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int]:
     """
     Unpacks the value read from the hub capabilities characteristic.
