@@ -894,7 +894,6 @@ class PybricksHubUSB(PybricksHub):
                 continue
 
             if len(msg) == 0:
-                logger.warning("Empty USB message")
                 continue
 
             if msg[0] == PybricksUsbInEpMessageType.RESPONSE:
