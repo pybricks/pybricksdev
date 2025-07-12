@@ -784,7 +784,7 @@ class PybricksHubUSB(PybricksHub):
         bos_descriptor = get_descriptor(self._device, bos_len, 0x0F, 0)
 
         while ofst < bos_len:
-            (len, desc_type, cap_type) = struct.unpack_from(
+            (size, desc_type, cap_type) = struct.unpack_from(
                 "<BBB", bos_descriptor, offset=ofst
             )
 
@@ -798,23 +798,23 @@ class PybricksHubUSB(PybricksHub):
                 uuid_str = str(UUID(bytes_le=bytes(uuid_bytes)))
 
                 if uuid_str == FW_REV_UUID:
-                    fw_version = bytearray(bos_descriptor[ofst + 20 : ofst + len])
+                    fw_version = bytearray(bos_descriptor[ofst + 20 : ofst + size])
                     self.fw_version = Version(fw_version.decode())
 
                 elif uuid_str == SW_REV_UUID:
                     self._protocol_version = bytearray(
-                        bos_descriptor[ofst + 20 : ofst + len]
+                        bos_descriptor[ofst + 20 : ofst + size]
                     )
 
                 elif uuid_str == PYBRICKS_HUB_CAPABILITIES_UUID:
-                    caps = bytearray(bos_descriptor[ofst + 20 : ofst + len])
+                    caps = bytearray(bos_descriptor[ofst + 20 : ofst + size])
                     (
                         _,
                         self._capability_flags,
                         self._max_user_program_size,
                     ) = unpack_hub_capabilities(caps)
 
-            ofst += len
+            ofst += size
 
         self._monitor_task = asyncio.create_task(self._monitor_usb())
 
