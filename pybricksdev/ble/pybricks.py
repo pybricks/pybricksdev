@@ -255,6 +255,12 @@ class StatusFlag(IntFlag):
     .. availability:: Since Pybricks protocol v1.2.0.
     """
 
+    BLE_HOST_CONNECTED = 1 << 9
+    """Bluetooth Low Energy host is connected.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+
 
 class HubCapabilityFlag(IntFlag):
     """
@@ -277,12 +283,34 @@ class HubCapabilityFlag(IntFlag):
     .. availability:: Since Pybricks protocol v1.2.0.
     """
 
-    USER_PROG_MULTI_FILE_MPY6_1_NATIVE = 2 << 1
+    USER_PROG_MULTI_FILE_MPY6_1_NATIVE = 1 << 2
     """
     Hub supports user programs using a multi-file blob with MicroPython MPY (ABI V6.1) files
     including native module support.
 
     .. availability:: Since Pybricks protocol v1.3.0.
+    """
+
+    BUILTIN_USER_PROGRAM_PORT_VIEW = 1 << 3
+    """
+    Hub has the built-in user program "port view" feature.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+
+    BUILTIN_USER_PROGRAM_IMU_CALIBRATION = 1 << 4
+    """
+    Hub has the built-in user program "IMU calibration" feature.
+
+    .. availability:: Since Pybricks protocol v1.4.0.
+    """
+
+    USER_PROG_FORMAT_MULTI_MPY_V6_3_NATIVE = 1 << 5
+    """
+    Hub supports user programs using a multi-file blob with MicroPython MPY (ABI V6.3) files
+    including native module support.
+
+    .. availability:: Since Pybricks protocol v1.5.0.
     """
 
 
@@ -295,10 +323,32 @@ def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int]:
 
     Returns:
         A tuple of the maximum characteristic write size in bytes, the hub capability
-        flags and the max user program size in bytes.
+        flags and the max user program size in bytes and the number of slots.
     """
-    max_char_size, flags, max_user_prog_size = unpack("<HII", data)
-    return max_char_size, HubCapabilityFlag(flags), max_user_prog_size
+    if len(data) == 11:
+        # Pybricks protocol v1.5
+        max_char_size, flags, max_user_prog_size, num_of_slots = unpack("<HIIB", data)
+    else:
+        # Pybricks protocol v1.2
+        max_char_size, flags, max_user_prog_size = unpack("<HII", data)
+        num_of_slots = 0
+
+    return max_char_size, HubCapabilityFlag(flags), max_user_prog_size, num_of_slots
+
+
+def unpack_hub_capabilities_v15(data: bytes) -> Tuple[int, HubCapabilityFlag, int, int]:
+    """
+    Unpacks the value read from the hub capabilities characteristic. (Pybricks protocol v1.5)
+
+    Args:
+        data: The raw characteristic value.
+
+    Returns:
+        A tuple of the maximum characteristic write size in bytes, the hub capability
+        flags and the max user program size in bytes and the number of slots.
+    """
+    max_char_size, flags, max_user_prog_size, num_of_slots = unpack("<HIIB", data)
+    return max_char_size, HubCapabilityFlag(flags), max_user_prog_size, num_of_slots
 
 
 # The Pybricks Protocol version also implies certain other services and

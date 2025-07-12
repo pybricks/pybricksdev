@@ -87,6 +87,25 @@ class PybricksHub:
     has not been connected yet or the connected hub has Pybricks profile < v1.2.0.
     """
 
+    _running_program: int
+    """
+    The ID number of the currently running user program on the connected hub.
+    Only valid if a user program is running and the hub supports Pybricks
+    profile >= v1.4.
+    """
+
+    _num_of_slots: int
+    """
+    The number of user program slots available on the connected hub. ``0`` if
+    the hub has not been connected yet or the hub does not support slots.
+    """
+
+    _selected_slot: int
+    """
+    The currently selected user program slot on the connected hub. Only valid
+    if ``_num_of_slots`` is greater than ``0``.
+    """
+
     def __init__(self):
         self.connection_state_observable = BehaviorSubject(ConnectionState.DISCONNECTED)
         self.status_observable = BehaviorSubject(StatusFlag(0))
@@ -97,6 +116,9 @@ class PybricksHub:
         self._mpy_abi_version = 0
         self._capability_flags = HubCapabilityFlag(0)
         self._max_user_program_size = 0
+        self._running_program = 0
+        self._num_of_slots = 0
+        self._selected_slot = 0
 
         # whether to enable line handler features or not
         self._enable_line_handler = False
@@ -229,6 +251,11 @@ class PybricksHub:
             # decode the payload
             (flags,) = struct.unpack_from("<I", data, 1)
             self.status_observable.on_next(StatusFlag(flags))
+
+            if len(data) >= 6:
+                self._running_program = data[5]
+            if len(data) >= 7:
+                self._selected_slot = data[6]
         elif data[0] == Event.WRITE_STDOUT:
             payload = data[1:]
             self._stdout_subject.on_next(payload)
@@ -452,7 +479,11 @@ class PybricksHub:
         """
         await self.write_gatt_char(
             PYBRICKS_COMMAND_EVENT_UUID,
-            struct.pack("<B", Command.START_USER_PROGRAM),
+            (
+                struct.pack("<B", Command.START_USER_PROGRAM)
+                if self._num_of_slots == 0
+                else struct.pack("<BB", Command.START_USER_PROGRAM, self._selected_slot)
+            ),
             response=True,
         )
 
@@ -718,6 +749,7 @@ class PybricksHubBLE(PybricksHub):
                 self._max_write_size,
                 self._capability_flags,
                 self._max_user_program_size,
+                self._num_of_slots,
             ) = unpack_hub_capabilities(caps)
         else:
             # HACK: prior to profile v1.2.0 isn't a proper way to get the
@@ -812,6 +844,7 @@ class PybricksHubUSB(PybricksHub):
                         _,
                         self._capability_flags,
                         self._max_user_program_size,
+                        self._num_of_slots,
                     ) = unpack_hub_capabilities(caps)
 
             ofst += size
