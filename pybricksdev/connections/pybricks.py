@@ -866,8 +866,23 @@ class PybricksHubUSB(PybricksHub):
         return True
 
     async def _client_disconnect(self) -> bool:
+        await self._send_message(bytes([PybricksUsbOutEpMessageType.SUBSCRIBE, 0]))
         self._monitor_task.cancel()
         self._handle_disconnect()
+
+    async def _send_message(self, msg: bytes) -> None:
+        # REVISIT: technically, this is blocking, but pyusb doesn't support asyncio
+        self._ep_out.write(msg)
+
+        # FIXME: This needs to race with hub disconnect, and could also use a
+        # timeout, otherwise it blocks forever. Pyusb doesn't currently seem to
+        # have any disconnect callback.
+        reply = await self._response_queue.get()
+
+        # REVISIT: could look up status error code and convert to string,
+        # although BLE doesn't do that either.
+        if int.from_bytes(reply[:4], "little") != 0:
+            raise RuntimeError(f"Write failed: {reply[0]}")
 
     async def read_gatt_char(self, uuid: str) -> bytearray:
         # Most stuff is available via other properties due to reading BOS
@@ -881,19 +896,10 @@ class PybricksHubUSB(PybricksHub):
         if not response:
             raise ValueError("Response is required for USB")
 
-        self._ep_out.write(bytes([PybricksUsbOutEpMessageType.COMMAND]) + data)
-        # FIXME: This needs to race with hub disconnect, and could also use a
-        # timeout, otherwise it blocks forever. Pyusb doesn't currently seem to
-        # have any disconnect callback.
-        reply = await self._response_queue.get()
-
-        # REVISIT: could look up status error code and convert to string,
-        # although BLE doesn't do that either.
-        if int.from_bytes(reply[:4], "little") != 0:
-            raise RuntimeError(f"Write failed: {reply[0]}")
+        await self._send_message(bytes([PybricksUsbOutEpMessageType.COMMAND]) + data)
 
     async def start_notify(self, uuid: str, callback: Callable) -> None:
-        # TODO: need to send subscribe message over USB
+        await self._send_message(bytes([PybricksUsbOutEpMessageType.SUBSCRIBE, 1]))
         self._notify_callbacks[uuid] = callback
 
     async def _monitor_usb(self):
