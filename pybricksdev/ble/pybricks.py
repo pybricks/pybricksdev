@@ -351,7 +351,7 @@ class UserProgramId(IntEnum):
     """
 
 
-def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int]:
+def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int, int]:
     """
     Unpacks the value read from the hub capabilities characteristic.
 
