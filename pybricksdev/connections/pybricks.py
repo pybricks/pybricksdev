@@ -7,7 +7,6 @@ import logging
 import os
 import struct
 from typing import Awaitable, Callable, List, Optional, TypeVar
-from uuid import UUID
 
 import reactivex.operators as op
 import semver
@@ -18,14 +17,23 @@ from reactivex import Observable
 from reactivex.subject import BehaviorSubject, Subject
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from usb.control import get_descriptor
 from usb.core import Device as USBDevice
-from usb.core import Endpoint, USBTimeoutError
-from usb.util import ENDPOINT_IN, ENDPOINT_OUT, endpoint_direction, find_descriptor
+from usb.core import Endpoint, Interface, USBTimeoutError
+from usb.util import (
+    CTRL_IN,
+    CTRL_RECIPIENT_INTERFACE,
+    CTRL_TYPE_CLASS,
+    ENDPOINT_IN,
+    ENDPOINT_OUT,
+    build_request_type,
+    endpoint_direction,
+    find_descriptor,
+)
 
 from pybricksdev.ble.lwp3.bytecodes import HubKind
 from pybricksdev.ble.nus import NUS_RX_UUID, NUS_TX_UUID
 from pybricksdev.ble.pybricks import (
+    DEVICE_NAME_UUID,
     FW_REV_UUID,
     PNP_ID_UUID,
     PYBRICKS_COMMAND_EVENT_UUID,
@@ -37,6 +45,7 @@ from pybricksdev.ble.pybricks import (
     HubCapabilityFlag,
     StatusFlag,
     UserProgramId,
+    short_uuid,
     unpack_hub_capabilities,
     unpack_pnp_id,
 )
@@ -45,7 +54,9 @@ from pybricksdev.connections import ConnectionState
 from pybricksdev.tools import chunk
 from pybricksdev.tools.checksum import xor_bytes
 from pybricksdev.usb.pybricks import (
+    PYBRICKS_USB_INTERFACE_CLASS_REQUEST_MAX_SIZE,
     PybricksUsbInEpMessageType,
+    PybricksUsbInterfaceClassRequest,
     PybricksUsbOutEpMessageType,
 )
 
@@ -786,6 +797,40 @@ class PybricksHubBLE(PybricksHub):
         return await self._client.start_notify(uuid, callback)
 
 
+def get_interface_class_data(
+    dev: USBDevice,
+    interface: Interface,
+    desc_size: int,
+    request: int = 0,
+    value: int = 0,
+) -> bytes:
+    """
+    Get a vendor-specific descriptor.
+
+    usb.util doesn't have a method like this, so we have to do it ourselves.
+
+    Args:
+        dev: The USB device.
+        vendor_code: The vendor code from the BOS descriptor.
+        value: The wValue field of the request.
+        index: The wIndex field of the request.
+    """
+
+    bmRequestType = build_request_type(
+        CTRL_IN, CTRL_TYPE_CLASS, CTRL_RECIPIENT_INTERFACE
+    )
+
+    ret = dev.ctrl_transfer(
+        bmRequestType=bmRequestType,
+        bRequest=request,
+        wValue=value,
+        wIndex=interface.index,
+        data_or_wLength=desc_size,
+    )
+
+    return bytes(ret)
+
+
 class PybricksHubUSB(PybricksHub):
     _device: USBDevice
     _ep_in: Endpoint
@@ -820,46 +865,49 @@ class PybricksHubUSB(PybricksHub):
         # There is 1 byte overhead for PybricksUsbMessageType
         self._max_write_size = self._ep_out.wMaxPacketSize - 1
 
-        # Get length of BOS descriptor
-        bos_descriptor = get_descriptor(self._device, 5, 0x0F, 0)
-        (ofst, _, bos_len, _) = struct.unpack("<BBHB", bos_descriptor)
+        # This is the equivalent of reading GATT characteristics for BLE connections.
 
-        # Get full BOS descriptor
-        bos_descriptor = get_descriptor(self._device, bos_len, 0x0F, 0)
-
-        while ofst < bos_len:
-            (size, desc_type, cap_type) = struct.unpack_from(
-                "<BBB", bos_descriptor, offset=ofst
+        def read_data(req: PybricksUsbInterfaceClassRequest, value: int) -> bytes:
+            return get_interface_class_data(
+                self._device,
+                intf,
+                PYBRICKS_USB_INTERFACE_CLASS_REQUEST_MAX_SIZE,
+                req,
+                value,
             )
 
-            if desc_type != 0x10:
-                logger.error("Expected Device Capability descriptor")
-                exit(1)
+        hub_name_desc = read_data(
+            PybricksUsbInterfaceClassRequest.GATT_CHARACTERISTIC,
+            short_uuid(DEVICE_NAME_UUID),
+        )
 
-            # Look for platform descriptors
-            if cap_type == 0x05:
-                uuid_bytes = bos_descriptor[ofst + 4 : ofst + 4 + 16]
-                uuid_str = str(UUID(bytes_le=bytes(uuid_bytes)))
+        self._hub_name = str(hub_name_desc, "utf-8")
 
-                if uuid_str == FW_REV_UUID:
-                    fw_version = bytearray(bos_descriptor[ofst + 20 : ofst + size])
-                    self.fw_version = Version(fw_version.decode())
+        fw_version_desc = read_data(
+            PybricksUsbInterfaceClassRequest.GATT_CHARACTERISTIC,
+            short_uuid(FW_REV_UUID),
+        )
 
-                elif uuid_str == SW_REV_UUID:
-                    self._protocol_version = bytearray(
-                        bos_descriptor[ofst + 20 : ofst + size]
-                    )
+        self.fw_version = Version(str(fw_version_desc, "utf-8"))
 
-                elif uuid_str == PYBRICKS_HUB_CAPABILITIES_UUID:
-                    caps = bytearray(bos_descriptor[ofst + 20 : ofst + size])
-                    (
-                        _,
-                        self._capability_flags,
-                        self._max_user_program_size,
-                        self._num_of_slots,
-                    ) = unpack_hub_capabilities(caps)
+        sw_version_desc = read_data(
+            PybricksUsbInterfaceClassRequest.GATT_CHARACTERISTIC,
+            short_uuid(SW_REV_UUID),
+        )
 
-            ofst += size
+        self._protocol_version = str(sw_version_desc, "utf-8")
+
+        hub_caps_desc = read_data(
+            PybricksUsbInterfaceClassRequest.PYBRICKS_CHARACTERISTIC,
+            short_uuid(PYBRICKS_HUB_CAPABILITIES_UUID),
+        )
+
+        (
+            _,
+            self._capability_flags,
+            self._max_user_program_size,
+            self._num_of_slots,
+        ) = unpack_hub_capabilities(hub_caps_desc)
 
         self._monitor_task = asyncio.create_task(self._monitor_usb())
 

@@ -407,10 +407,31 @@ def _standard_uuid(short: int) -> str:
     return f"{short:08x}-0000-1000-8000-00805f9b34fb"
 
 
+def short_uuid(uuid: str) -> int:
+    """Gets a 16-bit from a 128-bit UUID.
+
+    Args:
+        uuid: a 128-bit UUID as a string.
+
+    Returns:
+        The 16-bit UUID.
+    """
+    return int(uuid[4:8], 16)
+
+
 # Device Information Service: https://www.bluetooth.com/specifications/specs/device-information-service-1-1/
 
 DI_SERVICE_UUID = _standard_uuid(0x180A)
 """Standard Device Information Service UUID.
+
+.. availability:: Since Pybricks protocol v1.0.0.
+"""
+
+DEVICE_NAME_UUID = _standard_uuid(0x2A00)
+"""Standard Device Name characteristic UUID.
+
+We typically don't read this directly over BLE since some OSes block reading it.
+Instead,we use the name from the advertising data.
 
 .. availability:: Since Pybricks protocol v1.0.0.
 """
