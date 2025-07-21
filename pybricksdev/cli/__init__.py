@@ -196,8 +196,10 @@ class Run(Tool):
 
             from pybricksdev.connections.pybricks import PybricksHubUSB
             from pybricksdev.usb import (
+                EV3_USB_PID,
                 LEGO_USB_VID,
                 MINDSTORMS_INVENTOR_USB_PID,
+                NXT_USB_PID,
                 SPIKE_ESSENTIAL_USB_PID,
                 SPIKE_PRIME_USB_PID,
             )
@@ -208,6 +210,8 @@ class Run(Tool):
                     and (
                         dev.idProduct
                         in [
+                            NXT_USB_PID,
+                            EV3_USB_PID,
                             SPIKE_PRIME_USB_PID,
                             SPIKE_ESSENTIAL_USB_PID,
                             MINDSTORMS_INVENTOR_USB_PID,
