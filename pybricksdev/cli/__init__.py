@@ -222,12 +222,11 @@ class Run(Tool):
 
             device_or_address = find_usb(custom_match=is_pybricks_usb)
 
-            if device_or_address is not None:
-                hub = PybricksHubUSB(device_or_address)
-            else:
-                from pybricksdev.connections.lego import REPLHub
+            if device_or_address is None:
+                print("Pybricks Hub not found.", file=sys.stderr)
+                exit(1)
 
-                hub = REPLHub()
+            hub = PybricksHubUSB(device_or_address)
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 
@@ -294,8 +293,10 @@ class Download(Tool):
 
             from pybricksdev.connections.pybricks import PybricksHubUSB
             from pybricksdev.usb import (
+                EV3_USB_PID,
                 LEGO_USB_VID,
                 MINDSTORMS_INVENTOR_USB_PID,
+                NXT_USB_PID,
                 SPIKE_ESSENTIAL_USB_PID,
                 SPIKE_PRIME_USB_PID,
             )
@@ -306,6 +307,8 @@ class Download(Tool):
                     and (
                         dev.idProduct
                         in [
+                            NXT_USB_PID,
+                            EV3_USB_PID,
                             SPIKE_PRIME_USB_PID,
                             SPIKE_ESSENTIAL_USB_PID,
                             MINDSTORMS_INVENTOR_USB_PID,
@@ -316,12 +319,11 @@ class Download(Tool):
 
             device_or_address = find_usb(custom_match=is_pybricks_usb)
 
-            if device_or_address is not None:
-                hub = PybricksHubUSB(device_or_address)
-            else:
-                from pybricksdev.connections.lego import REPLHub
+            if device_or_address is None:
+                print("Pybricks Hub not found.", file=sys.stderr)
+                exit(1)
 
-                hub = REPLHub()
+            hub = PybricksHubUSB(device_or_address)
         else:
             raise ValueError(f"Unknown connection type: {args.conntype}")
 

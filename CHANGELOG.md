@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed calling `PybricksHub.write()` methods.
 
+### Removed
+- Removed `REPLHub`. This was used for non-Pybricks MicroPython boards, but
+  `mpremote` should be used for this.
+
 ## [1.2.0] - 2025-07-11
 
 ### Added
