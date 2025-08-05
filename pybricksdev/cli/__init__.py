@@ -148,8 +148,15 @@ class Run(Tool):
         )
 
         parser.add_argument(
+            "--start",
+            help="Start the program immediately after downloading it.",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+        )
+
+        parser.add_argument(
             "--wait",
-            help="wait for the program to complete before disconnecting",
+            help="Wait for the program to complete before disconnecting. Only applies when starting program right away.",
             action=argparse.BooleanOptionalAction,
             default=True,
         )
@@ -208,93 +215,10 @@ class Run(Tool):
         await hub.connect()
         try:
             with _get_script_path(args.file) as script_path:
-                await hub.run(script_path, args.wait)
-        finally:
-            await hub.disconnect()
-
-
-class Download(Tool):
-    def add_parser(self, subparsers: argparse._SubParsersAction):
-        parser = subparsers.add_parser(
-            "download",
-            help="upload a Pybricks program without running it",
-        )
-        parser.tool = self
-        parser.add_argument(
-            "conntype",
-            metavar="<connection type>",
-            help="connection type: %(choices)s",
-            choices=["ble", "usb"],
-        )
-        parser.add_argument(
-            "file",
-            metavar="<file>",
-            help="path to a MicroPython script or `-` for stdin",
-            type=argparse.FileType(),
-        )
-        parser.add_argument(
-            "-n",
-            "--name",
-            metavar="<name>",
-            required=False,
-            help="Bluetooth device name or Bluetooth address for BLE connection; "
-            "serial port name for USB connection",
-        )
-
-    async def run(self, args: argparse.Namespace):
-        # Pick the right connection
-        if args.conntype == "ble":
-            from pybricksdev.ble import find_device as find_ble
-            from pybricksdev.connections.pybricks import PybricksHubBLE
-
-            # It is a Pybricks Hub with BLE. Device name or address is given.
-            print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
-            device_or_address = await find_ble(args.name)
-            hub = PybricksHubBLE(device_or_address)
-        elif args.conntype == "usb":
-            from usb.core import find as find_usb
-
-            from pybricksdev.connections.pybricks import PybricksHubUSB
-            from pybricksdev.usb import (
-                EV3_USB_PID,
-                LEGO_USB_VID,
-                MINDSTORMS_INVENTOR_USB_PID,
-                NXT_USB_PID,
-                SPIKE_ESSENTIAL_USB_PID,
-                SPIKE_PRIME_USB_PID,
-            )
-
-            def is_pybricks_usb(dev):
-                return (
-                    (dev.idVendor == LEGO_USB_VID)
-                    and (
-                        dev.idProduct
-                        in [
-                            NXT_USB_PID,
-                            EV3_USB_PID,
-                            SPIKE_PRIME_USB_PID,
-                            SPIKE_ESSENTIAL_USB_PID,
-                            MINDSTORMS_INVENTOR_USB_PID,
-                        ]
-                    )
-                    and dev.product.endswith("Pybricks")
-                )
-
-            device_or_address = find_usb(custom_match=is_pybricks_usb)
-
-            if device_or_address is None:
-                print("Pybricks Hub not found.", file=sys.stderr)
-                exit(1)
-
-            hub = PybricksHubUSB(device_or_address)
-        else:
-            raise ValueError(f"Unknown connection type: {args.conntype}")
-
-        # Connect to the address and upload the script without running it
-        await hub.connect()
-        try:
-            with _get_script_path(args.file) as script_path:
-                await hub.download(script_path)
+                if args.start:
+                    await hub.run(script_path, args.wait)
+                else:
+                    await hub.download(script_path)
         finally:
             await hub.disconnect()
 
@@ -522,7 +446,7 @@ def main():
         help="the tool to use",
     )
 
-    for tool in Compile(), Run(), Download(), Flash(), DFU(), OAD(), LWP3(), Udev():
+    for tool in Compile(), Run(), Flash(), DFU(), OAD(), LWP3(), Udev():
         tool.add_parser(subparsers)
 
     argcomplete.autocomplete(parser)
