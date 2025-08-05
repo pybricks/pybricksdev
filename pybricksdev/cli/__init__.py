@@ -8,7 +8,6 @@ import asyncio
 import contextlib
 import logging
 import os
-import socket
 import sys
 from abc import ABC, abstractmethod
 from os import PathLike, path
