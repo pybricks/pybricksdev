@@ -16,6 +16,7 @@ from argcomplete.completers import FilesCompleter
 
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
+from pybricksdev.ble.pybricks import UserProgramId
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -97,7 +98,7 @@ class Run(Tool):
         parser.add_argument(
             "file",
             metavar="<file>",
-            help="path to a MicroPython script or `-` for stdin",
+            help="path to a MicroPython script, `-` for stdin, or `repl` for interactive prompt",
             type=str,
         )
         parser.add_argument(
@@ -176,15 +177,21 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect()
         try:
-            if args.file == "-":
-                with NamedTemporaryFile(suffix=".py", delete=False) as temp:
-                    temp.write(sys.stdin.buffer.read())
-                args.file = temp.name
-
-            if args.start:
-                await hub.run(args.file, args.wait)
+            # Handle builtin programs.
+            if args.file == "repl":
+                await hub.run(UserProgramId.REPL, args.wait)
             else:
-                await hub.download(args.file)
+                # If using stdin, save to temporary file first.
+                if args.file == "-":
+                    with NamedTemporaryFile(suffix=".py", delete=False) as temp:
+                        temp.write(sys.stdin.buffer.read())
+                    args.file = temp.name
+
+                # Download program and optionally start it.
+                if args.start:
+                    await hub.run(args.file, args.wait)
+                else:
+                    await hub.download(args.file)
         finally:
             await hub.disconnect()
 
