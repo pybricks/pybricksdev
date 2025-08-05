@@ -1,5 +1,3 @@
 * text eol=lf
 *.dll binary
 *.exe binary
-*.ipynb filter=nbstripout
-*.ipynb diff=ipynb

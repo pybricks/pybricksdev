@@ -42,12 +42,6 @@ packaging = ">=22"
 typing-extensions = ">=4.3.0"
 reactivex = ">=4.0.4"
 hidapi = ">=0.14.0"
-
-[tool.poetry.group.notebook.dependencies]
-ipykernel = ">=5.3.1"
-ipywidgets = ">=7.6.3"
-nbstripout = ">=0.3.8"
-notebook = ">=6.0.3"
 pybricks = {version = ">=3", allow-prereleases = true}
 
 [tool.poetry.group.lint.dependencies]
