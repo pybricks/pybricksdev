@@ -5,14 +5,11 @@
 
 import argparse
 import asyncio
-import contextlib
 import logging
-import os
 import sys
 from abc import ABC, abstractmethod
-from os import PathLike, path
+from os import path
 from tempfile import NamedTemporaryFile
-from typing import ContextManager, TextIO
 
 import argcomplete
 from argcomplete.completers import FilesCompleter
@@ -50,44 +47,6 @@ class Tool(ABC):
         pass
 
 
-def _get_script_path(file: TextIO) -> ContextManager[PathLike]:
-    """
-    Gets the path to a script on the file system.
-
-    If the file is ``sys.stdin``, the contents are copied to a temporary file
-    and the path to the temporary file is returned. Otherwise, the file is closed
-    and the path is returned.
-
-    The context manager will delete the temporary file, if applicable.
-    """
-    if file is sys.stdin:
-        # Have to close the temp file so that mpy-cross can read it, so we
-        # create our own context manager to delete the file when we are done
-        # using it.
-
-        @contextlib.contextmanager
-        def temp_context():
-            try:
-                with NamedTemporaryFile(suffix=".py", delete=False) as temp:
-                    temp.write(file.buffer.read())
-
-                yield temp.name
-            finally:
-                try:
-                    os.remove(temp.name)
-                except NameError:
-                    # if NamedTemporaryFile() throws, temp is not defined
-                    pass
-                except OSError:
-                    # file was already deleted or other strangeness
-                    pass
-
-        return temp_context()
-
-    file.close()
-    return contextlib.nullcontext(file.name)
-
-
 class Compile(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
@@ -98,7 +57,7 @@ class Compile(Tool):
             "file",
             metavar="<file>",
             help="path to a MicroPython script or `-` for stdin",
-            type=argparse.FileType(),
+            type=str,
         )
         parser.add_argument(
             "--abi",
@@ -113,8 +72,12 @@ class Compile(Tool):
     async def run(self, args: argparse.Namespace):
         from pybricksdev.compile import compile_multi_file, print_mpy
 
-        with _get_script_path(args.file) as script_path:
-            mpy = await compile_multi_file(script_path, args.abi)
+        if args.file == "-":
+            with NamedTemporaryFile(suffix=".py", delete=False) as temp:
+                temp.write(sys.stdin.buffer.read())
+            args.file = temp.name
+
+        mpy = await compile_multi_file(args.file, args.abi)
         print_mpy(mpy)
 
 
@@ -135,7 +98,7 @@ class Run(Tool):
             "file",
             metavar="<file>",
             help="path to a MicroPython script or `-` for stdin",
-            type=argparse.FileType(),
+            type=str,
         )
         parser.add_argument(
             "-n",
@@ -213,11 +176,15 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect()
         try:
-            with _get_script_path(args.file) as script_path:
-                if args.start:
-                    await hub.run(script_path, args.wait)
-                else:
-                    await hub.download(script_path)
+            if args.file == "-":
+                with NamedTemporaryFile(suffix=".py", delete=False) as temp:
+                    temp.write(sys.stdin.buffer.read())
+                args.file = temp.name
+
+            if args.start:
+                await hub.run(args.file, args.wait)
+            else:
+                await hub.download(args.file)
         finally:
             await hub.disconnect()
 
