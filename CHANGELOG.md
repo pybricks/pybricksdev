@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed `REPLHub`. This was used for non-Pybricks MicroPython boards, but
   `mpremote` should be used for this.
+- Removed `EV3Connection`. This was used for ev3dev connections over ssh,
+  making it possible to automate motor benchmarking on ev3dev. This use case
+  no longer applies and other tools can be used to run code on ev3dev.
 
 ## [1.2.0] - 2025-07-11
 

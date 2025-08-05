@@ -130,7 +130,7 @@ class Run(Tool):
             "conntype",
             metavar="<connection type>",
             help="connection type: %(choices)s",
-            choices=["ble", "usb", "ssh"],
+            choices=["ble", "usb"],
         )
         parser.add_argument(
             "file",
@@ -143,8 +143,7 @@ class Run(Tool):
             "--name",
             metavar="<name>",
             required=False,
-            help="hostname or IP address for SSH connection; "
-            "Bluetooth device name or Bluetooth address for BLE connection; "
+            help="Bluetooth device name or Bluetooth address for BLE connection; "
             "serial port name for USB connection",
         )
 
@@ -173,17 +172,7 @@ class Run(Tool):
     async def run(self, args: argparse.Namespace):
 
         # Pick the right connection
-        if args.conntype == "ssh":
-            from pybricksdev.connections.ev3dev import EV3Connection
-
-            # So it's an ev3dev
-            if args.name is None:
-                print("--name is required for SSH connections", file=sys.stderr)
-                exit(1)
-
-            device_or_address = socket.gethostbyname(args.name)
-            hub = EV3Connection(device_or_address)
-        elif args.conntype == "ble":
+        if args.conntype == "ble":
             from pybricksdev.ble import find_device as find_ble
             from pybricksdev.connections.pybricks import PybricksHubBLE
 
@@ -250,7 +239,7 @@ class Download(Tool):
             "conntype",
             metavar="<connection type>",
             help="connection type: %(choices)s",
-            choices=["ble", "usb", "ssh"],
+            choices=["ble", "usb"],
         )
         parser.add_argument(
             "file",
@@ -263,24 +252,13 @@ class Download(Tool):
             "--name",
             metavar="<name>",
             required=False,
-            help="hostname or IP address for SSH connection; "
-            "Bluetooth device name or Bluetooth address for BLE connection; "
+            help="Bluetooth device name or Bluetooth address for BLE connection; "
             "serial port name for USB connection",
         )
 
     async def run(self, args: argparse.Namespace):
         # Pick the right connection
-        if args.conntype == "ssh":
-            from pybricksdev.connections.ev3dev import EV3Connection
-
-            # So it's an ev3dev
-            if args.name is None:
-                print("--name is required for SSH connections", file=sys.stderr)
-                exit(1)
-
-            device_or_address = socket.gethostbyname(args.name)
-            hub = EV3Connection(device_or_address)
-        elif args.conntype == "ble":
+        if args.conntype == "ble":
             from pybricksdev.ble import find_device as find_ble
             from pybricksdev.connections.pybricks import PybricksHubBLE
 

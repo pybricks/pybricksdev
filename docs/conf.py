@@ -102,10 +102,8 @@ python_use_unqualified_type_names = True
 # -- Options for autodoc extension -------------------------------------------
 
 autodoc_mock_imports = [
-    "aioserial",
     "appdirs",
     "argcomplete",
-    "asyncssh",
     "bleak",
     "mpy_cross_v5",
     "mpy_cross_v6",
