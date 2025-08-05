@@ -117,6 +117,9 @@ firmware.
     # Run script on any Pybricks device
     pipx run pybricksdev run ble demo/shortdemo.py
 
+    # Download script to any Pybricks device but don't start it
+    pipx run pybricksdev run ble demo/shortdemo.py --no-start
+
     # Run script on the first device we find called Pybricks hub
     pipx run pybricksdev run ble --name "Pybricks Hub" demo/shortdemo.py
 
@@ -125,18 +128,10 @@ firmware.
            
     #
     # usb connection examples:
-    # NOTE: running programs via usb connection works for official LEGO firmwares only
+    #
 
     # Run script on any Pybricks device
     pipx run pybricksdev run usb demo/shortdemo.py
-
-    #
-    # Other connection examples:
-    #
-
-    # Run script on ev3dev at 192.168.0.102
-    pipx run pybricksdev run ssh --name 192.168.0.102 demo/shortdemo.py
-
 
 ### Compiling Pybricks MicroPython programs without running
 
