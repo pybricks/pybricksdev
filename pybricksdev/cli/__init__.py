@@ -147,27 +147,12 @@ class Run(Tool):
             "serial port name for USB connection",
         )
 
-        if hasattr(argparse, "BooleanOptionalAction"):
-            # BooleanOptionalAction requires Python 3.9
-            parser.add_argument(
-                "--wait",
-                help="wait for the program to complete before disconnecting",
-                action=argparse.BooleanOptionalAction,
-                default=True,
-            )
-        else:
-            parser.add_argument(
-                "--wait",
-                help="wait for the program to complete before disconnecting (default)",
-                action="store_true",
-                default=True,
-            )
-            parser.add_argument(
-                "--no-wait",
-                help="disconnect as soon as program is done downloading",
-                action="store_false",
-                dest="wait",
-            )
+        parser.add_argument(
+            "--wait",
+            help="wait for the program to complete before disconnecting",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+        )
 
     async def run(self, args: argparse.Namespace):
 
