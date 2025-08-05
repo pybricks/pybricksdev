@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, mock_open, patch
 
 import pytest
 
-from pybricksdev.cli import Download, Tool
+from pybricksdev.cli import Run, Tool
 
 
 class TestTool:
@@ -21,7 +21,7 @@ class TestTool:
             Tool()
 
 
-class TestDownload:
+class TestRun:
     """Tests for the Download command."""
 
     def test_add_parser(self):
@@ -31,13 +31,13 @@ class TestDownload:
         subparsers = parser.add_subparsers()
 
         # Add the download command
-        download = Download()
-        download.add_parser(subparsers)
+        run = Run()
+        run.add_parser(subparsers)
 
         # Verify the parser was created with correct arguments
-        assert "download" in subparsers.choices
-        parser = subparsers.choices["download"]
-        assert parser.tool is download
+        assert "run" in subparsers.choices
+        parser = subparsers.choices["run"]
+        assert parser.tool is run
 
         # Test that required arguments are present
         mock_file = mock_open(read_data="print('test')")
@@ -82,6 +82,8 @@ class TestDownload:
                 conntype="ble",
                 file=open(temp_path, "r"),
                 name="MyHub",
+                start=False,
+                wait=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -95,8 +97,8 @@ class TestDownload:
             )
 
             # Run the command
-            download = Download()
-            await download.run(args)
+            run = Run()
+            await run.run(args)
 
             # Verify the hub was created and used correctly
             mock_hub_class.assert_called_once_with("mock_device")
@@ -127,6 +129,8 @@ class TestDownload:
                 conntype="usb",
                 file=open(temp_path, "r"),
                 name=None,
+                start=False,
+                wait=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -138,8 +142,8 @@ class TestDownload:
             stack.enter_context(patch("usb.core.find", return_value="mock_device"))
 
             # Run the command
-            download = Download()
-            await download.run(args)
+            run = Run()
+            await run.run(args)
 
             # Verify the hub was created and used correctly
             mock_hub_class.assert_called_once_with("mock_device")
@@ -165,6 +169,8 @@ class TestDownload:
             conntype="ble",
             file=mock_stdin,
             name="MyHub",
+            start=False,
+            wait=False,
         )
 
         # Set up mocks using ExitStack
@@ -182,8 +188,8 @@ class TestDownload:
             mock_temp.return_value.__enter__.return_value.name = "/tmp/test.py"
 
             # Run the command
-            download = Download()
-            await download.run(args)
+            run = Run()
+            await run.run(args)
 
             # Verify the hub was created and used correctly
             mock_hub_class.assert_called_once_with("mock_device")
@@ -213,6 +219,8 @@ class TestDownload:
                 conntype="ble",
                 file=open(temp_path, "r"),
                 name="MyHub",
+                start=False,
+                wait=False,
             )
 
             stack.enter_context(
@@ -226,9 +234,9 @@ class TestDownload:
             )
 
             # Run the command and verify it raises the error
-            download = Download()
+            run = Run()
             with pytest.raises(RuntimeError, match="Connection failed"):
-                await download.run(args)
+                await run.run(args)
 
             # Verify disconnect was not called since connection failed
             mock_hub.disconnect.assert_not_called()
