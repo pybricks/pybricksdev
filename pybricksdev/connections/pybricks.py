@@ -947,8 +947,8 @@ class PybricksHubUSB(PybricksHub):
         await self._send_message(bytes([PybricksUsbOutEpMessageType.COMMAND]) + data)
 
     async def start_notify(self, uuid: str, callback: Callable) -> None:
-        await self._send_message(bytes([PybricksUsbOutEpMessageType.SUBSCRIBE, 1]))
         self._notify_callbacks[uuid] = callback
+        await self._send_message(bytes([PybricksUsbOutEpMessageType.SUBSCRIBE, 1]))
 
     async def _monitor_usb(self):
         loop = asyncio.get_running_loop()
