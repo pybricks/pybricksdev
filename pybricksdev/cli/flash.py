@@ -2,13 +2,10 @@
 # Copyright (c) 2019-2023 The Pybricks Authors
 
 import asyncio
-import hashlib
-import json
 import logging
 import os
 import struct
 import sys
-import zipfile
 import zlib
 from tempfile import NamedTemporaryFile
 from typing import BinaryIO, Dict, Optional
@@ -46,7 +43,6 @@ from pybricksdev.ble.pybricks import (
     unpack_pnp_id,
 )
 from pybricksdev.compile import compile_file
-from pybricksdev.connections.lego import REPLHub
 from pybricksdev.dfu import flash_dfu
 from pybricksdev.firmware import create_firmware_blob
 from pybricksdev.flash import BootloaderConnection
@@ -439,42 +435,7 @@ async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> Non
     hub_kind = HubKind(metadata["device-id"])
 
     if hub_kind in (HubKind.TECHNIC_SMALL, HubKind.TECHNIC_LARGE):
-        try:
-            # Connect to the hub and exit the runtime.
-            hub = REPLHub()
-            await hub.connect()
-            await hub.reset_hub()
-
-            # Upload installation script.
-            archive = zipfile.ZipFile(firmware_zip)
-            await hub.exec_line("import uos; uos.mkdir('_firmware')")
-            await hub.upload_file(
-                "_firmware/install_pybricks.py",
-                bytearray(archive.open("install_pybricks.py").read()),
-            )
-
-            extended_metadata = metadata.copy()
-
-            # Add extended metadata needed by install_pybricks.py
-            extended_metadata["firmware-sha256"] = hashlib.sha256(firmware).hexdigest()
-
-            # Upload metadata.
-            await hub.upload_file(
-                "_firmware/firmware.metadata.json",
-                json.dumps(extended_metadata, indent=4).encode(),
-            )
-
-            # Upload Pybricks firmware
-            await hub.upload_file("_firmware/firmware.bin", firmware)
-
-            # Run installation script
-            print("Installing firmware")
-            await hub.exec_line("from _firmware.install_pybricks import install")
-            await hub.exec_paste_mode("install()")
-
-        except OSError:
-            print("Could not find hub in standard firmware mode. Trying DFU.")
-            flash_dfu(firmware, metadata)
+        flash_dfu(firmware, metadata)
     elif hub_kind in [HubKind.BOOST, HubKind.CITY, HubKind.TECHNIC]:
         await flash_ble(hub_kind, firmware, metadata)
     elif hub_kind == HubKind.NXT:
