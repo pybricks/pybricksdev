@@ -28,16 +28,16 @@ include = [
 pybricksdev = 'pybricksdev.cli:main'
 
 [tool.poetry.dependencies]
-argcomplete = ">=1.11.1"
+argcomplete = ">=3.6.2"
 bleak = ">=0.22.0"
-mpy-cross-v5 = ">=1.0.0"
+mpy-cross-v5 = ">=1.1.0"
 python = ">=3.10,<3.14"
 tqdm = ">=4.62.3"
 pyusb = ">=1.0.2"
 semver = ">=2.13.0"
 appdirs = ">=1.4.4"
 prompt-toolkit = ">=3.0.18"
-mpy-cross-v6 = ">=1.0.0"
+mpy-cross-v6 = ">=1.1.0"
 packaging = ">=22"
 typing-extensions = ">=4.3.0"
 reactivex = ">=4.0.4"
@@ -74,6 +74,11 @@ known_third_party = ["usb"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
+filterwarnings = [
+    "error",
+    # Known issue with reactivex package
+    "ignore::DeprecationWarning:reactivex.internal",
+]
 
 [tool.coverage.run]
 branch = true

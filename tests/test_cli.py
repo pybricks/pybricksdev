@@ -71,7 +71,9 @@ class TestRun:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -80,7 +82,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="ble",
-                file=open(temp_path, "r"),
+                file=open(temp_path, "r", encoding="utf-8"),
                 name="MyHub",
                 start=False,
                 wait=False,
@@ -118,7 +120,9 @@ class TestRun:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -127,7 +131,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="usb",
-                file=open(temp_path, "r"),
+                file=open(temp_path, "r", encoding="utf-8"),
                 name=None,
                 start=False,
                 wait=False,
@@ -208,7 +212,9 @@ class TestRun:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -217,7 +223,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="ble",
-                file=open(temp_path, "r"),
+                file=open(temp_path, "r", encoding="utf-8"),
                 name="MyHub",
                 start=False,
                 wait=False,

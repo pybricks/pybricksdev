@@ -14,7 +14,7 @@ from pybricksdev.compile import compile_file
 @pytest.mark.parametrize("abi", [5, 6])
 @pytest.mark.asyncio
 async def test_compile_file(abi: int):
-    with NamedTemporaryFile("w", delete=False) as f:
+    with NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
         try:
             f.write("print('test')")
             f.close()
@@ -35,7 +35,7 @@ async def test_compile_file(abi: int):
 
 @pytest.mark.asyncio
 async def test_compile_file_invalid_abi():
-    with NamedTemporaryFile("w", delete=False) as f:
+    with NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
         try:
             f.write("print('test')")
             f.close()

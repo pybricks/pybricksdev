@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed calling `PybricksHub.write()` methods.
+- Fixed using default text encoding when opening text files.
 
 ### Changed
 - Downloading programs without starting them can now be done by

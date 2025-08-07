@@ -55,7 +55,7 @@ async def compile_file(
     """
 
     # Get version info
-    with open(os.path.join(proj_dir, proj_path), "r") as f:
+    with open(os.path.join(proj_dir, proj_path), "r", encoding="utf-8") as f:
         loop = asyncio.get_running_loop()
         script = f.read()
 
@@ -188,7 +188,7 @@ def save_script(py_string):
     py_path = os.path.join(BUILD_DIR, TMP_PY_SCRIPT)
 
     # Write Python command to a file.
-    with open(py_path, "w") as f:
+    with open(py_path, "w", encoding="utf-8") as f:
         f.write(py_string)
         f.write("\n")
 

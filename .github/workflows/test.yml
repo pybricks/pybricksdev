@@ -38,6 +38,9 @@ jobs:
       - run: poetry install --only=main --only=test
       - run: poetry run pytest
         if: matrix.python-version != '3.10'
+        env:
+          PYTHONDEVMODE: 1
+          PYTHONWARNDEFAULTENCODING: 1
       - run: poetry run coverage run
         if: matrix.python-version == '3.10'
       - run: poetry run coverage xml

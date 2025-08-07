@@ -108,7 +108,7 @@ async def download_and_run(client: BleakClient, script: str, abi: int) -> None:
         script: The script to be compiled and run.
         abi: The MPY ABI version.
     """
-    with NamedTemporaryFile("w", suffix=".py") as temp:
+    with NamedTemporaryFile("w", suffix=".py", encoding="utf-8") as temp:
         temp.write(script)
 
         # file has to be closed so mpy-cross can open it
