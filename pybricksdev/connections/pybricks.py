@@ -194,7 +194,7 @@ class PybricksHub:
                 os.makedirs(dir_path)
 
             logger.info("Saving log to {0}.".format(full_path))
-            self.log_file = open(full_path, "w")
+            self.log_file = open(full_path, "w", encoding="utf-8")
             return
 
         # The line tells us to close a log file, so do it.

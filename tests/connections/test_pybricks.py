@@ -37,7 +37,9 @@ class TestPybricksHub:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -62,7 +64,9 @@ class TestPybricksHub:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -86,7 +90,9 @@ class TestPybricksHub:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name
@@ -114,7 +120,9 @@ class TestPybricksHub:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test'  # Missing closing parenthesis")
             temp_path = temp.name
@@ -157,7 +165,9 @@ class TestPybricksHub:
         with contextlib.ExitStack() as stack:
             # Create and manage temporary file
             temp = stack.enter_context(
-                tempfile.NamedTemporaryFile(suffix=".py", mode="w+", delete=False)
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
             )
             temp.write("print('test')")
             temp_path = temp.name

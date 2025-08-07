@@ -68,7 +68,9 @@ def _get_script_path(file: TextIO) -> ContextManager[PathLike]:
         @contextlib.contextmanager
         def temp_context():
             try:
-                with NamedTemporaryFile(suffix=".py", delete=False) as temp:
+                with NamedTemporaryFile(
+                    suffix=".py", delete=False, encoding="utf-8"
+                ) as temp:
                     temp.write(file.buffer.read())
 
                 yield temp.name
@@ -98,7 +100,7 @@ class Compile(Tool):
             "file",
             metavar="<file>",
             help="path to a MicroPython script or `-` for stdin",
-            type=argparse.FileType(),
+            type=argparse.FileType(encoding="utf-8"),
         )
         parser.add_argument(
             "--abi",
@@ -135,7 +137,7 @@ class Run(Tool):
             "file",
             metavar="<file>",
             help="path to a MicroPython script or `-` for stdin",
-            type=argparse.FileType(),
+            type=argparse.FileType(encoding="utf-8"),
         )
         parser.add_argument(
             "-n",
