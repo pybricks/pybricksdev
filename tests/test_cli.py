@@ -82,7 +82,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="ble",
-                file=open(temp_path, "r", encoding="utf-8"),
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
                 name="MyHub",
                 start=False,
                 wait=False,
@@ -131,7 +131,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="usb",
-                file=open(temp_path, "r", encoding="utf-8"),
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
                 name=None,
                 start=False,
                 wait=False,
@@ -223,7 +223,7 @@ class TestRun:
             # Create args
             args = argparse.Namespace(
                 conntype="ble",
-                file=open(temp_path, "r", encoding="utf-8"),
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
                 name="MyHub",
                 start=False,
                 wait=False,
