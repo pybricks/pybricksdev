@@ -884,6 +884,7 @@ description = "Documentation and user-API stubs for Pybricks MicroPython"
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
+markers = "python_version < \"4\""
 files = [
     {file = "pybricks-3.6.1-py3-none-any.whl", hash = "sha256:ff177a4c4728df1ea22cc7ac63c403affd0d1f64cc389a385f5b27561ab08c23"},
     {file = "pybricks-3.6.1.tar.gz", hash = "sha256:1836b5e14e143eec02a8c57d4677ab96a223a653e813567df072d90722d9f048"},
@@ -1082,6 +1083,7 @@ description = "ReactiveX (Rx) for Python"
 optional = false
 python-versions = ">=3.7,<4.0"
 groups = ["main"]
+markers = "python_version < \"4\""
 files = [
     {file = "reactivex-4.0.4-py3-none-any.whl", hash = "sha256:0004796c420bd9e68aad8e65627d85a8e13f293de76656165dffbcb3a0e3fb6a"},
     {file = "reactivex-4.0.4.tar.gz", hash = "sha256:e912e6591022ab9176df8348a653fe8c8fa7a301f26f9931c9d8c78a650e04e8"},
@@ -1710,5 +1712,5 @@ all = ["winrt-Windows.Foundation.Collections[all] (>=3.2.1.0,<3.3.0.0)", "winrt-
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10,<3.14"
-content-hash = "89e1f9115afdb712e281d2dd9ed6af76269ba3538fec2434781d27cf6b344b11"
+python-versions = ">=3.10"
+content-hash = "07bb1f2eb75c0ddec598e9e7f0d33748fc7fd1b912139ce347c407bf5b499942"

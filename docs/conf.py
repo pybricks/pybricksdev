@@ -27,10 +27,10 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = _pyproject["tool"]["poetry"]["name"]
+project = _pyproject["project"]["name"]
 copyright = "2021, The Pybricks Authors"
-author = _pyproject["tool"]["poetry"]["authors"][0]
-release = f"v{_pyproject['tool']['poetry']['version']}"
+author = _pyproject["project"]["authors"][0]["name"]
+release = f"v{_pyproject['project']['version']}"
 version = re.match(r"(v\d+\.\d+)", release)[0]
 
 
