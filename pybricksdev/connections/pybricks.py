@@ -566,7 +566,7 @@ class PybricksHub:
 
     async def run(
         self,
-        py_path: Optional[str] = None,
+        program: str | int,
         wait: bool = True,
         print_output: bool = True,
         line_handler: bool = True,
@@ -575,8 +575,8 @@ class PybricksHub:
         Compiles and runs a user program.
 
         Args:
-            py_path: The path to the .py file to compile. If None, runs a
-                previously downloaded program.
+            program: The path to the .py file to compile. If an integer is
+                given, runs a slot or builtin program with that identifier.
             wait: If true, wait for the user program to stop before returning.
             print_output: If true, echo stdout of the hub to ``sys.stdout``.
             line_handler: If true enable hub stdout line handler features.
@@ -592,24 +592,23 @@ class PybricksHub:
         self.print_output = print_output
         self._enable_line_handler = line_handler
         self.script_dir = os.getcwd()
-        if py_path is not None:
-            self.script_dir, _ = os.path.split(py_path)
+        if isinstance(program, str):
+            self.script_dir, _ = os.path.split(program)
 
         # maintain compatibility with older firmware (Pybricks profile < 1.2.0).
         if self._mpy_abi_version:
-            if py_path is None:
+            if not isinstance(program, str):
                 raise RuntimeError(
-                    "Hub does not support running stored program. Provide a py_path to run"
+                    "Hub does not support running stored program. Provide a path to run"
                 )
-            await self._legacy_run(py_path, wait)
+            await self._legacy_run(program, wait)
             return
 
-        # Download the program if a path is provided
-        if py_path is not None:
-            await self.download(py_path)
-
-        # Start the program
-        await self.start_user_program()
+        if isinstance(program, str):
+            await self.download(program)
+            await self.start_user_program()
+        else:
+            await self.start_user_program(program)
 
         if wait:
             await self._wait_for_user_program_stop()

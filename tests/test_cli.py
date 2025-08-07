@@ -45,7 +45,7 @@ class TestRun:
         with patch("builtins.open", mock_file):
             args = parser.parse_args(["ble", "test.py"])
             assert args.conntype == "ble"
-            assert args.file.name == "test.py"
+            assert args.file == "test.py"
             assert args.name is None
 
         # Test with optional name argument
