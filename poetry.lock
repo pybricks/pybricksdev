@@ -129,14 +129,14 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "bleak"
-version = "1.0.1"
+version = "1.1.0"
 description = "Bluetooth Low Energy platform Agnostic Klient"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "bleak-1.0.1-py3-none-any.whl", hash = "sha256:8f99bcb2fb74950466622b1f932ab661c74dcd48a3d122e95b661aa0705e5a6a"},
-    {file = "bleak-1.0.1.tar.gz", hash = "sha256:6177487c4eb08743a155e1295ff871eb2a61669b538bdbf35db45ea29cf7a41d"},
+    {file = "bleak-1.1.0-py3-none-any.whl", hash = "sha256:174e7836e1ab0879860cd24ddd0ac604bd192bcc1acb978892e27359f3f18304"},
+    {file = "bleak-1.1.0.tar.gz", hash = "sha256:0ace59c8cf5a2d8aa66a2493419b59ac6a119c2f72f6e57be8dbdd3f2c0270e0"},
 ]
 
 [package.dependencies]
@@ -154,6 +154,9 @@ winrt-runtime = {version = ">=3.1", markers = "platform_system == \"Windows\""}
 "winrt-Windows.Foundation" = {version = ">=3.1", markers = "platform_system == \"Windows\""}
 "winrt-Windows.Foundation.Collections" = {version = ">=3.1", markers = "platform_system == \"Windows\""}
 "winrt-Windows.Storage.Streams" = {version = ">=3.1", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+pythonista = ["bleak-pythonista (>=0.1.1)"]
 
 [[package]]
 name = "certifi"
@@ -1713,4 +1716,4 @@ all = ["winrt-Windows.Foundation.Collections[all] (>=3.2.1.0,<3.3.0.0)", "winrt-
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "a807d3347a9458a6c8c3a1981b8852e50ad63fa36f554151622acef5c6d81561"
+content-hash = "3d2a87a44fe61f7cbe48f13302f75cdcfa991b2ffc546e12818b9999050c5959"
