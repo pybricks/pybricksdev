@@ -36,13 +36,13 @@ include = [
 [tool.poetry.dependencies]
 argcomplete = ">=3.6.2"
 bleak = ">=0.22.0"
-mpy-cross-v5 = ">=1.1.0"
+mpy-cross-v5 = ">=1.1.1"
+mpy-cross-v6 = ">=1.1.1"
 tqdm = ">=4.62.3"
 pyusb = ">=1.0.2"
 semver = ">=2.13.0"
 appdirs = ">=1.4.4"
 prompt-toolkit = ">=3.0.18"
-mpy-cross-v6 = ">=1.1.0"
 packaging = ">=22"
 typing-extensions = ">=4.3.0"
 reactivex = {version = ">=4.0.4", python = "<4"}
