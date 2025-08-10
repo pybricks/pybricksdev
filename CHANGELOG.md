@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-08-10
+
 ### Added
 - Added optional user program ID arg to `PybricksHub.start_user_program()`.
+- Added support for running programs via USB on EV3 and NXT.
 
 ### Fixed
 - Fixed calling `PybricksHub.write()` methods.
@@ -490,7 +493,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v1.2.0..HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v2.0.0..HEAD
+[2.0.0]: https://github.com/pybricks/pybricksdev/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/pybricks/pybricksdev/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/pybricks/pybricksdev/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/pybricks/pybricksdev/compare/v1.0.0...v1.0.1
