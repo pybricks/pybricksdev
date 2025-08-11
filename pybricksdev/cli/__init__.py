@@ -68,9 +68,7 @@ def _get_script_path(file: TextIO) -> ContextManager[PathLike]:
         @contextlib.contextmanager
         def temp_context():
             try:
-                with NamedTemporaryFile(
-                    suffix=".py", delete=False, encoding="utf-8"
-                ) as temp:
+                with NamedTemporaryFile("wb", suffix=".py", delete=False) as temp:
                     temp.write(file.buffer.read())
 
                 yield temp.name

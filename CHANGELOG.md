@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed piping text files to `pybricksdev run` from stdin.
+
 ## [2.0.0] - 2025-08-10
 
 ### Added
