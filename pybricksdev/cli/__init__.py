@@ -213,11 +213,15 @@ class Run(Tool):
         # Connect to the address and run the script
         await hub.connect()
         try:
-            with _get_script_path(args.file) as script_path:
-                if args.start:
-                    await hub.run(script_path, args.wait)
-                else:
-                    await hub.download(script_path)
+            while True:
+                with _get_script_path(args.file) as script_path:
+                    if args.start:
+                        await hub.run(script_path, args.wait)
+                    else:
+                        await hub.download(script_path)
+                choice = input("Press enter to resend, Q to quit")
+                if choice.upper() == "Q":
+                    break
         finally:
             await hub.disconnect()
 
