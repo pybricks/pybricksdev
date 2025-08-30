@@ -16,6 +16,7 @@ from typing import ContextManager, TextIO
 
 import argcomplete
 from argcomplete.completers import FilesCompleter
+import simple_term_menu
 
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
@@ -219,8 +220,9 @@ class Run(Tool):
                         await hub.run(script_path, args.wait)
                     else:
                         await hub.download(script_path)
-                choice = input("Press enter to resend, Q to quit")
-                if choice.upper() == "Q":
+                menu = simple_term_menu.TerminalMenu(["Resend Code", "Exit"])
+                entry = menu.show()
+                if entry:
                     break
         finally:
             await hub.disconnect()
