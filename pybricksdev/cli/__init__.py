@@ -163,7 +163,7 @@ class Run(Tool):
 
         parser.add_argument(
             "--resend",
-            help="Add a menu option to resend the code instead of disconnecting from the robot.",
+            help="Add a menu option to resend the code with bluetooth instead of disconnecting from the robot after the program ends.",
             action=argparse.BooleanOptionalAction,
             default=False,
         )
@@ -228,7 +228,7 @@ class Run(Tool):
                     else:
                         await hub.download(script_path)
 
-                if not args.resend:
+                if args.conntype == "usb" or not args.wait or not args.resend:
                     break
 
                 menu = simple_term_menu.TerminalMenu(["Resend Code", "Exit"])
