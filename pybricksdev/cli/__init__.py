@@ -161,6 +161,13 @@ class Run(Tool):
             default=True,
         )
 
+        parser.add_argument(
+            "--resend",
+            help="Add a menu option to resend the code instead of disconnecting from the robot.",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+        )
+
     async def run(self, args: argparse.Namespace):
 
         # Pick the right connection
@@ -220,10 +227,16 @@ class Run(Tool):
                         await hub.run(script_path, args.wait)
                     else:
                         await hub.download(script_path)
+
+                if not args.resend:
+                    break
+
                 menu = simple_term_menu.TerminalMenu(["Resend Code", "Exit"])
                 entry = menu.show()
+
                 if entry:
                     break
+
         finally:
             await hub.disconnect()
 
