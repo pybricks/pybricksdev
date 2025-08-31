@@ -86,6 +86,7 @@ class TestRun:
                 name="MyHub",
                 start=False,
                 wait=False,
+                stay_connected=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -135,6 +136,7 @@ class TestRun:
                 name=None,
                 start=False,
                 wait=False,
+                stay_connected=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -175,6 +177,7 @@ class TestRun:
             name="MyHub",
             start=False,
             wait=False,
+            stay_connected=False,
         )
 
         # Set up mocks using ExitStack
@@ -227,6 +230,7 @@ class TestRun:
                 name="MyHub",
                 start=False,
                 wait=False,
+                stay_connected=False,
             )
 
             stack.enter_context(
@@ -273,6 +277,7 @@ class TestRun:
                 name="MyHub",
                 start=True,
                 wait=True,
+                stay_connected=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -321,6 +326,7 @@ class TestRun:
                 name=None,
                 start=True,
                 wait=True,
+                stay_connected=False,
             )
 
             mock_hub_class = stack.enter_context(
@@ -360,6 +366,7 @@ class TestRun:
             name="MyHub",
             start=True,
             wait=True,
+            stay_connected=False,
         )
 
         # Set up mocks using ExitStack
@@ -414,6 +421,7 @@ class TestRun:
                 name="MyHub",
                 start=False,
                 wait=True,
+                stay_connected=False,
             )
 
             stack.enter_context(
