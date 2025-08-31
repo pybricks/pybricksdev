@@ -13,10 +13,10 @@ from abc import ABC, abstractmethod
 from os import PathLike, path
 from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
+import questionary
 
 import argcomplete
 from argcomplete.completers import FilesCompleter
-import simple_term_menu
 
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
@@ -162,7 +162,7 @@ class Run(Tool):
         )
 
         parser.add_argument(
-            "--resend",
+            "--stay-connected",
             help="Add a menu option to resend the code with bluetooth instead of disconnecting from the robot after the program ends.",
             action=argparse.BooleanOptionalAction,
             default=False,
@@ -228,18 +228,22 @@ class Run(Tool):
                     else:
                         await hub.download(script_path)
 
-                if args.conntype == "usb" or not args.wait or not args.resend:
+                if not args.wait or not args.stay_connected:
                     break
 
-                menu = simple_term_menu.TerminalMenu(["Resend Code", "Exit"])
-                entry = menu.show()
+                resend = await questionary.select(
+                    "Would you like to resend your code?",
+                    choices=["Resend", "Exit"]
+                ).ask_async()
 
-                if entry:
+                if resend == "Exit":
                     break
+
+        except RuntimeError:
+            print("The hub is no longer connected.")
 
         finally:
             await hub.disconnect()
-
 
 class Flash(Tool):
     def add_parser(self, subparsers: argparse._SubParsersAction):
