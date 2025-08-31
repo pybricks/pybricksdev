@@ -4,6 +4,7 @@
 """Command line wrapper around pybricksdev library."""
 
 import argparse
+import questionary
 import asyncio
 import contextlib
 import logging
@@ -13,7 +14,6 @@ from abc import ABC, abstractmethod
 from os import PathLike, path
 from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
-import questionary
 
 import argcomplete
 from argcomplete.completers import FilesCompleter
