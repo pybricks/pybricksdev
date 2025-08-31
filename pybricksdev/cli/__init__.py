@@ -4,11 +4,11 @@
 """Command line wrapper around pybricksdev library."""
 
 import argparse
-import questionary
 import asyncio
 import contextlib
 import logging
 import os
+import questionary
 import sys
 from abc import ABC, abstractmethod
 from os import PathLike, path
