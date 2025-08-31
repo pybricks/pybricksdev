@@ -8,7 +8,6 @@ import asyncio
 import contextlib
 import logging
 import os
-import questionary
 import sys
 from abc import ABC, abstractmethod
 from os import PathLike, path
@@ -16,6 +15,7 @@ from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
 
 import argcomplete
+import questionary
 from argcomplete.completers import FilesCompleter
 
 from pybricksdev import __name__ as MODULE_NAME
@@ -232,8 +232,7 @@ class Run(Tool):
                     break
 
                 resend = await questionary.select(
-                    "Would you like to resend your code?",
-                    choices=["Resend", "Exit"]
+                    "Would you like to resend your code?", choices=["Resend", "Exit"]
                 ).ask_async()
 
                 if resend == "Exit":
@@ -245,7 +244,9 @@ class Run(Tool):
         finally:
             await hub.disconnect()
 
+
 class Flash(Tool):
+
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
             "flash", help="flash firmware on a LEGO Powered Up device"
