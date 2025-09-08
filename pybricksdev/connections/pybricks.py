@@ -715,7 +715,7 @@ class PybricksHub:
                 power_button_press_event.set()
 
         with self.status_observable.subscribe(
-                handle_power_button_press
+            handle_power_button_press
         ) and self.connection_state_observable.subscribe(handle_disconnect):
             done, pending = await asyncio.wait(
                 {awaitable_task, power_button_press_task, disconnect_task},
@@ -748,7 +748,8 @@ class PybricksHub:
                 # for it to start
                 try:
                     await asyncio.wait_for(
-                        self.race_disconnect(user_program_running.get()), program_start_timeout
+                        self.race_disconnect(user_program_running.get()),
+                        program_start_timeout
                     )
                 except asyncio.TimeoutError:
                     # if it doesn't start, assume it was a very short lived

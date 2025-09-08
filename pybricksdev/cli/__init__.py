@@ -237,7 +237,7 @@ class Run(Tool):
                     "Recompile and Run",
                     "Recompile and Download",
                     "Exit",
-                    ]
+                ]
                 while True:
                     try:
                         response = await hub.race_user_program_start(
@@ -250,8 +250,8 @@ class Run(Tool):
 
                         async def reconnect_hub():
                             if await questionary.confirm(
-                                    "\nThe hub has been disconnected. Would you like to re-connect?"
-                                ).ask_async():
+                                "\nThe hub has been disconnected. Would you like to re-connect?"
+                            ).ask_async():
                                 if args.conntype == "ble":
                                     print(
                                         f"Searching for {args.name or 'any hub with Pybricks service'}..."
@@ -273,7 +273,8 @@ class Run(Tool):
                             else:
                                 exit()
 
-                        if (hub.status_observable.value
+                        if (
+                            hub.status_observable.value
                             & StatusFlag.POWER_BUTTON_PRESSED
                         ):
                             try:
@@ -281,7 +282,8 @@ class Run(Tool):
                                 continue
 
                             except RuntimeError as e:
-                                if (hub.connection_state_observable.value
+                                if (
+                                    hub.connection_state_observable.value
                                     == ConnectionState.DISCONNECTED
                                 ):
                                     hub = await reconnect_hub()
@@ -290,7 +292,8 @@ class Run(Tool):
                                 else:
                                     raise e
 
-                        elif (hub.connection_state_observable.value
+                        elif (
+                            hub.connection_state_observable.value
                               == ConnectionState.DISCONNECTED
                         ):
                             # let terminal cool off before making a new prompt
