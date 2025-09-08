@@ -240,10 +240,10 @@ class Run(Tool):
                 ]
                 while True:
                     try:
-                        response = await hub.race_user_program_start(
+                        response = await hub.race_power_button_press(
                             questionary.select(
-                                    "Would you like to re-compile your code?",
-                                    response_options,
+                            "Would you like to re-compile your code?",
+                                response_options,
                                 ).ask_async()
                             )
                     except RuntimeError as e:
@@ -294,7 +294,7 @@ class Run(Tool):
 
                         elif (
                             hub.connection_state_observable.value
-                              == ConnectionState.DISCONNECTED
+                        == ConnectionState.DISCONNECTED
                         ):
                             # let terminal cool off before making a new prompt
                             await asyncio.sleep(0.3)

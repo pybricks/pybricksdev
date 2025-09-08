@@ -678,7 +678,7 @@ class PybricksHub:
         if wait:
             await self._wait_for_user_program_stop()
 
-    async def race_user_program_start(self, awaitable: Awaitable[T]) -> T:
+    async def race_power_button_press(self, awaitable: Awaitable[T]) -> T:
         """
         Races an awaitable against the user pressing the power button of the hub.
 
@@ -749,7 +749,7 @@ class PybricksHub:
                 try:
                     await asyncio.wait_for(
                         self.race_disconnect(user_program_running.get()),
-                        program_start_timeout
+                        program_start_timeout,
                     )
                 except asyncio.TimeoutError:
                     # if it doesn't start, assume it was a very short lived
