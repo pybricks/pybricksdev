@@ -714,7 +714,9 @@ class PybricksHub:
             if status.value & StatusFlag.POWER_BUTTON_PRESSED:
                 power_button_press_event.set()
 
-        with self.status_observable.subscribe(handle_power_button_press) and self.connection_state_observable.subscribe(handle_disconnect):
+        with self.status_observable.subscribe(
+                handle_power_button_press
+        ) and self.connection_state_observable.subscribe(handle_disconnect):
             done, pending = await asyncio.wait(
                 {awaitable_task, power_button_press_task, disconnect_task},
                 return_when=asyncio.FIRST_COMPLETED,
@@ -729,7 +731,7 @@ class PybricksHub:
             raise RuntimeError("the hub was disconnected during operation")
         return awaitable_task.result()
 
-    async def _wait_for_user_program_stop(self, program_start_timeout = 1):
+    async def _wait_for_user_program_stop(self, program_start_timeout=1):
         user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
         with self.status_observable.pipe(

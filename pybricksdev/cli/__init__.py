@@ -233,21 +233,35 @@ class Run(Tool):
                     await hub.download(script_path)
 
             if args.stay_connected:
-                response_options = ["Recompile and Run", "Recompile and Download", "Exit"]
+                response_options = [
+                    "Recompile and Run",
+                    "Recompile and Download",
+                    "Exit",
+                    ]
                 while True:
                     try:
-                        response = await hub.race_user_program_start(questionary.select("Would you like to re-compile your code?", response_options).ask_async())
+                        response = await hub.race_user_program_start(
+                            questionary.select(
+                                    "Would you like to re-compile your code?",
+                                    response_options,
+                                ).ask_async()
+                            )
                     except RuntimeError as e:
 
                         async def reconnect_hub():
                             if await questionary.confirm(
-                                    "\nThe hub has been disconnected. Would you like to re-connect?").ask_async():
+                                    "\nThe hub has been disconnected. Would you like to re-connect?"
+                                ).ask_async():
                                 if args.conntype == "ble":
-                                    print(f"Searching for {args.name or 'any hub with Pybricks service'}...")
+                                    print(
+                                        f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                                    )
                                     device_or_address = await find_ble(args.name)
                                     hub = PybricksHubBLE(device_or_address)
                                 elif args.conntype == "usb":
-                                    device_or_address = find_usb(custom_match=is_pybricks_usb)
+                                    device_or_address = find_usb(
+                                        custom_match=is_pybricks_usb
+                                    )
                                     hub = PybricksHubUSB(device_or_address)
 
                                 await hub.connect()
@@ -259,20 +273,26 @@ class Run(Tool):
                             else:
                                 exit()
 
-                        if hub.status_observable.value & StatusFlag.POWER_BUTTON_PRESSED:
+                        if (hub.status_observable.value
+                            & StatusFlag.POWER_BUTTON_PRESSED
+                        ):
                             try:
                                 await hub._wait_for_user_program_stop(2.1)
                                 continue
 
                             except RuntimeError as e:
-                                if hub.connection_state_observable.value == ConnectionState.DISCONNECTED:
+                                if (hub.connection_state_observable.value
+                                    == ConnectionState.DISCONNECTED
+                                ):
                                     hub = await reconnect_hub()
                                     continue
 
                                 else:
                                     raise e
 
-                        elif hub.connection_state_observable.value == ConnectionState.DISCONNECTED:
+                        elif (hub.connection_state_observable.value
+                              == ConnectionState.DISCONNECTED
+                        ):
                             # let terminal cool off before making a new prompt
                             await asyncio.sleep(0.3)
 
@@ -283,19 +303,18 @@ class Run(Tool):
                             raise e
 
                     with _get_script_path(args.file) as script_path:
-                            if response == response_options[0]:
-                                await hub.run(script_path, True)
-                            elif response == response_options[1]:
-                                await hub.download(script_path)
-                            else:
-                                exit(1)
+                        if response == response_options[0]:
+                            await hub.run(script_path, True)
+                        elif response == response_options[1]:
+                            await hub.download(script_path)
+                        else:
+                            exit(1)
 
         finally:
             await hub.disconnect()
 
 
 class Flash(Tool):
-
 
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
