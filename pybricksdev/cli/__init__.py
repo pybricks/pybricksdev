@@ -244,42 +244,53 @@ class Run(Tool):
                             questionary.select(
                                 "Would you like to re-compile your code?",
                                 response_options,
+                                default=(
+                                    response_options[0]
+                                    if args.start
+                                    else response_options[1]
+                                ),
                             ).ask_async()
                         )
+                        with _get_script_path(args.file) as script_path:
+                            if response == response_options[0]:
+                                await hub.run(script_path, True)
+                            elif response == response_options[1]:
+                                await hub.download(script_path)
+                            else:
+                                exit()
+
                     except RuntimeError as e:
 
                         async def reconnect_hub():
-                            if await questionary.confirm(
+                            if not await questionary.confirm(
                                 "\nThe hub has been disconnected. Would you like to re-connect?"
                             ).ask_async():
-                                if args.conntype == "ble":
-                                    print(
-                                        f"Searching for {args.name or 'any hub with Pybricks service'}..."
-                                    )
-                                    device_or_address = await find_ble(args.name)
-                                    hub = PybricksHubBLE(device_or_address)
-                                elif args.conntype == "usb":
-                                    device_or_address = find_usb(
-                                        custom_match=is_pybricks_usb
-                                    )
-                                    hub = PybricksHubUSB(device_or_address)
-
-                                await hub.connect()
-                                # re-enable echoing of the hub's stdout
-                                hub.print_output = True
-                                hub._enable_line_handler = True
-                                return hub
-
-                            else:
                                 exit()
+
+                            if args.conntype == "ble":
+                                print(
+                                    f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                                )
+                                device_or_address = await find_ble(args.name)
+                                hub = PybricksHubBLE(device_or_address)
+                            elif args.conntype == "usb":
+                                device_or_address = find_usb(
+                                    custom_match=is_pybricks_usb
+                                )
+                                hub = PybricksHubUSB(device_or_address)
+
+                            await hub.connect()
+                            # re-enable echoing of the hub's stdout
+                            hub.print_output = True
+                            hub._enable_line_handler = True
+                            return hub
 
                         if (
                             hub.status_observable.value
                             & StatusFlag.POWER_BUTTON_PRESSED
                         ):
                             try:
-                                await hub._wait_for_user_program_stop(2.1)
-                                continue
+                                await hub._wait_for_user_program_stop(5)
 
                             except RuntimeError as e:
                                 if (
@@ -287,7 +298,6 @@ class Run(Tool):
                                     == ConnectionState.DISCONNECTED
                                 ):
                                     hub = await reconnect_hub()
-                                    continue
 
                                 else:
                                     raise e
@@ -300,18 +310,9 @@ class Run(Tool):
                             await asyncio.sleep(0.3)
 
                             hub = await reconnect_hub()
-                            continue
 
                         else:
                             raise e
-
-                    with _get_script_path(args.file) as script_path:
-                        if response == response_options[0]:
-                            await hub.run(script_path, True)
-                        elif response == response_options[1]:
-                            await hub.download(script_path)
-                        else:
-                            exit(1)
 
         finally:
             await hub.disconnect()
