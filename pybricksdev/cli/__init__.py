@@ -254,6 +254,10 @@ class Run(Tool):
 
                     await hub.connect()
                     # re-enable echoing of the hub's stdout
+                    hub.log_file = None
+                    hub.output = []
+                    hub._stdout_buf.clear()
+                    hub._stdout_line_queue = asyncio.Queue()
                     hub.print_output = True
                     hub._enable_line_handler = True
                     return hub
@@ -284,13 +288,16 @@ class Run(Tool):
                             else:
                                 exit()
 
+                    except HubPowerButtonPressedError:
+                        try:
+                            await hub._wait_for_user_program_stop(5)
+                        except HubDisconnectError:
+                            hub = await reconnect_hub()
+
                     except HubDisconnectError:
                         # let terminal cool off before making a new prompt
                         await asyncio.sleep(0.3)
-                        hub = reconnect_hub()
-
-                    except HubPowerButtonPressedError:
-                        hub._wait_for_user_program_stop(5)
+                        hub = await reconnect_hub()
 
         finally:
             await hub.disconnect()
