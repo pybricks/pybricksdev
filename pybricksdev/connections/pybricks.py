@@ -65,6 +65,14 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+class HubDisconnectError(Exception):
+    """Raise when a hub disconnect occurs."""
+
+
+class HubPowerButtonPressedError(Exception):
+    """Raise when the hub's power button is pressed."""
+
+
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
@@ -358,7 +366,7 @@ class PybricksHub:
                 t.cancel()
 
             if awaitable_task not in done:
-                raise RuntimeError("disconnected during operation")
+                raise HubDisconnectError("disconnected during operation")
 
             return awaitable_task.result()
 
@@ -726,9 +734,11 @@ class PybricksHub:
             t.cancel()
 
         if power_button_press_task in done:
-            raise RuntimeError("the hub's power button was pressed during operation")
+            raise HubPowerButtonPressedError(
+                "the hub's power button was pressed during operation"
+            )
         elif disconnect_task in done:
-            raise RuntimeError("the hub was disconnected during operation")
+            raise HubDisconnectError("the hub was disconnected during operation")
         return awaitable_task.result()
 
     async def _wait_for_user_program_stop(self, program_start_timeout=1):

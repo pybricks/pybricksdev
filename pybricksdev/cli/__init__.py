@@ -20,8 +20,10 @@ from argcomplete.completers import FilesCompleter
 
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
-from pybricksdev.ble.pybricks import StatusFlag
-from pybricksdev.connections import ConnectionState
+from pybricksdev.connections.pybricks import (
+    HubDisconnectError,
+    HubPowerButtonPressedError,
+)
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -233,6 +235,29 @@ class Run(Tool):
                     await hub.download(script_path)
 
             if args.stay_connected:
+
+                async def reconnect_hub():
+                    if not await questionary.confirm(
+                        "\nThe hub has been disconnected. Would you like to re-connect?"
+                    ).ask_async():
+                        exit()
+
+                    if args.conntype == "ble":
+                        print(
+                            f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                        )
+                        device_or_address = await find_ble(args.name)
+                        hub = PybricksHubBLE(device_or_address)
+                    elif args.conntype == "usb":
+                        device_or_address = find_usb(custom_match=is_pybricks_usb)
+                        hub = PybricksHubUSB(device_or_address)
+
+                    await hub.connect()
+                    # re-enable echoing of the hub's stdout
+                    hub.print_output = True
+                    hub._enable_line_handler = True
+                    return hub
+
                 response_options = [
                     "Recompile and Run",
                     "Recompile and Download",
@@ -259,60 +284,13 @@ class Run(Tool):
                             else:
                                 exit()
 
-                    except RuntimeError as e:
+                    except HubDisconnectError:
+                        # let terminal cool off before making a new prompt
+                        await asyncio.sleep(0.3)
+                        hub = reconnect_hub()
 
-                        async def reconnect_hub():
-                            if not await questionary.confirm(
-                                "\nThe hub has been disconnected. Would you like to re-connect?"
-                            ).ask_async():
-                                exit()
-
-                            if args.conntype == "ble":
-                                print(
-                                    f"Searching for {args.name or 'any hub with Pybricks service'}..."
-                                )
-                                device_or_address = await find_ble(args.name)
-                                hub = PybricksHubBLE(device_or_address)
-                            elif args.conntype == "usb":
-                                device_or_address = find_usb(
-                                    custom_match=is_pybricks_usb
-                                )
-                                hub = PybricksHubUSB(device_or_address)
-
-                            await hub.connect()
-                            # re-enable echoing of the hub's stdout
-                            hub.print_output = True
-                            hub._enable_line_handler = True
-                            return hub
-
-                        if (
-                            hub.status_observable.value
-                            & StatusFlag.POWER_BUTTON_PRESSED
-                        ):
-                            try:
-                                await hub._wait_for_user_program_stop(5)
-
-                            except RuntimeError as e:
-                                if (
-                                    hub.connection_state_observable.value
-                                    == ConnectionState.DISCONNECTED
-                                ):
-                                    hub = await reconnect_hub()
-
-                                else:
-                                    raise e
-
-                        elif (
-                            hub.connection_state_observable.value
-                            == ConnectionState.DISCONNECTED
-                        ):
-                            # let terminal cool off before making a new prompt
-                            await asyncio.sleep(0.3)
-
-                            hub = await reconnect_hub()
-
-                        else:
-                            raise e
+                    except HubPowerButtonPressedError:
+                        hub._wait_for_user_program_stop(5)
 
         finally:
             await hub.disconnect()
