@@ -357,10 +357,15 @@ class PybricksHub:
                 disconnect_event.set()
 
         with self.connection_state_observable.subscribe(handle_disconnect):
-            done, pending = await asyncio.wait(
-                {awaitable_task, disconnect_task},
-                return_when=asyncio.FIRST_COMPLETED,
-            )
+            try:
+                done, pending = await asyncio.wait(
+                    {awaitable_task, disconnect_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+            except BaseException:
+                awaitable_task.cancel()
+                disconnect_task.cancel()
+                raise
 
             for t in pending:
                 t.cancel()
