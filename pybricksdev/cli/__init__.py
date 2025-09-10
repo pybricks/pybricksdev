@@ -303,20 +303,10 @@ class Run(Tool):
                     # current program, so the menu was canceled and we are now printing
                     # the hub stdout until the user program ends on the hub.
                     try:
-                        await hub._wait_for_user_program_stop(
-                            2.25, raise_error_on_timeout=True
-                        )
+                        await hub._wait_for_power_button_release()
+                        await hub._wait_for_user_program_stop()
 
                     except HubDisconnectError:
-                        hub = await reconnect_hub()
-
-                    except asyncio.TimeoutError:
-                        # On windows, it can take significantly longer
-                        # for the device to register that the hub was
-                        # disconnected. If _wait_for_user_program_stop
-                        # throws a timeout error, we can assume that the
-                        # hub was disconnected.
-                        await hub.disconnect()
                         hub = await reconnect_hub()
 
                 except HubDisconnectError:

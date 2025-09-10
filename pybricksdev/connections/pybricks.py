@@ -741,6 +741,46 @@ class PybricksHub:
             )
         return awaitable_task.result()
 
+    async def _wait_for_power_button_release(
+        self, program_start_timeout=1, raise_error_on_timeout=False
+    ):
+        power_button_pressed: asyncio.Queue[bool] = asyncio.Queue()
+
+        with self.status_observable.pipe(
+            op.map(lambda s: bool(s & StatusFlag.POWER_BUTTON_PRESSED)),
+            op.distinct_until_changed(),
+        ).subscribe(lambda s: power_button_pressed.put_nowait(s)):
+            # The first item in the queue is the current status. The status
+            # could change before or after the last checksum is received,
+            # so this could be either true or false.
+            is_pressed = await self.race_disconnect(power_button_pressed.get())
+
+            if not is_pressed:
+                # If the button isn't already pressed,
+                # wait a short time for it to become pressed
+                try:
+                    await asyncio.wait_for(
+                        self.race_disconnect(power_button_pressed.get()),
+                        program_start_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    if raise_error_on_timeout:
+                        raise
+                    # If the button never shows as pressed,
+                    # assume that we just missed the status flag
+                    logger.debug(
+                        "timed out waiting for power button press, assuming is was a short press"
+                    )
+                    return
+
+            # At this point, we know the button is pressed, so the
+            # next item in the queue must indicate the button has
+            # been released.
+            is_pressed = await self.race_disconnect(power_button_pressed.get())
+
+            # maybe catch mistake if the code is changed
+            assert not is_pressed
+
     async def _wait_for_user_program_stop(
         self, program_start_timeout=1, raise_error_on_timeout=False
     ):
