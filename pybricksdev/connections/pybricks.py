@@ -717,24 +717,20 @@ class PybricksHub:
         power_button_press_event = asyncio.Event()
         power_button_press_task = asyncio.ensure_future(power_button_press_event.wait())
 
-        disconnect_event = asyncio.Event()
-        disconnect_task = asyncio.ensure_future(disconnect_event.wait())
-
-        def handle_disconnect(state: ConnectionState):
-            if state == ConnectionState.DISCONNECTED:
-                disconnect_event.set()
-
         def handle_power_button_press(status: StatusFlag):
             if status.value & StatusFlag.POWER_BUTTON_PRESSED:
                 power_button_press_event.set()
 
-        with self.status_observable.subscribe(
-            handle_power_button_press
-        ), self.connection_state_observable.subscribe(handle_disconnect):
-            done, pending = await asyncio.wait(
-                {awaitable_task, power_button_press_task, disconnect_task},
-                return_when=asyncio.FIRST_COMPLETED,
-            )
+        with self.status_observable.subscribe(handle_power_button_press):
+            try:
+                done, pending = await asyncio.wait(
+                    {awaitable_task, power_button_press_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+            except BaseException:
+                awaitable_task.cancel()
+                power_button_press_task.cancel()
+                raise
 
         for t in pending:
             t.cancel()
@@ -743,11 +739,11 @@ class PybricksHub:
             raise HubPowerButtonPressedError(
                 "the hub's power button was pressed during operation"
             )
-        if disconnect_task in done:
-            raise HubDisconnectError("the hub was disconnected during operation")
         return awaitable_task.result()
 
-    async def _wait_for_user_program_stop(self, program_start_timeout=1):
+    async def _wait_for_user_program_stop(
+        self, program_start_timeout=1, raise_error_on_timeout=False
+    ):
         user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
         with self.status_observable.pipe(
@@ -768,6 +764,8 @@ class PybricksHub:
                         program_start_timeout,
                     )
                 except asyncio.TimeoutError:
+                    if raise_error_on_timeout:
+                        raise
                     # if it doesn't start, assume it was a very short lived
                     # program and we just missed the status message
                     logger.debug(

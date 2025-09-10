@@ -268,16 +268,18 @@ class Run(Tool):
             ]
             while True:
                 try:
-                    response = await hub.race_power_button_press(
-                        questionary.select(
-                            "Would you like to re-compile your code?",
-                            response_options,
-                            default=(
-                                response_options[0]
-                                if args.start
-                                else response_options[1]
-                            ),
-                        ).ask_async()
+                    response = await hub.race_disconnect(
+                        hub.race_power_button_press(
+                            questionary.select(
+                                "Would you like to re-compile your code?",
+                                response_options,
+                                default=(
+                                    response_options[0]
+                                    if args.start
+                                    else response_options[1]
+                                ),
+                            ).ask_async()
+                        )
                     )
                     with _get_script_path(args.file) as script_path:
                         if response == response_options[0]:
@@ -292,8 +294,20 @@ class Run(Tool):
                     # current program, so the menu was canceled and we are now printing
                     # the hub stdout until the user program ends on the hub.
                     try:
-                        await hub._wait_for_user_program_stop(5)
+                        await hub._wait_for_user_program_stop(
+                            2.25, raise_error_on_timeout=True
+                        )
+
                     except HubDisconnectError:
+                        hub = await reconnect_hub()
+
+                    except asyncio.TimeoutError:
+                        # On windows, it takes significantly longer
+                        # for the device to register that the hub was
+                        # disconnected. If _wait_for_user_program_stop
+                        # throws a timeout error, we can assume that the
+                        # hub was disconnected.
+                        await hub.disconnect()
                         hub = await reconnect_hub()
 
                 except HubDisconnectError:
