@@ -65,12 +65,12 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class HubDisconnectError(Exception):
+class HubDisconnectError(RuntimeError):
     """Raise when a hub disconnect occurs."""
 
 
-class HubPowerButtonPressedError(Exception):
-    """Raise when the hub's power button is pressed."""
+class HubPowerButtonPressedError(RuntimeError):
+    """Raise when a task was canceled because the hub's power button was pressed."""
 
 
 class PybricksHub:
@@ -689,12 +689,13 @@ class PybricksHub:
     async def race_power_button_press(self, awaitable: Awaitable[T]) -> T:
         """
         Races an awaitable against the user pressing the power button of the hub.
-
         If the power button is pressed or the hub becomes disconnected before the awaitable is complete, a
-        ``RuntimeError`` is raised and the awaitable is canceled.
-
+        :class:`HubPowerButtonPressedError` or :class:`HubDisconnectError` is raised and the awaitable is canceled.
         Otherwise, the result of the awaitable is returned. If the awaitable
         raises an exception, that exception will be raised.
+        The intended purpose of this function is to detect when
+        the user manually starts a program on the hub. It is used instead of the program running flag
+        because the hub can send info through stdout before we can detect a change in the program running flag.
 
         Args:
             awaitable: Any awaitable such as a coroutine.
@@ -703,8 +704,8 @@ class PybricksHub:
             The result of the awaitable.
 
         Raises:
-            RuntimeError:
-                Thrown if the hub's power button is pressed or the hub is disconnected.
+            HubPowerButtonPressedError
+            HubDisconnectError
         """
         awaitable_task = asyncio.ensure_future(awaitable)
 
@@ -724,7 +725,7 @@ class PybricksHub:
 
         with self.status_observable.subscribe(
             handle_power_button_press
-        ) and self.connection_state_observable.subscribe(handle_disconnect):
+        ), self.connection_state_observable.subscribe(handle_disconnect):
             done, pending = await asyncio.wait(
                 {awaitable_task, power_button_press_task, disconnect_task},
                 return_when=asyncio.FIRST_COMPLETED,
@@ -737,7 +738,7 @@ class PybricksHub:
             raise HubPowerButtonPressedError(
                 "the hub's power button was pressed during operation"
             )
-        elif disconnect_task in done:
+        if disconnect_task in done:
             raise HubDisconnectError("the hub was disconnected during operation")
         return awaitable_task.result()
 

@@ -230,74 +230,76 @@ class Run(Tool):
                     await hub.run(script_path, args.wait or args.stay_connected)
                 else:
                     if args.stay_connected:
+                        # if the user later starts the program by pressing the button on the hub,
+                        # we still want the hub stdout to print to Python's stdout
                         hub.print_output = True
                         hub._enable_line_handler = True
                     await hub.download(script_path)
 
-            if args.stay_connected:
+            if not args.stay_connected:
+                exit()
 
-                async def reconnect_hub():
-                    if not await questionary.confirm(
-                        "\nThe hub has been disconnected. Would you like to re-connect?"
-                    ).ask_async():
-                        exit()
+            async def reconnect_hub():
+                if not await questionary.confirm(
+                    "\nThe hub has been disconnected. Would you like to re-connect?"
+                ).ask_async():
+                    exit()
 
-                    if args.conntype == "ble":
-                        print(
-                            f"Searching for {args.name or 'any hub with Pybricks service'}..."
-                        )
-                        device_or_address = await find_ble(args.name)
-                        hub = PybricksHubBLE(device_or_address)
-                    elif args.conntype == "usb":
-                        device_or_address = find_usb(custom_match=is_pybricks_usb)
-                        hub = PybricksHubUSB(device_or_address)
+                if args.conntype == "ble":
+                    print(
+                        f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                    )
+                    device_or_address = await find_ble(args.name)
+                    hub = PybricksHubBLE(device_or_address)
+                elif args.conntype == "usb":
+                    device_or_address = find_usb(custom_match=is_pybricks_usb)
+                    hub = PybricksHubUSB(device_or_address)
 
-                    await hub.connect()
-                    # re-enable echoing of the hub's stdout
-                    hub.log_file = None
-                    hub.output = []
-                    hub._stdout_buf.clear()
-                    hub._stdout_line_queue = asyncio.Queue()
-                    hub.print_output = True
-                    hub._enable_line_handler = True
-                    return hub
+                await hub.connect()
+                # re-enable echoing of the hub's stdout
+                hub._enable_line_handler = True
+                hub.print_output = True
+                return hub
 
-                response_options = [
-                    "Recompile and Run",
-                    "Recompile and Download",
-                    "Exit",
-                ]
-                while True:
+            response_options = [
+                "Recompile and Run",
+                "Recompile and Download",
+                "Exit",
+            ]
+            while True:
+                try:
+                    response = await hub.race_power_button_press(
+                        questionary.select(
+                            "Would you like to re-compile your code?",
+                            response_options,
+                            default=(
+                                response_options[0]
+                                if args.start
+                                else response_options[1]
+                            ),
+                        ).ask_async()
+                    )
+                    with _get_script_path(args.file) as script_path:
+                        if response == response_options[0]:
+                            await hub.run(script_path, wait=True)
+                        elif response == response_options[1]:
+                            await hub.download(script_path)
+                        else:
+                            exit()
+
+                except HubPowerButtonPressedError:
+                    # This means the user pressed the button on the hub to re-start the
+                    # current program, so the menu was canceled and we are now printing
+                    # the hub stdout until the user program ends on the hub.
                     try:
-                        response = await hub.race_power_button_press(
-                            questionary.select(
-                                "Would you like to re-compile your code?",
-                                response_options,
-                                default=(
-                                    response_options[0]
-                                    if args.start
-                                    else response_options[1]
-                                ),
-                            ).ask_async()
-                        )
-                        with _get_script_path(args.file) as script_path:
-                            if response == response_options[0]:
-                                await hub.run(script_path, True)
-                            elif response == response_options[1]:
-                                await hub.download(script_path)
-                            else:
-                                exit()
-
-                    except HubPowerButtonPressedError:
-                        try:
-                            await hub._wait_for_user_program_stop(5)
-                        except HubDisconnectError:
-                            hub = await reconnect_hub()
-
+                        await hub._wait_for_user_program_stop(5)
                     except HubDisconnectError:
-                        # let terminal cool off before making a new prompt
-                        await asyncio.sleep(0.3)
                         hub = await reconnect_hub()
+
+                except HubDisconnectError:
+                    # let terminal cool off before making a new prompt
+                    await asyncio.sleep(0.3)
+                    hub = await reconnect_hub()
 
         finally:
             await hub.disconnect()
