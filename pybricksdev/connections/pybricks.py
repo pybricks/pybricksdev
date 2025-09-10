@@ -741,9 +741,7 @@ class PybricksHub:
             )
         return awaitable_task.result()
 
-    async def _wait_for_power_button_release(
-        self, program_start_timeout=1, raise_error_on_timeout=False
-    ):
+    async def _wait_for_power_button_release(self):
         power_button_pressed: asyncio.Queue[bool] = asyncio.Queue()
 
         with self.status_observable.pipe(
@@ -761,11 +759,9 @@ class PybricksHub:
                 try:
                     await asyncio.wait_for(
                         self.race_disconnect(power_button_pressed.get()),
-                        program_start_timeout,
+                        1,
                     )
                 except asyncio.TimeoutError:
-                    if raise_error_on_timeout:
-                        raise
                     # If the button never shows as pressed,
                     # assume that we just missed the status flag
                     logger.debug(
@@ -781,9 +777,7 @@ class PybricksHub:
             # maybe catch mistake if the code is changed
             assert not is_pressed
 
-    async def _wait_for_user_program_stop(
-        self, program_start_timeout=1, raise_error_on_timeout=False
-    ):
+    async def _wait_for_user_program_stop(self):
         user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
         with self.status_observable.pipe(
@@ -801,11 +795,9 @@ class PybricksHub:
                 try:
                     await asyncio.wait_for(
                         self.race_disconnect(user_program_running.get()),
-                        program_start_timeout,
+                        1,
                     )
                 except asyncio.TimeoutError:
-                    if raise_error_on_timeout:
-                        raise
                     # if it doesn't start, assume it was a very short lived
                     # program and we just missed the status message
                     logger.debug(
