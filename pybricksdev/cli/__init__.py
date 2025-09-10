@@ -268,6 +268,15 @@ class Run(Tool):
             ]
             while True:
                 try:
+                    if args.file is sys.stdin:
+                        await hub.race_disconnect(
+                            hub.race_power_button_press(
+                                questionary.press_any_key_to_continue(
+                                    "The hub will stay connected and echo its output to the terminal. Press any key to exit."
+                                ).ask_async()
+                            )
+                        )
+                        return
                     response = await hub.race_disconnect(
                         hub.race_power_button_press(
                             questionary.select(
@@ -302,7 +311,7 @@ class Run(Tool):
                         hub = await reconnect_hub()
 
                     except asyncio.TimeoutError:
-                        # On windows, it takes significantly longer
+                        # On windows, it can take significantly longer
                         # for the device to register that the hub was
                         # disconnected. If _wait_for_user_program_stop
                         # throws a timeout error, we can assume that the
