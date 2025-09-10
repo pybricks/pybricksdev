@@ -237,7 +237,7 @@ class Run(Tool):
                     await hub.download(script_path)
 
             if not args.stay_connected:
-                exit()
+                return
 
             async def reconnect_hub():
                 if not await questionary.confirm(
@@ -285,7 +285,7 @@ class Run(Tool):
                         elif response == response_options[1]:
                             await hub.download(script_path)
                         else:
-                            exit()
+                            return
 
                 except HubPowerButtonPressedError:
                     # This means the user pressed the button on the hub to re-start the
