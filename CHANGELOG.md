@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added the `--stay-connected` arg to the `pybricksdev run`
+    command, allowing re-compiling and running the input file. Also echoes
+    the hub's output to the console when manually running a program.
+    ([pybricksdev#122])
+
+[pybricksdev#122]: https://github.com/pybricks/pybricksdev/pull/122
+
+
 ## [2.0.1] - 2025-08-11
 
 ### Fixed

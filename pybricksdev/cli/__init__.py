@@ -15,10 +15,15 @@ from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
 
 import argcomplete
+import questionary
 from argcomplete.completers import FilesCompleter
 
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
+from pybricksdev.connections.pybricks import (
+    HubDisconnectError,
+    HubPowerButtonPressedError,
+)
 
 PROG_NAME = (
     f"{path.basename(sys.executable)} -m {MODULE_NAME}"
@@ -160,6 +165,13 @@ class Run(Tool):
             default=True,
         )
 
+        parser.add_argument(
+            "--stay-connected",
+            help="Add a menu option to resend the code with bluetooth instead of disconnecting from the robot after the program ends.",
+            action=argparse.BooleanOptionalAction,
+            default=False,
+        )
+
     async def run(self, args: argparse.Namespace):
 
         # Pick the right connection
@@ -215,14 +227,99 @@ class Run(Tool):
         try:
             with _get_script_path(args.file) as script_path:
                 if args.start:
-                    await hub.run(script_path, args.wait)
+                    await hub.run(script_path, args.wait or args.stay_connected)
                 else:
+                    if args.stay_connected:
+                        # if the user later starts the program by pressing the button on the hub,
+                        # we still want the hub stdout to print to Python's stdout
+                        hub.print_output = True
+                        hub._enable_line_handler = True
                     await hub.download(script_path)
+
+            if not args.stay_connected:
+                return
+
+            async def reconnect_hub():
+                if not await questionary.confirm(
+                    "\nThe hub has been disconnected. Would you like to re-connect?"
+                ).ask_async():
+                    exit()
+
+                if args.conntype == "ble":
+                    print(
+                        f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                    )
+                    device_or_address = await find_ble(args.name)
+                    hub = PybricksHubBLE(device_or_address)
+                elif args.conntype == "usb":
+                    device_or_address = find_usb(custom_match=is_pybricks_usb)
+                    hub = PybricksHubUSB(device_or_address)
+
+                await hub.connect()
+                # re-enable echoing of the hub's stdout
+                hub._enable_line_handler = True
+                hub.print_output = True
+                return hub
+
+            response_options = [
+                "Recompile and Run",
+                "Recompile and Download",
+                "Exit",
+            ]
+            while True:
+                try:
+                    if args.file is sys.stdin:
+                        await hub.race_disconnect(
+                            hub.race_power_button_press(
+                                questionary.press_any_key_to_continue(
+                                    "The hub will stay connected and echo its output to the terminal. Press any key to exit."
+                                ).ask_async()
+                            )
+                        )
+                        return
+                    response = await hub.race_disconnect(
+                        hub.race_power_button_press(
+                            questionary.select(
+                                "Would you like to re-compile your code?",
+                                response_options,
+                                default=(
+                                    response_options[0]
+                                    if args.start
+                                    else response_options[1]
+                                ),
+                            ).ask_async()
+                        )
+                    )
+                    with _get_script_path(args.file) as script_path:
+                        if response == response_options[0]:
+                            await hub.run(script_path, wait=True)
+                        elif response == response_options[1]:
+                            await hub.download(script_path)
+                        else:
+                            return
+
+                except HubPowerButtonPressedError:
+                    # This means the user pressed the button on the hub to re-start the
+                    # current program, so the menu was canceled and we are now printing
+                    # the hub stdout until the user program ends on the hub.
+                    try:
+                        await hub._wait_for_power_button_release()
+                        await hub._wait_for_user_program_stop()
+
+                    except HubDisconnectError:
+                        hub = await reconnect_hub()
+
+                except HubDisconnectError:
+                    # let terminal cool off before making a new prompt
+                    await asyncio.sleep(0.3)
+                    hub = await reconnect_hub()
+
         finally:
             await hub.disconnect()
 
 
 class Flash(Tool):
+
     def add_parser(self, subparsers: argparse._SubParsersAction):
         parser = subparsers.add_parser(
             "flash", help="flash firmware on a LEGO Powered Up device"

@@ -1080,6 +1080,22 @@ files = [
 ]
 
 [[package]]
+name = "questionary"
+version = "2.1.1"
+description = "Python library to build pretty command line user prompts ⭐️"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "python_version < \"4\""
+files = [
+    {file = "questionary-2.1.1-py3-none-any.whl", hash = "sha256:a51af13f345f1cdea62347589fbb6df3b290306ab8930713bfae4d475a7d4a59"},
+    {file = "questionary-2.1.1.tar.gz", hash = "sha256:3d7e980292bb0107abaa79c68dd3eee3c561b83a0f89ae482860b181c8bd412d"},
+]
+
+[package.dependencies]
+prompt_toolkit = ">=2.0,<4.0"
+
+[[package]]
 name = "reactivex"
 version = "4.0.4"
 description = "ReactiveX (Rx) for Python"
@@ -1716,4 +1732,4 @@ all = ["winrt-Windows.Foundation.Collections[all] (>=3.2.1.0,<3.3.0.0)", "winrt-
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "3d2a87a44fe61f7cbe48f13302f75cdcfa991b2ffc546e12818b9999050c5959"
+content-hash = "71dd6b61b42043573f4f6f7d1b89ae384c60f320c10d45b9095125d1dec015a1"

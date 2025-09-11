@@ -65,6 +65,14 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+class HubDisconnectError(RuntimeError):
+    """Raise when a hub disconnect occurs."""
+
+
+class HubPowerButtonPressedError(RuntimeError):
+    """Raise when a task was canceled because the hub's power button was pressed."""
+
+
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
@@ -363,7 +371,7 @@ class PybricksHub:
                 t.cancel()
 
             if awaitable_task not in done:
-                raise RuntimeError("disconnected during operation")
+                raise HubDisconnectError("disconnected during operation")
 
             return awaitable_task.result()
 
@@ -683,6 +691,92 @@ class PybricksHub:
         if wait:
             await self._wait_for_user_program_stop()
 
+    async def race_power_button_press(self, awaitable: Awaitable[T]) -> T:
+        """
+        Races an awaitable against the user pressing the power button of the hub.
+        If the power button is pressed or the hub becomes disconnected before the awaitable is complete, a
+        :class:`HubPowerButtonPressedError` or :class:`HubDisconnectError` is raised and the awaitable is canceled.
+        Otherwise, the result of the awaitable is returned. If the awaitable
+        raises an exception, that exception will be raised.
+        The intended purpose of this function is to detect when
+        the user manually starts a program on the hub. It is used instead of the program running flag
+        because the hub can send info through stdout before we can detect a change in the program running flag.
+
+        Args:
+            awaitable: Any awaitable such as a coroutine.
+
+        Returns:
+            The result of the awaitable.
+
+        Raises:
+            HubPowerButtonPressedError
+            HubDisconnectError
+        """
+        awaitable_task = asyncio.ensure_future(awaitable)
+
+        power_button_press_event = asyncio.Event()
+        power_button_press_task = asyncio.ensure_future(power_button_press_event.wait())
+
+        def handle_power_button_press(status: StatusFlag):
+            if status.value & StatusFlag.POWER_BUTTON_PRESSED:
+                power_button_press_event.set()
+
+        with self.status_observable.subscribe(handle_power_button_press):
+            try:
+                done, pending = await asyncio.wait(
+                    {awaitable_task, power_button_press_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+            except BaseException:
+                awaitable_task.cancel()
+                power_button_press_task.cancel()
+                raise
+
+        for t in pending:
+            t.cancel()
+
+        if power_button_press_task in done:
+            raise HubPowerButtonPressedError(
+                "the hub's power button was pressed during operation"
+            )
+        return awaitable_task.result()
+
+    async def _wait_for_power_button_release(self):
+        power_button_pressed: asyncio.Queue[bool] = asyncio.Queue()
+
+        with self.status_observable.pipe(
+            op.map(lambda s: bool(s & StatusFlag.POWER_BUTTON_PRESSED)),
+            op.distinct_until_changed(),
+        ).subscribe(lambda s: power_button_pressed.put_nowait(s)):
+            # The first item in the queue is the current status. The status
+            # could change before or after the last checksum is received,
+            # so this could be either true or false.
+            is_pressed = await self.race_disconnect(power_button_pressed.get())
+
+            if not is_pressed:
+                # If the button isn't already pressed,
+                # wait a short time for it to become pressed
+                try:
+                    await asyncio.wait_for(
+                        self.race_disconnect(power_button_pressed.get()),
+                        1,
+                    )
+                except asyncio.TimeoutError:
+                    # If the button never shows as pressed,
+                    # assume that we just missed the status flag
+                    logger.debug(
+                        "timed out waiting for power button press, assuming is was a short press"
+                    )
+                    return
+
+            # At this point, we know the button is pressed, so the
+            # next item in the queue must indicate the button has
+            # been released.
+            is_pressed = await self.race_disconnect(power_button_pressed.get())
+
+            # maybe catch mistake if the code is changed
+            assert not is_pressed
+
     async def _wait_for_user_program_stop(self):
         user_program_running: asyncio.Queue[bool] = asyncio.Queue()
 
@@ -700,7 +794,8 @@ class PybricksHub:
                 # for it to start
                 try:
                     await asyncio.wait_for(
-                        self.race_disconnect(user_program_running.get()), 1
+                        self.race_disconnect(user_program_running.get()),
+                        1,
                     )
                 except asyncio.TimeoutError:
                     # if it doesn't start, assume it was a very short lived
