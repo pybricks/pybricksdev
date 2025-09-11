@@ -1,6 +1,6 @@
 [project]
 name = "pybricksdev"
-version = "2.0.1"
+version = "2.1.0"
 description = "Pybricks developer tools"
 authors = [{ name = "The Pybricks Authors", email = "dev@pybricks.com" }]
 maintainers = [
