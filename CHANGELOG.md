@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.1] - 2025-09-13
 
 ### Fixed
-- Fixed USB/DFU hub not rebooting after flashing firmware on Windows (pybricksdev#112).
+- Fixed USB/DFU hub not rebooting after flashing firmware on Windows ([pybricksdev#112]).
 
 [pybricksdev#112]: https://github.com/pybricks/pybricksdev/issues/112
 
