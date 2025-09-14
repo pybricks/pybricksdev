@@ -18,12 +18,12 @@ See document UM0391 for a description of the DFuse file.
 from __future__ import print_function
 
 import argparse
-import collections
-import inspect
 import re
 import struct
 import sys
 import zlib
+from collections.abc import Callable
+from typing import Any, NamedTuple, TypedDict
 
 import usb.core
 import usb.util
@@ -84,31 +84,27 @@ __verbose = None
 # USB DFU interface
 __DFU_INTERFACE = 0
 
-if "length" in inspect.getfullargspec(usb.util.get_string).args:
-    # PyUSB 1.0.0.b1 has the length argument
-    def get_string(dev, index):
-        return usb.util.get_string(dev, 255, index)
 
-else:
-    # PyUSB 1.0.0.b2 dropped the length argument
-    def get_string(dev, index):
-        return usb.util.get_string(dev, index)
+class Element(TypedDict):
+    num: int
+    addr: int
+    size: int
+    data: bytes
 
 
-def find_dfu_cfg_descr(descr):
+class CfgDescr(NamedTuple):
+    bLength: int
+    bDescriptorType: int
+    bmAttributes: int
+    wDetachTimeOut: int
+    wTransferSize: int
+    bcdDFUVersion: int
+
+
+def find_dfu_cfg_descr(descr: bytes) -> CfgDescr | None:
     if len(descr) == 9 and descr[0] == 9 and descr[1] == _DFU_DESCRIPTOR_TYPE:
-        nt = collections.namedtuple(
-            "CfgDescr",
-            [
-                "bLength",
-                "bDescriptorType",
-                "bmAttributes",
-                "wDetachTimeOut",
-                "wTransferSize",
-                "bcdDFUVersion",
-            ],
-        )
-        return nt(*struct.unpack("<BBBHHH", bytearray(descr)))
+        return CfgDescr(*struct.unpack("<BBBHHH", bytearray(descr)))
+
     return None
 
 
@@ -138,7 +134,7 @@ def init():
                 break
 
     # Get device into idle state
-    for attempt in range(4):
+    for _ in range(4):
         status = get_status()
         if status == __DFU_STATE_DFU_IDLE:
             break
@@ -151,30 +147,30 @@ def init():
             clr_status()
 
 
-def abort_request():
+def abort_request() -> None:
     """Sends an abort request."""
     __dev.ctrl_transfer(0x21, __DFU_ABORT, 0, __DFU_INTERFACE, None, __TIMEOUT)
 
 
-def clr_status():
+def clr_status() -> None:
     """Clears any error status (perhaps left over from a previous session)."""
     __dev.ctrl_transfer(0x21, __DFU_CLRSTATUS, 0, __DFU_INTERFACE, None, __TIMEOUT)
 
 
-def get_status():
+def get_status() -> int:
     """Get the status of the last operation."""
     stat = __dev.ctrl_transfer(0xA1, __DFU_GETSTATUS, 0, __DFU_INTERFACE, 6, 20000)
 
     # firmware can provide an optional string for any error
     if stat[5]:
-        message = get_string(__dev, stat[5])
+        message = usb.util.get_string(__dev, stat[5])
         if message:
             print(message)
 
     return stat[4]
 
 
-def check_status(stage, expected):
+def check_status(stage: str, expected: int) -> None:
     status = get_status()
     if status != expected:
         raise SystemExit(
@@ -194,7 +190,7 @@ def mass_erase():
     check_status("erase", __DFU_STATE_DFU_DOWNLOAD_IDLE)
 
 
-def page_erase(addr):
+def page_erase(addr: int) -> None:
     """Erases a single page."""
     if __verbose:
         print("Erasing page: 0x%x..." % (addr))
@@ -210,7 +206,7 @@ def page_erase(addr):
     check_status("erase", __DFU_STATE_DFU_DOWNLOAD_IDLE)
 
 
-def set_address(addr):
+def set_address(addr: int) -> None:
     """Sets the address for the next operation."""
     # Send DNLOAD with first byte=0x21 and page address
     buf = struct.pack("<BI", 0x21, addr)
@@ -223,7 +219,13 @@ def set_address(addr):
     check_status("set address", __DFU_STATE_DFU_DOWNLOAD_IDLE)
 
 
-def write_memory(addr, buf, progress=None, progress_addr=0, progress_size=0):
+def write_memory(
+    addr: int,
+    buf: bytes,
+    progress: Callable[[int, int, int], None] | None = None,
+    progress_addr: int = 0,
+    progress_size: int = 0,
+) -> None:
     """Writes a buffer into memory. This routine assumes that memory has
     already been erased.
     """
@@ -268,7 +270,7 @@ def write_memory(addr, buf, progress=None, progress_addr=0, progress_size=0):
         xfer_bytes += chunk
 
 
-def write_page(buf, xfer_offset):
+def write_page(buf: bytes, xfer_offset: int) -> None:
     """Writes a single page. This routine assumes that memory has already
     been erased.
     """
@@ -291,7 +293,7 @@ def write_page(buf, xfer_offset):
         print("Write: 0x%x " % (xfer_base + xfer_offset))
 
 
-def exit_dfu():
+def exit_dfu() -> None:
     """Exit DFU mode, and start running the program."""
     # Set jump address
     set_address(0x08000000)
@@ -310,12 +312,12 @@ def exit_dfu():
         pass
 
 
-def named(values, names):
+def named(values: tuple[Any], names: str) -> dict[str, Any]:
     """Creates a dict with `names` as fields, and `values` as values."""
     return dict(zip(names.split(), values))
 
 
-def consume(fmt, data, names):
+def consume(fmt: str, data: bytes, names: str) -> tuple[dict[str, Any], bytes]:
     """Parses the struct defined by `fmt` from `data`, stores the parsed fields
     into a named tuple using `names`. Returns the named tuple, and the data
     with the struct stripped off."""
@@ -324,17 +326,17 @@ def consume(fmt, data, names):
     return named(struct.unpack(fmt, data[:size]), names), data[size:]
 
 
-def cstring(string):
+def cstring(string: bytes) -> str:
     """Extracts a null-terminated string from a byte array."""
     return string.decode("utf-8").split("\0", 1)[0]
 
 
-def compute_crc(data):
+def compute_crc(data: bytes) -> int:
     """Computes the CRC32 value for the data passed in."""
     return 0xFFFFFFFF & -zlib.crc32(data) - 1
 
 
-def read_dfu_file(filename):
+def read_dfu_file(filename: str) -> list[Element] | None:
     """Reads a DFU file, and parses the individual elements from the file.
     Returns an array of elements. Each element is a dictionary with the
     following keys:
@@ -349,7 +351,7 @@ def read_dfu_file(filename):
     with open(filename, "rb") as fin:
         data = fin.read()
     crc = compute_crc(data[:-4])
-    elements = []
+    elements: list[Element] = []
 
     # Decode the DFU Prefix
     #
@@ -430,11 +432,11 @@ def read_dfu_file(filename):
     )
     if crc != dfu_suffix["crc"]:
         print("CRC ERROR: computed crc32 is 0x%08x" % crc)
-        return
+        return None
     data = data[16:]
     if data:
         print("PARSE ERROR")
-        return
+        return None
 
     return elements
 
@@ -444,13 +446,15 @@ class FilterDFU(object):
     mode.
     """
 
-    def __call__(self, device):
+    def __call__(self, device: usb.core.Device) -> bool | None:
         for cfg in device:
             for intf in cfg:
                 return intf.bInterfaceClass == 0xFE and intf.bInterfaceSubClass == 1
 
+        return None
 
-def get_dfu_devices(*args, **kwargs):
+
+def get_dfu_devices(*args: Any, **kwargs: Any) -> list[usb.core.Device]:
     """Returns a list of USB devices which are currently in DFU mode.
     Additional filters (like idProduct and idVendor) can be passed in
     to refine the search.
@@ -460,7 +464,7 @@ def get_dfu_devices(*args, **kwargs):
     return list(usb.core.find(*args, find_all=True, custom_match=FilterDFU(), **kwargs))
 
 
-def get_memory_layout(device):
+def get_memory_layout(device: usb.core.Device) -> list[dict[str, Any]]:
     """Returns an array which identifies the memory layout. Each entry
     of the array will contain a dictionary with the following keys:
         addr        - Address of this memory segment.
@@ -472,7 +476,7 @@ def get_memory_layout(device):
 
     cfg = device[0]
     intf = cfg[(0, 0)]
-    mem_layout_str = get_string(device, intf.iInterface)
+    mem_layout_str = usb.util.get_string(device, intf.iInterface)
     mem_layout = mem_layout_str.split("/")
     result = []
     for mem_layout_index in range(1, len(mem_layout), 2):
@@ -521,7 +525,11 @@ def list_dfu_devices(*args, **kwargs):
             )
 
 
-def write_elements(elements, mass_erase_used, progress=None):
+def write_elements(
+    elements: list[Element],
+    mass_erase_used: bool,
+    progress: Callable[[int, int, int], None] | None = None,
+):
     """Writes the indicated elements into the target memory,
     erasing as needed.
     """
@@ -556,7 +564,7 @@ def write_elements(elements, mass_erase_used, progress=None):
                 progress(elem_addr, addr - elem_addr, elem_size)
 
 
-def cli_progress(addr, offset, size):
+def cli_progress(addr: int, offset: int, size: int) -> None:
     """Prints a progress report suitable for use on the command line."""
     width = 25
     done = offset * width // size
@@ -574,7 +582,7 @@ def cli_progress(addr, offset, size):
         print("")
 
 
-def main():
+def main() -> None:
     """Test program for verifying this files functionality."""
     global __verbose
     global __VID
@@ -617,7 +625,6 @@ def main():
     args = parser.parse_args()
 
     __verbose = args.verbose
-
     __VID = args.vid
     __PID = args.pid
 

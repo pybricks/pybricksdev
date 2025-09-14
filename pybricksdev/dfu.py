@@ -16,6 +16,7 @@ from usb.core import NoBackendError, USBError
 from pybricksdev import resources
 from pybricksdev._vendored import dfu_create, dfu_upload
 from pybricksdev.ble.lwp3.bytecodes import HubKind
+from pybricksdev.firmware import AnyFirmwareMetadata
 from pybricksdev.usb import (
     LEGO_USB_VID,
     MINDSTORMS_INVENTOR_DFU_USB_PID,
@@ -35,7 +36,7 @@ ALL_PIDS = {
 ALL_DEVICES = [f"{LEGO_USB_VID:04x}:{pid:04x}" for pid in ALL_PIDS.keys()]
 
 
-def _get_dfu_util() -> ContextManager[os.PathLike]:
+def _get_dfu_util() -> ContextManager[os.PathLike[str] | str]:
     """Gets ``dfu-util`` command line tool path.
 
     Returns: Context manager containing the path. The path may no longer be
@@ -61,7 +62,7 @@ def _get_dfu_util() -> ContextManager[os.PathLike]:
     return nullcontext(dfu_util)
 
 
-def _get_vid_pid(dfu_util: os.PathLike) -> str:
+def _get_vid_pid(dfu_util: os.PathLike[str] | str) -> str:
     """
     Gets the VID and PID of a connected LEGO DFU device.
 
@@ -158,12 +159,12 @@ def restore_dfu(file: BinaryIO) -> None:
             )
 
 
-def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
+def flash_dfu(firmware_bin: bytes, metadata: AnyFirmwareMetadata) -> None:
     """Flashes a firmware file using DFU."""
 
     with TemporaryDirectory() as out_dir:
         outfile = os.path.join(out_dir, "firmware.dfu")
-        target = {"address": FIRMWARE_ADDRESS, "data": firmware_bin}
+        target: dfu_create.Image = {"address": FIRMWARE_ADDRESS, "data": firmware_bin}
 
         try:
             # Determine correct product ID
@@ -195,6 +196,7 @@ def flash_dfu(firmware_bin: bytes, metadata: dict) -> None:
             dfu_upload.__PID = product_id
             dfu_upload.init()
             elements = dfu_upload.read_dfu_file(outfile)
+            assert elements is not None
 
             # Erase flash
             print("Erasing flash...")

@@ -13,28 +13,29 @@ import struct
 import sys
 import zlib
 from optparse import OptionParser
+from typing import Any, TypedDict
 
 DEFAULT_DEVICE = "0x0483:0xdf11"
 
 
-def named(tuple, names):
+def named(tuple: tuple[Any], names: str) -> dict[str, Any]:
     return dict(zip(names.split(), tuple))
 
 
-def consume(fmt, data, names):
+def consume(fmt: str, data: bytes, names: str) -> tuple[dict[str, Any], bytes]:
     n = struct.calcsize(fmt)
     return named(struct.unpack(fmt, data[:n]), names), data[n:]
 
 
-def cstring(string):
+def cstring(string: str) -> str:
     return string.split("\0", 1)[0]
 
 
-def compute_crc(data):
+def compute_crc(data: bytes) -> int:
     return 0xFFFFFFFF & -zlib.crc32(data) - 1
 
 
-def parse(file, dump_images=False):
+def parse(file: str, dump_images: bool = False):
     print('File: "%s"' % file)
     data = open(file, "rb").read()
     crc = compute_crc(data[:-4])
@@ -84,10 +85,16 @@ def parse(file, dump_images=False):
         print("PARSE ERROR")
 
 
-def build(file, targets, device=DEFAULT_DEVICE):
+class Image(TypedDict):
+    address: int
+    data: bytes
+
+
+def build(file: str, targets: list[list[Image]], device: str = DEFAULT_DEVICE) -> None:
     data = b""
-    for t, target in enumerate(targets):
+    for target in targets:
         tdata = b""
+
         for image in target:
             # pad image to 8 bytes (needed at least for L476)
             pad = (8 - len(image["data"]) % 8) % 8
@@ -143,7 +150,7 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if options.binfiles and len(args) == 1:
-        target = []
+        target: list[Image] = []
         for arg in options.binfiles:
             try:
                 address, binfile = arg.split(":", 1)
