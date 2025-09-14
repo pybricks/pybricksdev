@@ -225,20 +225,24 @@ def flash_dfu(firmware_bin: bytes, metadata: AnyFirmwareMetadata) -> None:
             # if libusb was not found, try using dfu-util command line tool
 
             with _get_dfu_util() as dfu_util:
-                dev_id = _get_vid_pid(dfu_util)
-
-                dfu_create.build(outfile, [[target]], dev_id)
+                with open(os.path.join(out_dir, "firmware.bin"), "wb") as bin_file:
+                    bin_file.write(firmware_bin)
 
                 exit(
                     call(
                         [
                             dfu_util,
                             "--device",
-                            f",{dev_id}",
+                            f",{_get_vid_pid(dfu_util)}",
                             "--alt",
                             "0",
+                            # We have to use dfuse option to be able to use
+                            # "leave" to exit DFU mode after flashing. --reset
+                            # doesn't work on Windows, so we can't use a .dfu file
+                            "--dfuse-address",
+                            f"{target['address']}:leave",
                             "--download",
-                            outfile,
+                            bin_file.name,
                         ]
                     )
                 )
