@@ -284,21 +284,23 @@ class Run(Tool):
                                 "Would you like to re-compile your code?",
                                 response_options,
                                 default=(
-                                    response_options[0]
+                                    response_options[1]
                                     if args.start
-                                    else response_options[1]
+                                    else response_options[2]
                                 ),
                             ).ask_async()
                         )
                     )
                     with _get_script_path(args.file) as script_path:
                         if response == response_options[0]:
-                            args.file = os.path.abspath(
-                                await hub.race_disconnect(
-                                    hub.race_power_button_press(
-                                        questionary.path(
-                                            "What file would you like to use?"
-                                        ).ask_async()
+                            args.file = open(
+                                os.path.abspath(
+                                    await hub.race_disconnect(
+                                        hub.race_power_button_press(
+                                            questionary.path(
+                                                "What file would you like to use?"
+                                            ).ask_async()
+                                        )
                                     )
                                 )
                             )
