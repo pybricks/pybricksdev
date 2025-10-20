@@ -293,6 +293,7 @@ class Run(Tool):
                     )
                     with _get_script_path(args.file) as script_path:
                         if response == response_options[0]:
+                            args.file.close()
                             args.file = open(
                                 await hub.race_disconnect(
                                     hub.race_power_button_press(
