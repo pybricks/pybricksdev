@@ -262,6 +262,7 @@ class Run(Tool):
                 return hub
 
             response_options = [
+                "Change Target File",
                 "Recompile and Run",
                 "Recompile and Download",
                 "Exit",
@@ -292,8 +293,18 @@ class Run(Tool):
                     )
                     with _get_script_path(args.file) as script_path:
                         if response == response_options[0]:
-                            await hub.run(script_path, wait=True)
+                            args.file = os.path.abspath(
+                                await hub.race_disconnect(
+                                    hub.race_power_button_press(
+                                        questionary.path(
+                                            "What file would you like to use?"
+                                        ).ask_async()
+                                    )
+                                )
+                            )
                         elif response == response_options[1]:
+                            await hub.run(script_path, wait=True)
+                        elif response == response_options[2]:
                             await hub.download(script_path)
                         else:
                             return
