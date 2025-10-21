@@ -291,22 +291,28 @@ class Run(Tool):
                             ).ask_async()
                         )
                     )
-                    with _get_script_path(args.file) as script_path:
-                        if response == response_options[0]:
-                            args.file.close()
-                            args.file = open(
-                                await hub.race_disconnect(
-                                    hub.race_power_button_press(
-                                        questionary.path(
-                                            "What file would you like to use?"
-                                        ).ask_async()
-                                    )
+
+                    if response == response_options[0]:
+                        args.file.close()
+                        args.file = open(
+                            await hub.race_disconnect(
+                                hub.race_power_button_press(
+                                    questionary.path(
+                                        "What file would you like to use?"
+                                    ).ask_async()
                                 )
                             )
+                        )
+
+                    with _get_script_path(args.file) as script_path:
+                        # send the new target file to the hub
+                        if (
+                            response == response_options[0]
+                            or response == response_options[2]
+                        ):
+                            await hub.download(script_path)
                         elif response == response_options[1]:
                             await hub.run(script_path, wait=True)
-                        elif response == response_options[2]:
-                            await hub.download(script_path)
                         else:
                             return
 
@@ -325,6 +331,9 @@ class Run(Tool):
                     # let terminal cool off before making a new prompt
                     await asyncio.sleep(0.3)
                     hub = await reconnect_hub()
+
+                except FileNotFoundError:
+                    print("Your file is invalid.")
 
         finally:
             await hub.disconnect()
