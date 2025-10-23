@@ -13,7 +13,7 @@ messages used in the `LWP3 protocol`_.
 import abc
 import struct
 from enum import IntEnum
-from typing import Any, NamedTuple, Union, overload
+from typing import Any, NamedTuple, overload
 
 from pybricksdev.ble.lwp3.bytecodes import (
     MAX_NAME_SIZE,
@@ -1211,7 +1211,7 @@ class PortModeInfoFormatMessage(AbstractPortModeInfoMessage):
 
 
 class PortValueMessage(AbstractMessage):
-    def __init__(self, port: PortID, fmt: str, *values: Union[int, float]) -> None:
+    def __init__(self, port: PortID, fmt: str, *values: int | float) -> None:
         super().__init__(4 + struct.calcsize(fmt), MessageKind.PORT_VALUE)
 
         self._data[3] = port
@@ -1221,7 +1221,7 @@ class PortValueMessage(AbstractMessage):
     def port(self) -> PortID:
         return PortID(self._data[3])
 
-    def unpack(self, fmt: str) -> tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 4)
 
     def __repr__(self) -> str:
@@ -1232,7 +1232,7 @@ class PortValueMessage(AbstractMessage):
 
 class PortValueComboMessage(AbstractMessage):
     def __init__(
-        self, port: PortID, modes: list[int], fmt: str, *values: Union[int, float]
+        self, port: PortID, modes: list[int], fmt: str, *values: int | float
     ) -> None:
         super().__init__(6 + struct.calcsize(fmt), MessageKind.PORT_VALUE_COMBO)
 
@@ -1253,7 +1253,7 @@ class PortValueComboMessage(AbstractMessage):
         (flags,) = struct.unpack_from("<H", self._data, 4)
         return [m for m in range(16) if flags & (1 << m)]
 
-    def unpack(self, fmt: str) -> tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 6)
 
     def __repr__(self) -> str:
@@ -1450,7 +1450,7 @@ class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessa
         end: EndInfo,
         mode: int,
         fmt: str,
-        *values: Union[int, float],
+        *values: int | float,
     ) -> None:
         super().__init__(
             7 + struct.calcsize(fmt),
@@ -1467,7 +1467,7 @@ class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessa
     def mode(self) -> int:
         return self._data[6]
 
-    def unpack(self, fmt: str) -> tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 7)
 
     def __repr__(self) -> str:
@@ -1577,7 +1577,7 @@ class _Lookup(NamedTuple):
     index: int
     """The index of the bytecode that determines the type."""
 
-    value: Union[dict[IntEnum, type[AbstractMessage]], dict[IntEnum, "_Lookup"]]
+    value: dict[IntEnum, type[AbstractMessage]] | dict[IntEnum, "_Lookup"]
     """
     A dictionary mapping a bytecode to the cooresponding Python type if the type can be determined or
     a dictionary mapping a bytecode to another lookup if more discrimination is required.

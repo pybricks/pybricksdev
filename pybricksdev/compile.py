@@ -5,7 +5,6 @@ import asyncio
 import logging
 import os
 from modulefinder import ModuleFinder
-from typing import Union
 
 import mpy_cross_v5
 import mpy_cross_v6
@@ -81,7 +80,7 @@ async def compile_file(
         return mpy
 
 
-async def compile_multi_file(path: str, abi: Union[int, tuple[int, int]]):
+async def compile_multi_file(path: str, abi: int | tuple[int, int]):
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
