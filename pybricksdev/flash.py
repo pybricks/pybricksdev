@@ -220,9 +220,10 @@ class BootloaderConnection(BLERequestsConnection):
         logger.debug("Begin update.")
 
         # Maintain progress using tqdm
-        with logging_redirect_tqdm(), tqdm(
-            total=firmware_size, unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=firmware_size, unit="B", unit_scale=True) as pbar,
+        ):
 
             def reader():
                 while True:
