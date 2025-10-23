@@ -11,10 +11,9 @@ used in the `LWP3 protocol`_.
 """
 
 from enum import IntEnum, IntFlag, unique
-from typing import Type, Union
 
 
-def _create_pseudo_member_(cls: Type[IntEnum], value: int) -> IntEnum:
+def _create_pseudo_member_(cls: type[IntEnum], value: int) -> IntEnum:
     """
     Creates a new enum member at runtime for ``IntEnum``s.
     """
@@ -122,7 +121,7 @@ class BluetoothAddress(bytes):
     identifying individual Bluetooth devices instead of network cards.
     """
 
-    def __new__(cls, value: Union[str, bytes]) -> "BluetoothAddress":
+    def __new__(cls, value: str | bytes) -> "BluetoothAddress":
         if isinstance(value, str):
             # if it is a string, assume the format "XX:XX:XX:XX:XX:XX"
             value = [int(x, 16) for x in value.split(":")]

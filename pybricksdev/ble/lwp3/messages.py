@@ -13,7 +13,7 @@ messages used in the `LWP3 protocol`_.
 import abc
 import struct
 from enum import IntEnum
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union, overload
+from typing import Any, NamedTuple, overload
 
 from pybricksdev.ble.lwp3.bytecodes import (
     MAX_NAME_SIZE,
@@ -144,7 +144,7 @@ class AbstractHubPropertyMessage(AbstractMessage):
 class _HubPropertyType(NamedTuple):
     type: type
     fmt: str
-    max_size: Optional[int] = None
+    max_size: int | None = None
 
 
 # specifies payload type information for each property
@@ -861,7 +861,7 @@ class AbstractPortFormatSetupComboMessage(AbstractMessage):
 
 
 class PortFormatSetupComboMessage(AbstractPortFormatSetupComboMessage):
-    def __init__(self, port: PortID, modes_and_datasets: List[Tuple[int, int]]) -> None:
+    def __init__(self, port: PortID, modes_and_datasets: list[tuple[int, int]]) -> None:
         super().__init__(
             5 + len(modes_and_datasets), port, PortInfoFormatSetupCommand.SET
         )
@@ -870,7 +870,7 @@ class PortFormatSetupComboMessage(AbstractPortFormatSetupComboMessage):
             self._data[i] = ((mode & 0xF) << 4) | (dataset & 0xF)
 
     @property
-    def modes_and_datasets(self) -> List[Tuple[int, int]]:
+    def modes_and_datasets(self) -> list[tuple[int, int]]:
         return [(x >> 4, x & 0xF) for x in self._data[5:]]
 
     def __repr__(self) -> str:
@@ -923,8 +923,8 @@ class PortInfoModeInfoMessage(AbstractPortInfoMessage):
         port: PortID,
         capabilities: ModeCapabilities,
         num_modes: int,
-        input_modes: List[int],
-        output_modes: List[int],
+        input_modes: list[int],
+        output_modes: list[int],
     ) -> None:
         super().__init__(11, port, InfoKind.MODE_INFO)
 
@@ -955,12 +955,12 @@ class PortInfoModeInfoMessage(AbstractPortInfoMessage):
         return self._data[6]
 
     @property
-    def input_modes(self) -> List[int]:
+    def input_modes(self) -> list[int]:
         (flags,) = struct.unpack_from("<H", self._data, 7)
         return [n for n in range(16) if flags & (1 << n)]
 
     @property
-    def output_modes(self) -> List[int]:
+    def output_modes(self) -> list[int]:
         (flags,) = struct.unpack_from("<H", self._data, 9)
         return [n for n in range(16) if flags & (1 << n)]
 
@@ -972,7 +972,7 @@ class PortInfoCombosMessage(AbstractPortInfoMessage):
     def __init__(
         self,
         port: PortID,
-        combos: List[List[int]],
+        combos: list[list[int]],
     ) -> None:
         super().__init__(5 + len(combos) * 2, port, InfoKind.COMBOS)
 
@@ -988,7 +988,7 @@ class PortInfoCombosMessage(AbstractPortInfoMessage):
         struct.pack_into(f"<{len(flags)}H", self._data, 5, *flags)
 
     @property
-    def combos(self) -> List[List[int]]:
+    def combos(self) -> list[list[int]]:
         count = (len(self._data) - 5) // 2
         return [
             [m for m in range(16) if flags & (1 << m)]
@@ -1211,7 +1211,7 @@ class PortModeInfoFormatMessage(AbstractPortModeInfoMessage):
 
 
 class PortValueMessage(AbstractMessage):
-    def __init__(self, port: PortID, fmt: str, *values: Union[int, float]) -> None:
+    def __init__(self, port: PortID, fmt: str, *values: int | float) -> None:
         super().__init__(4 + struct.calcsize(fmt), MessageKind.PORT_VALUE)
 
         self._data[3] = port
@@ -1221,7 +1221,7 @@ class PortValueMessage(AbstractMessage):
     def port(self) -> PortID:
         return PortID(self._data[3])
 
-    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 4)
 
     def __repr__(self) -> str:
@@ -1232,7 +1232,7 @@ class PortValueMessage(AbstractMessage):
 
 class PortValueComboMessage(AbstractMessage):
     def __init__(
-        self, port: PortID, modes: List[int], fmt: str, *values: Union[int, float]
+        self, port: PortID, modes: list[int], fmt: str, *values: int | float
     ) -> None:
         super().__init__(6 + struct.calcsize(fmt), MessageKind.PORT_VALUE_COMBO)
 
@@ -1249,11 +1249,11 @@ class PortValueComboMessage(AbstractMessage):
         return PortID(self._data[3])
 
     @property
-    def modes(self) -> List[int]:
+    def modes(self) -> list[int]:
         (flags,) = struct.unpack_from("<H", self._data, 4)
         return [m for m in range(16) if flags & (1 << m)]
 
-    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 6)
 
     def __repr__(self) -> str:
@@ -1294,7 +1294,7 @@ class PortInputFormatComboMessage(AbstractMessage):
         port: PortID,
         combo: int,
         multi_update: bool,
-        modes_and_datasets: List[int],
+        modes_and_datasets: list[int],
     ) -> None:
         super().__init__(7, MessageKind.PORT_INPUT_FMT_COMBO)
 
@@ -1321,7 +1321,7 @@ class PortInputFormatComboMessage(AbstractMessage):
         return bool(self._data[4] & 0x80)
 
     @property
-    def modes_and_datasets(self) -> List[int]:
+    def modes_and_datasets(self) -> list[int]:
         (flags,) = struct.unpack_from("<H", self._data, 5)
         return [m for m in range(16) if flags & (1 << m)]
 
@@ -1450,7 +1450,7 @@ class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessa
         end: EndInfo,
         mode: int,
         fmt: str,
-        *values: Union[int, float],
+        *values: int | float,
     ) -> None:
         super().__init__(
             7 + struct.calcsize(fmt),
@@ -1467,7 +1467,7 @@ class PortOutputCommandWriteDirectModeDataMessage(AbstractPortOutputCommandMessa
     def mode(self) -> int:
         return self._data[6]
 
-    def unpack(self, fmt: str) -> Tuple[Union[int, float], ...]:
+    def unpack(self, fmt: str) -> tuple[int | float, ...]:
         return struct.unpack_from(fmt, self._data, 7)
 
     def __repr__(self) -> str:
@@ -1500,10 +1500,10 @@ class PortOutputCommandFeedbackMessage(AbstractMessage):
         self,
         port1: PortID,
         feedback1: Feedback,
-        port2: Optional[PortID] = None,
-        feedback2: Optional[Feedback] = None,
-        port3: Optional[PortID] = None,
-        feedback3: Optional[Feedback] = None,
+        port2: PortID | None = None,
+        feedback2: Feedback | None = None,
+        port3: PortID | None = None,
+        feedback3: Feedback | None = None,
     ) -> None:
         length = 5
 
@@ -1577,7 +1577,7 @@ class _Lookup(NamedTuple):
     index: int
     """The index of the bytecode that determines the type."""
 
-    value: Union[Dict[IntEnum, Type[AbstractMessage]], Dict[IntEnum, "_Lookup"]]
+    value: dict[IntEnum, type[AbstractMessage]] | dict[IntEnum, "_Lookup"]
     """
     A dictionary mapping a bytecode to the cooresponding Python type if the type can be determined or
     a dictionary mapping a bytecode to another lookup if more discrimination is required.

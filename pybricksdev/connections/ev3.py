@@ -5,7 +5,7 @@ import asyncio
 import enum
 import itertools
 import struct
-from typing import Callable, Optional, Tuple
+from typing import Callable
 
 import hid
 
@@ -75,7 +75,7 @@ class EV3Bootloader:
         """
         self._device.close()
 
-    def _send_command(self, command: Command, payload: Optional[bytes] = None) -> int:
+    def _send_command(self, command: Command, payload: bytes | None = None) -> int:
         length = 4
 
         if payload is not None:
@@ -145,7 +145,7 @@ class EV3Bootloader:
     def download_sync(
         self,
         data: bytes,
-        progress: Optional[Callable[[int], None]] = None,
+        progress: Callable[[int], None] | None = None,
     ) -> None:
         """
         Blocking version of :meth:`download`.
@@ -169,7 +169,7 @@ class EV3Bootloader:
     async def download(
         self,
         data: bytes,
-        progress: Optional[Callable[[int], None]] = None,
+        progress: Callable[[int], None] | None = None,
     ) -> None:
         """
         Downloads a firmware blob to the EV3.
@@ -244,7 +244,7 @@ class EV3Bootloader:
             None, self.get_checksum_sync, address, size
         )
 
-    def get_version_sync(self) -> Tuple[int, int]:
+    def get_version_sync(self) -> tuple[int, int]:
         """
         Blocking version of :meth:`get_version`.
         """
@@ -257,7 +257,7 @@ class EV3Bootloader:
         payload = self._receive_reply(Command.GET_VERSION, num, force_length=13)
         return struct.unpack("<II", payload)
 
-    async def get_version(self) -> Tuple[int, int]:
+    async def get_version(self) -> tuple[int, int]:
         """
         Gets the bootloader firmware version and the hardware version.
 

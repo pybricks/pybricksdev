@@ -8,7 +8,7 @@ import struct
 import sys
 import zlib
 from tempfile import NamedTemporaryFile
-from typing import BinaryIO, Dict, Optional
+from typing import BinaryIO
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -273,7 +273,7 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
     # as return value from find_device_by_filter()
     # https://github.com/hbldh/bleak/issues/1277
 
-    device_adv_map: Dict[str, AdvertisementData] = {}
+    device_adv_map: dict[str, AdvertisementData] = {}
 
     def map_and_match(device: BLEDevice, adv: AdvertisementData):
         # capture the adv data for later use
@@ -391,17 +391,19 @@ async def flash_ev3(firmware: bytes) -> None:
                 callback(CHUNK)
 
         print("Erasing memory and preparing firmware download...")
-        with logging_redirect_tqdm(), tqdm(
-            total=len(firmware), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(firmware), unit="B", unit_scale=True) as pbar,
+        ):
             await asyncio.gather(
                 bootloader.erase_and_begin_download(len(firmware)), tick(pbar.update)
             )
 
         print("Downloading firmware...")
-        with logging_redirect_tqdm(), tqdm(
-            total=len(firmware), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(firmware), unit="B", unit_scale=True) as pbar,
+        ):
             await bootloader.download(firmware, pbar.update)
 
         print("Verifying...", end="", flush=True)
@@ -419,7 +421,7 @@ async def flash_ev3(firmware: bytes) -> None:
         print("Done.")
 
 
-async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> None:
+async def flash_firmware(firmware_zip: BinaryIO, new_name: str | None) -> None:
     """
     Command line tool for flashing firmware.
 

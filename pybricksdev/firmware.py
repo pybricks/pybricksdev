@@ -11,7 +11,7 @@ import os
 import struct
 import sys
 import zipfile
-from typing import BinaryIO, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import BinaryIO, Literal, TypedDict
 
 if sys.version_info < (3, 10):
     from typing_extensions import TypeGuard
@@ -33,7 +33,7 @@ class FirmwareMetadataV100(
             "device-id": Literal[0x40, 0x41, 0x80, 0x81],
             "checksum-type": Literal["sum", "crc32"],
             "mpy-abi-version": int,
-            "mpy-cross-options": List[str],
+            "mpy-cross-options": list[str],
             "user-mpy-offset": int,
             "max-firmware-size": int,
         },
@@ -98,17 +98,17 @@ class FirmwareMetadataV210(
     """
 
 
-AnyFirmwareV1Metadata = Union[FirmwareMetadataV100, FirmwareMetadataV110]
+AnyFirmwareV1Metadata = FirmwareMetadataV100 | FirmwareMetadataV110
 """
 Type for data contained in ``firmware.metadata.json`` files of any 1.x version.
 """
 
-AnyFirmwareV2Metadata = Union[FirmwareMetadataV200, FirmwareMetadataV210]
+AnyFirmwareV2Metadata = FirmwareMetadataV200 | FirmwareMetadataV210
 """
 Type for data contained in ``firmware.metadata.json`` files of any 2.x version.
 """
 
-AnyFirmwareMetadata = Union[AnyFirmwareV1Metadata, AnyFirmwareV2Metadata]
+AnyFirmwareMetadata = AnyFirmwareV1Metadata | AnyFirmwareV2Metadata
 """
 Type for data contained in ``firmware.metadata.json`` files of any version.
 """
@@ -127,7 +127,7 @@ def _firmware_metadata_is_v2(
 
 
 async def _create_firmware_v1(
-    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: Optional[str]
+    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: str | None
 ) -> bytearray:
     base = archive.open("firmware-base.bin").read()
 
@@ -189,7 +189,7 @@ async def _create_firmware_v1(
 
 
 async def _create_firmware_v2(
-    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: Optional[str]
+    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: str | None
 ) -> bytearray:
     base = archive.open("firmware-base.bin").read()
 
@@ -233,8 +233,8 @@ async def _create_firmware_v2(
 
 
 async def create_firmware_blob(
-    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
-) -> Tuple[bytes, AnyFirmwareMetadata, str]:
+    firmware_zip: str | os.PathLike | BinaryIO, name: str | None = None
+) -> tuple[bytes, AnyFirmwareMetadata, str]:
     """Creates a firmware blob from base firmware and an optional custom name.
 
     .. note:: The firmware.zip file must contain the following files::

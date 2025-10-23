@@ -7,7 +7,6 @@ import logging
 import platform
 import struct
 from collections import namedtuple
-from typing import Dict, List, Optional, Tuple
 
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 # NAME, PAYLOAD_SIZE requirement
-HUB_INFO: Dict[HubKind, Tuple[str, int]] = {
+HUB_INFO: dict[HubKind, tuple[str, int]] = {
     HubKind.BOOST: ("Move Hub", 14),
     HubKind.CITY: ("City Hub", 32),
     HubKind.TECHNIC: ("Technic Hub", 32),
@@ -34,7 +33,7 @@ class BootloaderRequest:
         self,
         command: BootloaderCommand,
         name: str,
-        request_format: List[str],
+        request_format: list[str],
         data_format: str,
         request_reply: bool = True,
         write_with_response: bool = True,
@@ -47,7 +46,7 @@ class BootloaderRequest:
             self.reply_len += 1
         self.write_with_response = write_with_response
 
-    def make_request(self, payload: Optional[bytes] = None) -> bytearray:
+    def make_request(self, payload: bytes | None = None) -> bytearray:
         request = bytearray([self.command])
         if payload is not None:
             request += payload
@@ -220,9 +219,10 @@ class BootloaderConnection(BLERequestsConnection):
         logger.debug("Begin update.")
 
         # Maintain progress using tqdm
-        with logging_redirect_tqdm(), tqdm(
-            total=firmware_size, unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=firmware_size, unit="B", unit_scale=True) as pbar,
+        ):
 
             def reader():
                 while True:

@@ -6,7 +6,7 @@ import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, Callable, List, Optional, TypeVar
+from typing import Awaitable, Callable, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -76,7 +76,7 @@ class HubPowerButtonPressedError(RuntimeError):
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
-    fw_version: Optional[Version]
+    fw_version: Version | None
     """
     Firmware version of the connected hub or ``None`` if not connected yet.
     """
@@ -152,7 +152,7 @@ class PybricksHub:
         # REVISIT: It would be better to be able to subscribe to output instead
         # of always capturing it even if it is not used. This is currently
         # used in motor test code in pybricks-micropython.
-        self.output: List[bytes] = []
+        self.output: list[bytes] = []
         """
         Contains lines printed to stdout of the hub as a a list of bytes.
 
@@ -473,9 +473,10 @@ class PybricksHub:
         payload_size = self._max_write_size - 5
 
         # write program data with progress bar
-        with logging_redirect_tqdm(), tqdm(
-            total=len(program), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(program), unit="B", unit_scale=True) as pbar,
+        ):
             for i, c in enumerate(chunk(program, payload_size)):
                 await self.write_gatt_char(
                     PYBRICKS_COMMAND_EVENT_UUID,
@@ -579,7 +580,7 @@ class PybricksHub:
 
     async def run(
         self,
-        py_path: Optional[str] = None,
+        py_path: str | None = None,
         wait: bool = True,
         print_output: bool = True,
         line_handler: bool = True,
@@ -678,9 +679,10 @@ class PybricksHub:
             await send_block(length)
 
             # Send the data chunk by chunk
-            with logging_redirect_tqdm(), tqdm(
-                total=len(mpy), unit="B", unit_scale=True
-            ) as pbar:
+            with (
+                logging_redirect_tqdm(),
+                tqdm(total=len(mpy), unit="B", unit_scale=True) as pbar,
+            ):
                 for c in chunk(mpy, 100):
                     await send_block(c)
                     pbar.update(len(c))
