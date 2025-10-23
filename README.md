@@ -16,14 +16,14 @@ operations from within a Python script.
 
 `pybricksdev` requires Python 3.10 or higher.
 
-- For Windows, use the [official Python installer][py-dl] or the [Windows Store][py38-win].
+- For Windows, use the [official Python installer][py-dl] or the [Windows Store][py312-win].
 - For Mac, use the [official Python installer][py-dl] or Homebrew (`brew install python@3.12`).
 - For Linux, use the distro provided `python3.12` or if not available, use a Python
   runtime version manager such as [asdf][asdf] or [pyenv][pyenv].
 
 
 [py-dl]: https://www.python.org/downloads/
-[py38-win]: https://www.microsoft.com/en-us/p/python-38/9mssztt1n39l
+[py312-win]: https://apps.microsoft.com/detail/9ncvdn91xzqp
 [asdf]: https://asdf-vm.com
 [pyenv]: https://github.com/pyenv/pyenv
 
