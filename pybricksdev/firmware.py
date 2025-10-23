@@ -11,7 +11,7 @@ import os
 import struct
 import sys
 import zipfile
-from typing import BinaryIO, List, Literal, Tuple, TypedDict, Union
+from typing import BinaryIO, Literal, TypedDict, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import TypeGuard
@@ -33,7 +33,7 @@ class FirmwareMetadataV100(
             "device-id": Literal[0x40, 0x41, 0x80, 0x81],
             "checksum-type": Literal["sum", "crc32"],
             "mpy-abi-version": int,
-            "mpy-cross-options": List[str],
+            "mpy-cross-options": list[str],
             "user-mpy-offset": int,
             "max-firmware-size": int,
         },
@@ -234,7 +234,7 @@ async def _create_firmware_v2(
 
 async def create_firmware_blob(
     firmware_zip: Union[str, os.PathLike, BinaryIO], name: str | None = None
-) -> Tuple[bytes, AnyFirmwareMetadata, str]:
+) -> tuple[bytes, AnyFirmwareMetadata, str]:
     """Creates a firmware blob from base firmware and an optional custom name.
 
     .. note:: The firmware.zip file must contain the following files::

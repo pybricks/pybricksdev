@@ -7,7 +7,6 @@ import logging
 import platform
 import struct
 from collections import namedtuple
-from typing import Dict, List, Tuple
 
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 # NAME, PAYLOAD_SIZE requirement
-HUB_INFO: Dict[HubKind, Tuple[str, int]] = {
+HUB_INFO: dict[HubKind, tuple[str, int]] = {
     HubKind.BOOST: ("Move Hub", 14),
     HubKind.CITY: ("City Hub", 32),
     HubKind.TECHNIC: ("Technic Hub", 32),
@@ -34,7 +33,7 @@ class BootloaderRequest:
         self,
         command: BootloaderCommand,
         name: str,
-        request_format: List[str],
+        request_format: list[str],
         data_format: str,
         request_reply: bool = True,
         write_with_response: bool = True,
