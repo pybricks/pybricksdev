@@ -301,40 +301,38 @@ class Run(Tool):
                         )
                     )
 
-                    if response == response_options[ResponseOptions.RECOMPILE_RUN]:
-                        with _get_script_path(args.file) as script_path:
-                            await hub.run(script_path, wait=True)
+                    match response_options.index(response):
 
-                    elif (
-                        response == response_options[ResponseOptions.RECOMPILE_DOWNLOAD]
-                    ):
-                        with _get_script_path(args.file) as script_path:
-                            await hub.download(script_path)
+                        case ResponseOptions.RECOMPILE_RUN:
+                            with _get_script_path(args.file) as script_path:
+                                await hub.run(script_path, wait=True)
 
-                    elif (
-                        response == response_options[ResponseOptions.CHANGE_TARGET_FILE]
-                    ):
-                        args.file.close()
-                        while True:
-                            try:
-                                args.file = open(
-                                    await hub.race_disconnect(
-                                        hub.race_power_button_press(
-                                            questionary.path(
-                                                "What file would you like to use?"
-                                            ).ask_async()
+                        case ResponseOptions.RECOMPILE_DOWNLOAD:
+                            with _get_script_path(args.file) as script_path:
+                                await hub.download(script_path)
+
+                        case ResponseOptions.CHANGE_TARGET_FILE:
+                            args.file.close()
+                            while True:
+                                try:
+                                    args.file = open(
+                                        await hub.race_disconnect(
+                                            hub.race_power_button_press(
+                                                questionary.path(
+                                                    "What file would you like to use?"
+                                                ).ask_async()
+                                            )
                                         )
                                     )
-                                )
-                                break
-                            except FileNotFoundError:
-                                print("The file was not found. Please try again.")
-                        # send the new target file to the hub
-                        with _get_script_path(args.file) as script_path:
-                            await hub.download(script_path)
+                                    break
+                                except FileNotFoundError:
+                                    print("The file was not found. Please try again.")
+                                # send the new target file to the hub
+                            with _get_script_path(args.file) as script_path:
+                                await hub.download(script_path)
 
-                    else:
-                        return
+                        case _:
+                            return
 
                 except HubPowerButtonPressedError:
                     # This means the user pressed the button on the hub to re-start the
