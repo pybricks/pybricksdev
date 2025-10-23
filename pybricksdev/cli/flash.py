@@ -391,17 +391,19 @@ async def flash_ev3(firmware: bytes) -> None:
                 callback(CHUNK)
 
         print("Erasing memory and preparing firmware download...")
-        with logging_redirect_tqdm(), tqdm(
-            total=len(firmware), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(firmware), unit="B", unit_scale=True) as pbar,
+        ):
             await asyncio.gather(
                 bootloader.erase_and_begin_download(len(firmware)), tick(pbar.update)
             )
 
         print("Downloading firmware...")
-        with logging_redirect_tqdm(), tqdm(
-            total=len(firmware), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(firmware), unit="B", unit_scale=True) as pbar,
+        ):
             await bootloader.download(firmware, pbar.update)
 
         print("Verifying...", end="", flush=True)

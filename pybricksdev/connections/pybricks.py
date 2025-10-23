@@ -473,9 +473,10 @@ class PybricksHub:
         payload_size = self._max_write_size - 5
 
         # write program data with progress bar
-        with logging_redirect_tqdm(), tqdm(
-            total=len(program), unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=len(program), unit="B", unit_scale=True) as pbar,
+        ):
             for i, c in enumerate(chunk(program, payload_size)):
                 await self.write_gatt_char(
                     PYBRICKS_COMMAND_EVENT_UUID,
@@ -678,9 +679,10 @@ class PybricksHub:
             await send_block(length)
 
             # Send the data chunk by chunk
-            with logging_redirect_tqdm(), tqdm(
-                total=len(mpy), unit="B", unit_scale=True
-            ) as pbar:
+            with (
+                logging_redirect_tqdm(),
+                tqdm(total=len(mpy), unit="B", unit_scale=True) as pbar,
+            ):
                 for c in chunk(mpy, 100):
                     await send_block(c)
                     pbar.update(len(c))

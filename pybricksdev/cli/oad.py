@@ -73,11 +73,12 @@ async def flash_oad_image(firmware: BinaryIO) -> None:
         disconnect_event.set()
 
     # long timeout in case pairing is needed
-    async with asyncio.timeout(60), BleakClient(
-        device, on_disconnect
-    ) as client, OADImageIdentify(client) as image_identify, OADControlPoint(
-        client
-    ) as control_point:
+    async with (
+        asyncio.timeout(60),
+        BleakClient(device, on_disconnect) as client,
+        OADImageIdentify(client) as image_identify,
+        OADControlPoint(client) as control_point,
+    ):
         image_block = OADImageBlock(client)
 
         print(f"Connected to {device.name}")
@@ -107,9 +108,10 @@ async def flash_oad_image(firmware: BinaryIO) -> None:
 
         print("Flashing...")
 
-        with logging_redirect_tqdm(), tqdm(
-            total=header.image_length, unit="B", unit_scale=True
-        ) as pbar:
+        with (
+            logging_redirect_tqdm(),
+            tqdm(total=header.image_length, unit="B", unit_scale=True) as pbar,
+        ):
             async with asyncio.TaskGroup() as group:
                 try:
                     async for (
@@ -161,9 +163,11 @@ async def dump_oad_info():
         return
 
     # long timeout in case pairing is needed
-    async with asyncio.timeout(30), BleakClient(device) as client, OADControlPoint(
-        client
-    ) as control_point:
+    async with (
+        asyncio.timeout(30),
+        BleakClient(device) as client,
+        OADControlPoint(client) as control_point,
+    ):
         sw_ver = await control_point.get_software_version()
         print(
             f"Software version: app={sw_ver.app.major}.{sw_ver.app.minor}, stack={sw_ver.stack.major}.{sw_ver.stack.minor}"
