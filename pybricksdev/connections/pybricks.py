@@ -6,7 +6,7 @@ import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, Callable, List, Optional, TypeVar
+from typing import Awaitable, Callable, List, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -76,7 +76,7 @@ class HubPowerButtonPressedError(RuntimeError):
 class PybricksHub:
     EOL = b"\r\n"  # MicroPython EOL
 
-    fw_version: Optional[Version]
+    fw_version: Version | None
     """
     Firmware version of the connected hub or ``None`` if not connected yet.
     """
@@ -580,7 +580,7 @@ class PybricksHub:
 
     async def run(
         self,
-        py_path: Optional[str] = None,
+        py_path: str | None = None,
         wait: bool = True,
         print_output: bool = True,
         line_handler: bool = True,

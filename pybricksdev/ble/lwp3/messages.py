@@ -13,7 +13,7 @@ messages used in the `LWP3 protocol`_.
 import abc
 import struct
 from enum import IntEnum
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, Union, overload
+from typing import Any, Dict, List, NamedTuple, Tuple, Type, Union, overload
 
 from pybricksdev.ble.lwp3.bytecodes import (
     MAX_NAME_SIZE,
@@ -144,7 +144,7 @@ class AbstractHubPropertyMessage(AbstractMessage):
 class _HubPropertyType(NamedTuple):
     type: type
     fmt: str
-    max_size: Optional[int] = None
+    max_size: int | None = None
 
 
 # specifies payload type information for each property
@@ -1500,10 +1500,10 @@ class PortOutputCommandFeedbackMessage(AbstractMessage):
         self,
         port1: PortID,
         feedback1: Feedback,
-        port2: Optional[PortID] = None,
-        feedback2: Optional[Feedback] = None,
-        port3: Optional[PortID] = None,
-        feedback3: Optional[Feedback] = None,
+        port2: PortID | None = None,
+        feedback2: Feedback | None = None,
+        port3: PortID | None = None,
+        feedback3: Feedback | None = None,
     ) -> None:
         length = 5
 

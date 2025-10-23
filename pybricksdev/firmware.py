@@ -11,7 +11,7 @@ import os
 import struct
 import sys
 import zipfile
-from typing import BinaryIO, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import BinaryIO, List, Literal, Tuple, TypedDict, Union
 
 if sys.version_info < (3, 10):
     from typing_extensions import TypeGuard
@@ -127,7 +127,7 @@ def _firmware_metadata_is_v2(
 
 
 async def _create_firmware_v1(
-    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: Optional[str]
+    metadata: AnyFirmwareV1Metadata, archive: zipfile.ZipFile, name: str | None
 ) -> bytearray:
     base = archive.open("firmware-base.bin").read()
 
@@ -189,7 +189,7 @@ async def _create_firmware_v1(
 
 
 async def _create_firmware_v2(
-    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: Optional[str]
+    metadata: AnyFirmwareV2Metadata, archive: zipfile.ZipFile, name: str | None
 ) -> bytearray:
     base = archive.open("firmware-base.bin").read()
 
@@ -233,7 +233,7 @@ async def _create_firmware_v2(
 
 
 async def create_firmware_blob(
-    firmware_zip: Union[str, os.PathLike, BinaryIO], name: Optional[str] = None
+    firmware_zip: Union[str, os.PathLike, BinaryIO], name: str | None = None
 ) -> Tuple[bytes, AnyFirmwareMetadata, str]:
     """Creates a firmware blob from base firmware and an optional custom name.
 

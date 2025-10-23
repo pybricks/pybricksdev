@@ -8,7 +8,7 @@ import struct
 import sys
 import zlib
 from tempfile import NamedTemporaryFile
-from typing import BinaryIO, Dict, Optional
+from typing import BinaryIO, Dict
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -421,7 +421,7 @@ async def flash_ev3(firmware: bytes) -> None:
         print("Done.")
 
 
-async def flash_firmware(firmware_zip: BinaryIO, new_name: Optional[str]) -> None:
+async def flash_firmware(firmware_zip: BinaryIO, new_name: str | None) -> None:
     """
     Command line tool for flashing firmware.
 

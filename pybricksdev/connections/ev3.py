@@ -5,7 +5,7 @@ import asyncio
 import enum
 import itertools
 import struct
-from typing import Callable, Optional, Tuple
+from typing import Callable, Tuple
 
 import hid
 
@@ -75,7 +75,7 @@ class EV3Bootloader:
         """
         self._device.close()
 
-    def _send_command(self, command: Command, payload: Optional[bytes] = None) -> int:
+    def _send_command(self, command: Command, payload: bytes | None = None) -> int:
         length = 4
 
         if payload is not None:
@@ -145,7 +145,7 @@ class EV3Bootloader:
     def download_sync(
         self,
         data: bytes,
-        progress: Optional[Callable[[int], None]] = None,
+        progress: Callable[[int], None] | None = None,
     ) -> None:
         """
         Blocking version of :meth:`download`.
@@ -169,7 +169,7 @@ class EV3Bootloader:
     async def download(
         self,
         data: bytes,
-        progress: Optional[Callable[[int], None]] = None,
+        progress: Callable[[int], None] | None = None,
     ) -> None:
         """
         Downloads a firmware blob to the EV3.

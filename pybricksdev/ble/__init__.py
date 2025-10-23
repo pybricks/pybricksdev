@@ -3,7 +3,6 @@
 
 import asyncio
 import logging
-from typing import Optional
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 async def find_device(
-    name: Optional[str] = None,
+    name: str | None = None,
     service: str = PYBRICKS_SERVICE_UUID,
     timeout: float = 10,
 ) -> BLEDevice:
