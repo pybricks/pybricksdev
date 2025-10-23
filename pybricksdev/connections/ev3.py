@@ -5,7 +5,7 @@ import asyncio
 import enum
 import itertools
 import struct
-from typing import Callable, Tuple
+from typing import Callable
 
 import hid
 
@@ -244,7 +244,7 @@ class EV3Bootloader:
             None, self.get_checksum_sync, address, size
         )
 
-    def get_version_sync(self) -> Tuple[int, int]:
+    def get_version_sync(self) -> tuple[int, int]:
         """
         Blocking version of :meth:`get_version`.
         """
@@ -257,7 +257,7 @@ class EV3Bootloader:
         payload = self._receive_reply(Command.GET_VERSION, num, force_length=13)
         return struct.unpack("<II", payload)
 
-    async def get_version(self) -> Tuple[int, int]:
+    async def get_version(self) -> tuple[int, int]:
         """
         Gets the bootloader firmware version and the hardware version.
 

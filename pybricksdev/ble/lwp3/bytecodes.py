@@ -11,10 +11,10 @@ used in the `LWP3 protocol`_.
 """
 
 from enum import IntEnum, IntFlag, unique
-from typing import Type, Union
+from typing import Union
 
 
-def _create_pseudo_member_(cls: Type[IntEnum], value: int) -> IntEnum:
+def _create_pseudo_member_(cls: type[IntEnum], value: int) -> IntEnum:
     """
     Creates a new enum member at runtime for ``IntEnum``s.
     """

@@ -5,7 +5,7 @@ import asyncio
 import logging
 import os
 from modulefinder import ModuleFinder
-from typing import List, Tuple, Union
+from typing import Union
 
 import mpy_cross_v5
 import mpy_cross_v6
@@ -81,7 +81,7 @@ async def compile_file(
         return mpy
 
 
-async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
+async def compile_multi_file(path: str, abi: Union[int, tuple[int, int]]):
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
@@ -134,7 +134,7 @@ async def compile_multi_file(path: str, abi: Union[int, Tuple[int, int]]):
     logger.debug("missing modules: %r", finder.any_missing())
 
     # Get a data blob with all scripts.
-    parts: List[bytes] = []
+    parts: list[bytes] = []
 
     abi_major, abi_minor = (abi, None) if isinstance(abi, int) else abi
 

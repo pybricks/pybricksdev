@@ -8,7 +8,7 @@ import struct
 import sys
 import zlib
 from tempfile import NamedTemporaryFile
-from typing import BinaryIO, Dict
+from typing import BinaryIO
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.device import BLEDevice
@@ -273,7 +273,7 @@ async def flash_ble(hub_kind: HubKind, firmware: bytes, metadata: dict):
     # as return value from find_device_by_filter()
     # https://github.com/hbldh/bleak/issues/1277
 
-    device_adv_map: Dict[str, AdvertisementData] = {}
+    device_adv_map: dict[str, AdvertisementData] = {}
 
     def map_and_match(device: BLEDevice, adv: AdvertisementData):
         # capture the adv data for later use

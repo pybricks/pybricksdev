@@ -6,7 +6,7 @@ import contextlib
 import logging
 import os
 import struct
-from typing import Awaitable, Callable, List, TypeVar
+from typing import Awaitable, Callable, TypeVar
 
 import reactivex.operators as op
 import semver
@@ -152,7 +152,7 @@ class PybricksHub:
         # REVISIT: It would be better to be able to subscribe to output instead
         # of always capturing it even if it is not used. This is currently
         # used in motor test code in pybricks-micropython.
-        self.output: List[bytes] = []
+        self.output: list[bytes] = []
         """
         Contains lines printed to stdout of the hub as a a list of bytes.
 

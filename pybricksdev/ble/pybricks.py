@@ -21,7 +21,7 @@ _`https://github.com/pybricks/technical-info/blob/master/pybricks-ble-profile.md
 
 from enum import IntEnum, IntFlag
 from struct import unpack
-from typing import Literal, Tuple
+from typing import Literal
 
 import semver
 
@@ -351,7 +351,7 @@ class UserProgramId(IntEnum):
     """
 
 
-def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int, int]:
+def unpack_hub_capabilities(data: bytes) -> tuple[int, HubCapabilityFlag, int, int]:
     """
     Unpacks the value read from the hub capabilities characteristic.
 
@@ -373,7 +373,7 @@ def unpack_hub_capabilities(data: bytes) -> Tuple[int, HubCapabilityFlag, int, i
     return max_char_size, HubCapabilityFlag(flags), max_user_prog_size, num_of_slots
 
 
-def unpack_hub_capabilities_v15(data: bytes) -> Tuple[int, HubCapabilityFlag, int, int]:
+def unpack_hub_capabilities_v15(data: bytes) -> tuple[int, HubCapabilityFlag, int, int]:
     """
     Unpacks the value read from the hub capabilities characteristic. (Pybricks protocol v1.5)
 
@@ -459,7 +459,7 @@ PNP_ID_UUID = _standard_uuid(0x2A50)
 """
 
 
-def unpack_pnp_id(data: bytes) -> Tuple[Literal["BT", "USB"], int, int, int]:
+def unpack_pnp_id(data: bytes) -> tuple[Literal["BT", "USB"], int, int, int]:
     """
     Unpacks raw data from the PnP ID characteristic.
 
