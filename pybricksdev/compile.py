@@ -5,7 +5,7 @@ import asyncio
 import logging
 import os
 from modulefinder import ModuleFinder
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import mpy_cross_v5
 import mpy_cross_v6
@@ -30,7 +30,7 @@ def make_build_dir():
 
 
 async def compile_file(
-    proj_dir: str, proj_path: str, abi: int, compile_args: Optional[List[str]] = None
+    proj_dir: str, proj_path: str, abi: int, compile_args: list[str] | None = None
 ):
     """Compiles a Python file with ``mpy-cross``.
 

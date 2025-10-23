@@ -7,7 +7,7 @@ import logging
 import platform
 import struct
 from collections import namedtuple
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from tqdm.auto import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
@@ -47,7 +47,7 @@ class BootloaderRequest:
             self.reply_len += 1
         self.write_with_response = write_with_response
 
-    def make_request(self, payload: Optional[bytes] = None) -> bytearray:
+    def make_request(self, payload: bytes | None = None) -> bytearray:
         request = bytearray([self.command])
         if payload is not None:
             request += payload
