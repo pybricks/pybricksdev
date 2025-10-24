@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added the `Change Target File` option to the `--stay-connected` menu. 
+    ([pybricksdev#123])
+
+[pybricksdev#123]: https://github.com/pybricks/pybricksdev/pull/123
+
 ## [2.1.1] - 2025-09-13
 
 ### Fixed

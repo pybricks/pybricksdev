@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 from abc import ABC, abstractmethod
+from enum import IntEnum
 from os import PathLike, path
 from tempfile import NamedTemporaryFile
 from typing import ContextManager, TextIO
@@ -239,6 +240,12 @@ class Run(Tool):
             if not args.stay_connected:
                 return
 
+            class ResponseOptions(IntEnum):
+                RECOMPILE_RUN = 0
+                RECOMPILE_DOWNLOAD = 1
+                CHANGE_TARGET_FILE = 2
+                EXIT = 3
+
             async def reconnect_hub():
                 if not await questionary.confirm(
                     "\nThe hub has been disconnected. Would you like to re-connect?"
@@ -264,6 +271,7 @@ class Run(Tool):
             response_options = [
                 "Recompile and Run",
                 "Recompile and Download",
+                "Change Target File",
                 "Exit",
             ]
             while True:
@@ -280,22 +288,50 @@ class Run(Tool):
                     response = await hub.race_disconnect(
                         hub.race_power_button_press(
                             questionary.select(
-                                "Would you like to re-compile your code?",
+                                f"Would you like to re-compile {os.path.basename(args.file.name)}?",
                                 response_options,
                                 default=(
-                                    response_options[0]
+                                    response_options[ResponseOptions.RECOMPILE_RUN]
                                     if args.start
-                                    else response_options[1]
+                                    else response_options[
+                                        ResponseOptions.RECOMPILE_DOWNLOAD
+                                    ]
                                 ),
                             ).ask_async()
                         )
                     )
-                    with _get_script_path(args.file) as script_path:
-                        if response == response_options[0]:
-                            await hub.run(script_path, wait=True)
-                        elif response == response_options[1]:
-                            await hub.download(script_path)
-                        else:
+
+                    match response_options.index(response):
+
+                        case ResponseOptions.RECOMPILE_RUN:
+                            with _get_script_path(args.file) as script_path:
+                                await hub.run(script_path, wait=True)
+
+                        case ResponseOptions.RECOMPILE_DOWNLOAD:
+                            with _get_script_path(args.file) as script_path:
+                                await hub.download(script_path)
+
+                        case ResponseOptions.CHANGE_TARGET_FILE:
+                            args.file.close()
+                            while True:
+                                try:
+                                    args.file = open(
+                                        await hub.race_disconnect(
+                                            hub.race_power_button_press(
+                                                questionary.path(
+                                                    "What file would you like to use?"
+                                                ).ask_async()
+                                            )
+                                        )
+                                    )
+                                    break
+                                except FileNotFoundError:
+                                    print("The file was not found. Please try again.")
+                            # send the new target file to the hub
+                            with _get_script_path(args.file) as script_path:
+                                await hub.download(script_path)
+
+                        case _:
                             return
 
                 except HubPowerButtonPressedError:
