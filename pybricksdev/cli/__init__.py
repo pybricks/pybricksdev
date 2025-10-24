@@ -322,9 +322,9 @@ class Run(Tool):
                                 await hub.download(script_path)
 
                         case ResponseOptions.RUN_STORED:
-                            if hub.fw_version < Version("v3.3.0"):
+                            if hub.fw_version < Version("3.2.0-beta.4"):
                                 print(
-                                    "Running a stored program remotely is only supported in the hub firmware version >= v3.3.0."
+                                    "Running a stored program remotely is only supported in the hub firmware version >= v3.2.0."
                                 )
                             else:
                                 default_response_option = ResponseOptions.RUN_STORED
