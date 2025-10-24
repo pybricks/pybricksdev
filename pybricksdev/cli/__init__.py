@@ -307,18 +307,20 @@ class Run(Tool):
                         )
                     )
 
+                    if (
+                        response_options.index(response)
+                        != ResponseOptions.CHANGE_TARGET_FILE
+                    ):
+                        default_response_option = response_options.index(response)
+
                     match response_options.index(response):
 
                         case ResponseOptions.RECOMPILE_RUN:
                             with _get_script_path(args.file) as script_path:
-                                default_response_option = ResponseOptions.RECOMPILE_RUN
                                 await hub.run(script_path, wait=True)
 
                         case ResponseOptions.RECOMPILE_DOWNLOAD:
                             with _get_script_path(args.file) as script_path:
-                                default_response_option = (
-                                    ResponseOptions.RECOMPILE_DOWNLOAD
-                                )
                                 await hub.download(script_path)
 
                         case ResponseOptions.RUN_STORED:
@@ -327,7 +329,6 @@ class Run(Tool):
                                     "Running a stored program remotely is only supported in the hub firmware version >= v3.2.0."
                                 )
                             else:
-                                default_response_option = ResponseOptions.RUN_STORED
                                 await hub.start_user_program()
                                 await hub._wait_for_user_program_stop()
 
