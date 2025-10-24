@@ -18,7 +18,6 @@ from typing import ContextManager, TextIO
 import argcomplete
 import questionary
 from argcomplete.completers import FilesCompleter
-
 from packaging.version import Version
 
 from pybricksdev import __name__ as MODULE_NAME
