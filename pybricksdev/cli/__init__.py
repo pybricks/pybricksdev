@@ -20,6 +20,7 @@ import questionary
 from argcomplete.completers import FilesCompleter
 
 from packaging.version import Version
+
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
 from pybricksdev.connections.pybricks import (
