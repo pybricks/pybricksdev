@@ -244,7 +244,7 @@ class Run(Tool):
             class ResponseOptions(IntEnum):
                 RECOMPILE_RUN = 0
                 RECOMPILE_DOWNLOAD = 1
-                RERUN_STORED = 2
+                RUN_STORED = 2
                 CHANGE_TARGET_FILE = 3
                 EXIT = 4
 
@@ -273,7 +273,7 @@ class Run(Tool):
             response_options = [
                 "Recompile and Run",
                 "Recompile and Download",
-                "Re-run Stored Program",
+                "Run Stored Program",
                 "Change Target File",
                 "Exit",
             ]
@@ -314,7 +314,7 @@ class Run(Tool):
                             with _get_script_path(args.file) as script_path:
                                 await hub.download(script_path)
 
-                        case ResponseOptions.RERUN_STORED:
+                        case ResponseOptions.RUN_STORED:
                             if hub.fw_version < Version("v1.2.0"):
                                 print(
                                     "Running a stored program remotely is only supported in firmware version >= v1.2.0."
