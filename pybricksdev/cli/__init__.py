@@ -19,6 +19,7 @@ import argcomplete
 import questionary
 from argcomplete.completers import FilesCompleter
 
+from packaging.version import Version
 from pybricksdev import __name__ as MODULE_NAME
 from pybricksdev import __version__ as MODULE_VERSION
 from pybricksdev.connections.pybricks import (
@@ -243,8 +244,9 @@ class Run(Tool):
             class ResponseOptions(IntEnum):
                 RECOMPILE_RUN = 0
                 RECOMPILE_DOWNLOAD = 1
-                CHANGE_TARGET_FILE = 2
-                EXIT = 3
+                RERUN_STORED = 2
+                CHANGE_TARGET_FILE = 3
+                EXIT = 4
 
             async def reconnect_hub():
                 if not await questionary.confirm(
@@ -271,6 +273,7 @@ class Run(Tool):
             response_options = [
                 "Recompile and Run",
                 "Recompile and Download",
+                "Re-run Stored Program",
                 "Change Target File",
                 "Exit",
             ]
@@ -310,6 +313,15 @@ class Run(Tool):
                         case ResponseOptions.RECOMPILE_DOWNLOAD:
                             with _get_script_path(args.file) as script_path:
                                 await hub.download(script_path)
+
+                        case ResponseOptions.RERUN_STORED:
+                            if hub.fw_version < Version("v1.2.0"):
+                                print(
+                                    "Running a stored program remotely is only supported in firmware version >= v1.2.0."
+                                )
+                            else:
+                                await hub.start_user_program()
+                                await hub._wait_for_user_program_stop()
 
                         case ResponseOptions.CHANGE_TARGET_FILE:
                             args.file.close()
