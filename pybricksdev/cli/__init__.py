@@ -277,6 +277,15 @@ class Run(Tool):
                 "Change Target File",
                 "Exit",
             ]
+            # the entry that is selected by default when the menu opens
+            # this is overridden after the user picks an option
+            # so that the default option is always the one that was last chosen
+            default_response_option = (
+                ResponseOptions.RECOMPILE_RUN
+                if args.start
+                else ResponseOptions.RECOMPILE_DOWNLOAD
+            )
+
             while True:
                 try:
                     if args.file is sys.stdin:
@@ -293,13 +302,7 @@ class Run(Tool):
                             questionary.select(
                                 f"Would you like to re-compile {os.path.basename(args.file.name)}?",
                                 response_options,
-                                default=(
-                                    response_options[ResponseOptions.RECOMPILE_RUN]
-                                    if args.start
-                                    else response_options[
-                                        ResponseOptions.RECOMPILE_DOWNLOAD
-                                    ]
-                                ),
+                                default=(response_options[default_response_option]),
                             ).ask_async()
                         )
                     )
@@ -308,18 +311,23 @@ class Run(Tool):
 
                         case ResponseOptions.RECOMPILE_RUN:
                             with _get_script_path(args.file) as script_path:
+                                default_response_option = ResponseOptions.RECOMPILE_RUN
                                 await hub.run(script_path, wait=True)
 
                         case ResponseOptions.RECOMPILE_DOWNLOAD:
                             with _get_script_path(args.file) as script_path:
+                                default_response_option = (
+                                    ResponseOptions.RECOMPILE_DOWNLOAD
+                                )
                                 await hub.download(script_path)
 
                         case ResponseOptions.RUN_STORED:
-                            if hub.fw_version < Version("v1.2.0"):
+                            if hub.fw_version < Version("v3.3.0"):
                                 print(
-                                    "Running a stored program remotely is only supported in firmware version >= v1.2.0."
+                                    "Running a stored program remotely is only supported in the hub firmware version >= v3.3.0."
                                 )
                             else:
+                                default_response_option = ResponseOptions.RUN_STORED
                                 await hub.start_user_program()
                                 await hub._wait_for_user_program_stop()
 
