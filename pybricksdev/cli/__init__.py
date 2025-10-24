@@ -327,7 +327,7 @@ class Run(Tool):
                                     break
                                 except FileNotFoundError:
                                     print("The file was not found. Please try again.")
-                                # send the new target file to the hub
+                            # send the new target file to the hub
                             with _get_script_path(args.file) as script_path:
                                 await hub.download(script_path)
 
