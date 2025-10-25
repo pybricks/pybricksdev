@@ -6,18 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-10-25
+
 ### Added
-- Added the `Run Stored Program` option to the `--stay-connected` menu.
-  ([pybricksdev#125])
-- Added the `Change Target File` option to the `--stay-connected` menu. 
-    ([pybricksdev#123])
+- Added the `Run Stored Program` option to the `--stay-connected` menu. ([pybricksdev#125])
+- Added the `Change Target File` option to the `--stay-connected` menu. ([pybricksdev#123])
 
 [pybricksdev#123]: https://github.com/pybricks/pybricksdev/pull/123
-
-### Changed
-- Changed the default option in the `--stay-connected` menu to be the last
-    used option. ([pybricksdev#125])
-
 [pybricksdev#125]: https://github.com/pybricks/pybricksdev/pull/125
 
 ## [2.1.1] - 2025-09-13
@@ -530,7 +525,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/pybricks/pybricksdev/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/pybricks/pybricksdev/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/pybricks/pybricksdev/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/pybricks/pybricksdev/compare/v2.0.0...v2.0.1
