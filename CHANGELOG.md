@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added the `Run Stored Program` option to the `--stay-connected` menu.
+  ([pybricksdev#125])
 - Added the `Change Target File` option to the `--stay-connected` menu. 
     ([pybricksdev#123])
 
 [pybricksdev#123]: https://github.com/pybricks/pybricksdev/pull/123
+
+### Changed
+- Changed the default option in the `--stay-connected` menu to be the last
+    used option. ([pybricksdev#125])
+
+[pybricksdev#125]: https://github.com/pybricks/pybricksdev/pull/125
 
 ## [2.1.1] - 2025-09-13
 
