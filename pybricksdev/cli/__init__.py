@@ -307,11 +307,7 @@ class Run(Tool):
                         )
                     )
 
-                    if (
-                        response_options.index(response)
-                        != ResponseOptions.CHANGE_TARGET_FILE
-                    ):
-                        default_response_option = response_options.index(response)
+                    default_response_option = response_options.index(response)
 
                     match response_options.index(response):
 
