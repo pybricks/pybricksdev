@@ -360,7 +360,7 @@ class Run(Tool):
                             return
 
                 except SyntaxError as e:
-                    print("\nA syntax error occurred when parsing your program:")
+                    print("\nA syntax error occurred while parsing your program:")
                     print(e, "\n")
 
                 except HubPowerButtonPressedError:
