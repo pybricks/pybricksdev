@@ -359,6 +359,10 @@ class Run(Tool):
                         case _:
                             return
 
+                except SyntaxError as e:
+                    print("\nA syntax error occurred when parsing your program:")
+                    print(e, "\n")
+
                 except HubPowerButtonPressedError:
                     # This means the user pressed the button on the hub to re-start the
                     # current program, so the menu was canceled and we are now printing
