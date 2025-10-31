@@ -503,6 +503,7 @@ class TestCompile:
             args = argparse.Namespace(
                 file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
                 abi=6,
+                bin=False,
             )
 
             # Mock the compile function
@@ -537,6 +538,7 @@ class TestCompile:
             args = argparse.Namespace(
                 file=mock_stdin,
                 abi=6,
+                bin=False,
             )
 
             # Mock the compile function and tempfile

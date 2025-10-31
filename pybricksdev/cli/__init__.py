@@ -115,6 +115,11 @@ class Compile(Tool):
             choices=[5, 6],
             type=int,
         )
+        parser.add_argument(
+            "--bin",
+            action="store_true",
+            help="output unformatted binary data only (useful for pipes)",
+        )
         parser.tool = self
 
     async def run(self, args: argparse.Namespace):
@@ -122,6 +127,9 @@ class Compile(Tool):
 
         with _get_script_path(args.file) as script_path:
             mpy = await compile_multi_file(script_path, args.abi)
+        if args.bin:
+            sys.stdout.buffer.write(mpy)
+            return
         print_mpy(mpy)
 
 
