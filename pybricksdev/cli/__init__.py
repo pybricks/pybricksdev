@@ -379,10 +379,8 @@ class Run(Tool):
                         hub._enable_line_handler = True
                     await hub.download(script_path)
 
-            if not args.stay_connected:
-                return
-
-            await stay_connected_menu(hub)
+            if args.stay_connected:
+                await stay_connected_menu(hub)
 
         except SyntaxError as e:
             print("\nA syntax error occurred while parsing your program:")
