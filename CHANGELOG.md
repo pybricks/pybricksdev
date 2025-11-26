@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed 
+- The `run` command now catches syntax errors in the input file. ([pybricksdev#126]) 
+
+[pybricksdev#126]: https://github.com/pybricks/pybricksdev/pull/126
+
 ## [2.3.0] - 2025-10-31
 
 ### Added
