@@ -4,7 +4,7 @@
 
 import os
 import struct
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -14,35 +14,27 @@ from pybricksdev.compile import compile_file
 @pytest.mark.parametrize("abi", [5, 6])
 @pytest.mark.asyncio
 async def test_compile_file(abi: int):
-    with NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        try:
+    with TemporaryDirectory() as temp_dir:
+        with open(os.path.join(temp_dir, "test.py"), "w", encoding="utf-8") as f:
             f.write("print('test')")
-            f.close()
 
-            mpy = await compile_file(
-                os.path.dirname(f.name), os.path.basename(f.name), abi=abi
-            )
+        mpy = await compile_file(
+            os.path.dirname(f.name), os.path.basename(f.name), abi=abi
+        )
 
-            magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
+        magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
 
-            assert chr(magic) == "M"
-            assert abi_ver == abi
-            assert flags == 0
-            assert int_bits == 31
-        finally:
-            os.unlink(f.name)
+        assert chr(magic) == "M"
+        assert abi_ver == abi
+        assert flags == 0
+        assert int_bits == 31
 
 
 @pytest.mark.asyncio
 async def test_compile_file_invalid_abi():
-    with NamedTemporaryFile("w", delete=False, encoding="utf-8") as f:
-        try:
+    with TemporaryDirectory() as temp_dir:
+        with open(os.path.join(temp_dir, "test.py"), "w", encoding="utf-8") as f:
             f.write("print('test')")
-            f.close()
 
-            with pytest.raises(ValueError, match="mpy_version must be 5 or 6"):
-                await compile_file(
-                    os.path.dirname(f.name), os.path.basename(f.name), abi=4
-                )
-        finally:
-            os.unlink(f.name)
+        with pytest.raises(ValueError, match="mpy_version must be 5 or 6"):
+            await compile_file(os.path.dirname(f.name), os.path.basename(f.name), abi=4)
