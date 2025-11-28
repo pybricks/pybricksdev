@@ -183,141 +183,173 @@ class Run(Tool):
             default=False,
         )
 
-    async def run(self, args: argparse.Namespace):
+    async def stay_connected_menu(self, hub: PybricksHub, args: argparse.Namespace):
 
-        async def stay_connected_menu(hub: PybricksHub):
+        if args.conntype == "ble":
+            from pybricksdev.ble import find_device as find_ble
+            from pybricksdev.connections.pybricks import PybricksHubBLE
+        else:
+            from usb.core import find as find_usb
 
-            class ResponseOptions(IntEnum):
-                RECOMPILE_RUN = 0
-                RECOMPILE_DOWNLOAD = 1
-                RUN_STORED = 2
-                CHANGE_TARGET_FILE = 3
-                EXIT = 4
-
-            async def reconnect_hub():
-                if not await questionary.confirm(
-                    "\nThe hub has been disconnected. Would you like to re-connect?"
-                ).ask_async():
-                    exit()
-
-                if args.conntype == "ble":
-                    print(
-                        f"Searching for {args.name or 'any hub with Pybricks service'}..."
-                    )
-                    device_or_address = await find_ble(args.name)
-                    hub = PybricksHubBLE(device_or_address)
-                elif args.conntype == "usb":
-                    device_or_address = find_usb(custom_match=is_pybricks_usb)
-                    hub = PybricksHubUSB(device_or_address)
-
-                await hub.connect()
-                # re-enable echoing of the hub's stdout
-                hub._enable_line_handler = True
-                hub.print_output = True
-                return hub
-
-            response_options = [
-                "Recompile and Run",
-                "Recompile and Download",
-                "Run Stored Program",
-                "Change Target File",
-                "Exit",
-            ]
-            # the entry that is selected by default when the menu opens
-            # this is overridden after the user picks an option
-            # so that the default option is always the one that was last chosen
-            default_response_option = (
-                ResponseOptions.RECOMPILE_RUN
-                if args.start
-                else ResponseOptions.RECOMPILE_DOWNLOAD
+            from pybricksdev.connections.pybricks import PybricksHubUSB
+            from pybricksdev.usb import (
+                EV3_USB_PID,
+                LEGO_USB_VID,
+                MINDSTORMS_INVENTOR_USB_PID,
+                NXT_USB_PID,
+                SPIKE_ESSENTIAL_USB_PID,
+                SPIKE_PRIME_USB_PID,
             )
 
-            while True:
-                try:
-                    if args.file is sys.stdin:
-                        await hub.race_disconnect(
-                            hub.race_power_button_press(
-                                questionary.press_any_key_to_continue(
-                                    "The hub will stay connected and echo its output to the terminal. Press any key to exit."
-                                ).ask_async()
-                            )
-                        )
-                        return
-                    response = await hub.race_disconnect(
+            def is_pybricks_usb(dev):
+                return (
+                    (dev.idVendor == LEGO_USB_VID)
+                    and (
+                        dev.idProduct
+                        in [
+                            NXT_USB_PID,
+                            EV3_USB_PID,
+                            SPIKE_PRIME_USB_PID,
+                            SPIKE_ESSENTIAL_USB_PID,
+                            MINDSTORMS_INVENTOR_USB_PID,
+                        ]
+                    )
+                    and dev.product.endswith("Pybricks")
+                )
+
+        class ResponseOptions(IntEnum):
+            RECOMPILE_RUN = 0
+            RECOMPILE_DOWNLOAD = 1
+            RUN_STORED = 2
+            CHANGE_TARGET_FILE = 3
+            EXIT = 4
+
+        async def reconnect_hub():
+            if not await questionary.confirm(
+                "\nThe hub has been disconnected. Would you like to re-connect?"
+            ).ask_async():
+                exit()
+
+            if args.conntype == "ble":
+                print(
+                    f"Searching for {args.name or 'any hub with Pybricks service'}..."
+                )
+                device_or_address = await find_ble(args.name)
+                hub = PybricksHubBLE(device_or_address)
+            elif args.conntype == "usb":
+                device_or_address = find_usb(custom_match=is_pybricks_usb)
+                hub = PybricksHubUSB(device_or_address)
+
+            await hub.connect()
+            # re-enable echoing of the hub's stdout
+            hub._enable_line_handler = True
+            hub.print_output = True
+            return hub
+
+        response_options = [
+            "Recompile and Run",
+            "Recompile and Download",
+            "Run Stored Program",
+            "Change Target File",
+            "Exit",
+        ]
+        # the entry that is selected by default when the menu opens
+        # this is overridden after the user picks an option
+        # so that the default option is always the one that was last chosen
+        default_response_option = (
+            ResponseOptions.RECOMPILE_RUN
+            if args.start
+            else ResponseOptions.RECOMPILE_DOWNLOAD
+        )
+
+        while True:
+            try:
+                if args.file is sys.stdin:
+                    await hub.race_disconnect(
                         hub.race_power_button_press(
-                            questionary.select(
-                                f"Would you like to re-compile {os.path.basename(args.file.name)}?",
-                                response_options,
-                                default=(response_options[default_response_option]),
+                            questionary.press_any_key_to_continue(
+                                "The hub will stay connected and echo its output to the terminal. Press any key to exit."
                             ).ask_async()
                         )
                     )
+                    return
+                response = await hub.race_disconnect(
+                    hub.race_power_button_press(
+                        questionary.select(
+                            f"Would you like to re-compile {os.path.basename(args.file.name)}?",
+                            response_options,
+                            default=(response_options[default_response_option]),
+                        ).ask_async()
+                    )
+                )
 
-                    default_response_option = response_options.index(response)
+                default_response_option = response_options.index(response)
 
-                    match response_options.index(response):
+                match response_options.index(response):
 
-                        case ResponseOptions.RECOMPILE_RUN:
-                            with _get_script_path(args.file) as script_path:
-                                await hub.run(script_path, wait=True)
+                    case ResponseOptions.RECOMPILE_RUN:
+                        with _get_script_path(args.file) as script_path:
+                            await hub.run(script_path, wait=True)
 
-                        case ResponseOptions.RECOMPILE_DOWNLOAD:
-                            with _get_script_path(args.file) as script_path:
-                                await hub.download(script_path)
+                    case ResponseOptions.RECOMPILE_DOWNLOAD:
+                        with _get_script_path(args.file) as script_path:
+                            await hub.download(script_path)
 
-                        case ResponseOptions.RUN_STORED:
-                            if hub.fw_version < Version("3.2.0-beta.4"):
-                                print(
-                                    "Running a stored program remotely is only supported in the hub firmware version >= v3.2.0."
-                                )
-                            else:
-                                await hub.start_user_program()
-                                await hub._wait_for_user_program_stop()
+                    case ResponseOptions.RUN_STORED:
+                        if hub.fw_version < Version("3.2.0-beta.4"):
+                            print(
+                                "Running a stored program remotely is only supported in the hub firmware version >= v3.2.0."
+                            )
+                        else:
+                            await hub.start_user_program()
+                            await hub._wait_for_user_program_stop()
 
-                        case ResponseOptions.CHANGE_TARGET_FILE:
-                            args.file.close()
-                            while True:
-                                try:
-                                    args.file = open(
-                                        await hub.race_disconnect(
-                                            hub.race_power_button_press(
-                                                questionary.path(
-                                                    "What file would you like to use?"
-                                                ).ask_async()
-                                            )
+                    case ResponseOptions.CHANGE_TARGET_FILE:
+                        args.file.close()
+                        while True:
+                            try:
+                                args.file = open(
+                                    await hub.race_disconnect(
+                                        hub.race_power_button_press(
+                                            questionary.path(
+                                                "What file would you like to use?"
+                                            ).ask_async()
                                         )
                                     )
-                                    break
-                                except FileNotFoundError:
-                                    print("The file was not found. Please try again.")
-                            # send the new target file to the hub
-                            with _get_script_path(args.file) as script_path:
-                                await hub.download(script_path)
+                                )
+                                break
+                            except FileNotFoundError:
+                                print("The file was not found. Please try again.")
+                        # send the new target file to the hub
+                        with _get_script_path(args.file) as script_path:
+                            await hub.download(script_path)
 
-                        case _:
-                            return
+                    case _:
+                        return
 
-                except SyntaxError as e:
-                    print()
-                    print("A syntax error occurred while parsing your program:")
-                    print(e)
-                    print()
+            except SyntaxError as e:
+                print()
+                print("A syntax error occurred while parsing your program:")
+                print(e)
+                print()
 
-                except HubPowerButtonPressedError:
-                    # This means the user pressed the button on the hub to re-start the
-                    # current program, so the menu was canceled and we are now printing
-                    # the hub stdout until the user program ends on the hub.
-                    try:
-                        await hub._wait_for_power_button_release()
-                        await hub._wait_for_user_program_stop()
-
-                    except HubDisconnectError:
-                        hub = await reconnect_hub()
+            except HubPowerButtonPressedError:
+                # This means the user pressed the button on the hub to re-start the
+                # current program, so the menu was canceled and we are now printing
+                # the hub stdout until the user program ends on the hub.
+                try:
+                    await hub._wait_for_power_button_release()
+                    await hub._wait_for_user_program_stop()
 
                 except HubDisconnectError:
-                    # let terminal cool off before making a new prompt
-                    await asyncio.sleep(0.3)
                     hub = await reconnect_hub()
+
+            except HubDisconnectError:
+                # let terminal cool off before making a new prompt
+                await asyncio.sleep(0.3)
+                hub = await reconnect_hub()
+
+    async def run(self, args: argparse.Namespace):
 
         # Pick the right connection
         if args.conntype == "ble":
@@ -382,13 +414,15 @@ class Run(Tool):
                     await hub.download(script_path)
 
             if args.stay_connected:
-                await stay_connected_menu(hub)
+                await self.stay_connected_menu(hub)
 
         except SyntaxError as e:
-            print("\nA syntax error occurred while parsing your program:")
-            print(e, "\n")
+            print()
+            print("A syntax error occurred while parsing your program:")
+            print(e)
+            print()
             if args.stay_connected:
-                await stay_connected_menu(hub)
+                await self.stay_connected_menu(hub)
 
         finally:
             await hub.disconnect()
