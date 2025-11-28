@@ -18,7 +18,7 @@ TMP_PY_SCRIPT = "_tmp.py"
 TMP_MPY_SCRIPT = "_tmp.mpy"
 
 
-def make_build_dir():
+def make_build_dir() -> None:
     # Create build folder if it does not exist
     if not os.path.exists(BUILD_DIR):
         os.mkdir(BUILD_DIR)
@@ -30,7 +30,7 @@ def make_build_dir():
 
 async def compile_file(
     proj_dir: str, proj_path: str, abi: int, compile_args: list[str] | None = None
-):
+) -> bytes:
     """Compiles a Python file with ``mpy-cross``.
 
     Arguments:
@@ -77,10 +77,12 @@ async def compile_file(
 
         proc.check_returncode()
 
+        assert mpy is not None, "if process succeeded, mpy should not be None"
+
         return mpy
 
 
-async def compile_multi_file(path: str, abi: int | tuple[int, int]):
+async def compile_multi_file(path: str, abi: int | tuple[int, int]) -> bytes:
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
@@ -178,7 +180,7 @@ async def compile_multi_file(path: str, abi: int | tuple[int, int]):
     return b"".join(parts)
 
 
-def save_script(py_string):
+def save_script(py_string: str) -> str:
     """Save a MicroPython one-liner to a file."""
     # Make the build directory.
     make_build_dir()
@@ -195,7 +197,7 @@ def save_script(py_string):
     return py_path
 
 
-def print_mpy(data):
+def print_mpy(data: bytes) -> None:
     # Print as string as a sanity check.
     print()
     print("Bytes:")
