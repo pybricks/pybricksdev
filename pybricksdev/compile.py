@@ -1,10 +1,14 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2019-2023 The Pybricks Authors
+# Copyright (c) 2019-2025 The Pybricks Authors
 
 import asyncio
+import json
 import logging
 import os
+import subprocess
+import sys
 from modulefinder import ModuleFinder
+from tempfile import TemporaryDirectory
 
 import mpy_cross_v5
 import mpy_cross_v6
@@ -18,7 +22,7 @@ TMP_PY_SCRIPT = "_tmp.py"
 TMP_MPY_SCRIPT = "_tmp.mpy"
 
 
-def make_build_dir():
+def make_build_dir() -> None:
     # Create build folder if it does not exist
     if not os.path.exists(BUILD_DIR):
         os.mkdir(BUILD_DIR)
@@ -30,7 +34,7 @@ def make_build_dir():
 
 async def compile_file(
     proj_dir: str, proj_path: str, abi: int, compile_args: list[str] | None = None
-):
+) -> bytes:
     """Compiles a Python file with ``mpy-cross``.
 
     Arguments:
@@ -77,10 +81,12 @@ async def compile_file(
 
         proc.check_returncode()
 
+        assert mpy is not None, "if process succeeded, mpy should not be None"
+
         return mpy
 
 
-async def compile_multi_file(path: str, abi: int | tuple[int, int]):
+async def compile_multi_file(path: str, abi: int | tuple[int, int]) -> bytes:
     """Compiles a Python file and its dependencies with ``mpy-cross``.
 
     On the hub, all dependencies behave as independent modules. Any (leading)
@@ -117,6 +123,151 @@ async def compile_multi_file(path: str, abi: int | tuple[int, int]):
         subprocess.CalledProcessError: if executing the ``mpy-cross` tool failed.
     """
 
+    if isinstance(abi, int) and abi < 6 or isinstance(abi, tuple) and abi < (6, 0):
+        return await _compile_multi_file_with_module_finder(path, abi)
+
+    return await _compile_multi_file_with_mpy_tool(path, abi)
+
+
+def _run_mpy_tool(mpy_path: str) -> bytes:
+    """
+    Runs mpy-tool to get disassembly info in JSON format.
+
+    Args:
+        mpy_path:
+            Path to the .mpy file to analyze.
+
+    Returns:
+        The JSON output from mpy-tool.
+    """
+
+    # We have to use subprocess here because mpy-tool stdout that we need to
+    # capture and stderr that we need to ignore.
+    stdout = subprocess.check_output(
+        [
+            sys.executable,
+            "-m",
+            "pybricksdev._vendored.mpy_tool_v6_3",
+            "-d",  # disassemble
+            "-j",  # output json (compiler explorer format)
+            mpy_path,
+        ],
+        stderr=subprocess.PIPE,
+    )
+
+    return stdout
+
+
+async def _compile_module_and_get_imports(
+    proj_dir: str, module_name: str, abi: int
+) -> tuple[bytes, set[str]]:
+    """
+    Compiles a single file with mpy-cross and then dissembles it with mpy-tool
+    to get the list of imported modules.
+
+    Args:
+        proj_dir:
+            Path to project containing the script to be compiled.
+        module_name:
+            Module name to be compiled.
+        abi:
+            Expected MPY ABI major version.
+
+    Returns:
+        A tuple of the compiled MPY bytes and a set of imported module names.
+
+    The module is searched relative to *proj_dir*.
+    """
+    with TemporaryDirectory() as temp_dir:
+        module_path = os.path.join(*module_name.split(".")) + ".py"
+
+        # TODO: check for pre-compiled .mpy file first?
+
+        mpy = await compile_file(proj_dir, module_path, abi)
+
+        mpy_path = os.path.join(temp_dir, TMP_MPY_SCRIPT)
+
+        with open(mpy_path, "wb") as f:
+            f.write(mpy)
+
+        info_json = await asyncio.get_running_loop().run_in_executor(
+            None, _run_mpy_tool, mpy_path
+        )
+
+        imported_modules = set[str]()
+
+        info: dict[str, list[dict[str, str]]] = json.loads(info_json)
+        for x in info["asm"]:
+            if x.get("disassembly") != "IMPORT_NAME":
+                continue
+
+            tokens = x["text"].split(" ")
+
+            assert tokens[-2] == "IMPORT_NAME", "expected IMPORT_NAME opcode"
+
+            imported_modules.add(tokens[-1])
+
+        return mpy, imported_modules
+
+
+async def _compile_multi_file_with_mpy_tool(
+    path: str, abi: int | tuple[int, int]
+) -> bytes:
+    """
+    Implementation of compile_multi_file() using mpy-tool to find imports.
+    """
+    proj_dir = os.path.dirname(path)
+    proj_module_file = os.path.basename(path)
+    proj_module_name = os.path.splitext(proj_module_file)[0]
+
+    abi_major, _abi_minor = (abi, None) if isinstance(abi, int) else abi
+
+    mpy, imported_modules = await _compile_module_and_get_imports(
+        proj_dir, proj_module_name, abi_major
+    )
+
+    not_found_modules = set[str]()
+    compiled_modules: dict[str, bytes] = {"__main__": mpy}
+
+    while to_compile := imported_modules.difference(not_found_modules).difference(
+        compiled_modules.keys()
+    ):
+        for module_name in to_compile:
+            try:
+                mpy, new_imports = await _compile_module_and_get_imports(
+                    proj_dir, module_name, abi_major
+                )
+            except FileNotFoundError:
+                not_found_modules.add(module_name)
+                continue
+
+            compiled_modules[module_name] = mpy
+            imported_modules.update(new_imports)
+
+    parts: list[bytes] = []
+
+    for name, mpy in compiled_modules.items():
+        parts.append(len(mpy).to_bytes(4, "little"))
+        parts.append(name.encode() + b"\x00")
+        parts.append(mpy)
+
+    print(imported_modules)
+    print(not_found_modules)
+
+    return b"".join(parts)
+
+
+async def _compile_multi_file_with_module_finder(
+    path: str, abi: int | tuple[int, int]
+) -> bytes:
+    """
+    Legacy implementation of compile_multi_file() using CPython's ModuleFinder.
+
+    This has some shortcomings:
+    - It can get hung up on CPython compile errors that may not be errors in MicroPython.
+    - In doesn't support implicit namespace packages.
+    - It doesn't search pre-compiled .mpy files for dependencies.
+    """
     # compile files using Python to find imports contained within the same directory as path
     proj_path = os.path.dirname(path)
     search_path = [proj_path]
@@ -178,7 +329,7 @@ async def compile_multi_file(path: str, abi: int | tuple[int, int]):
     return b"".join(parts)
 
 
-def save_script(py_string):
+def save_script(py_string: str) -> str:
     """Save a MicroPython one-liner to a file."""
     # Make the build directory.
     make_build_dir()
@@ -195,7 +346,7 @@ def save_script(py_string):
     return py_path
 
 
-def print_mpy(data):
+def print_mpy(data: bytes) -> None:
     # Print as string as a sanity check.
     print()
     print("Bytes:")
