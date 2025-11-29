@@ -414,7 +414,7 @@ class Run(Tool):
                     await hub.download(script_path)
 
             if args.stay_connected:
-                await self.stay_connected_menu(hub)
+                await self.stay_connected_menu(hub, args)
 
         except SyntaxError as e:
             print()
@@ -422,7 +422,7 @@ class Run(Tool):
             print(e)
             print()
             if args.stay_connected:
-                await self.stay_connected_menu(hub)
+                await self.stay_connected_menu(hub, args)
 
         finally:
             await hub.disconnect()
