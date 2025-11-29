@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed 
+### Changed
 - The `run` command now catches syntax errors in the input file. ([pybricksdev#126]) 
+- Changed `pybricksdev.compile.compile_multi_file()` to use `mpy-tool` to find imports
+  instead of Python's `ModuleFinder`.
+
+### Fixed
+- Fixed compiling multi-file projects with implicit namespace packages.
 
 [pybricksdev#126]: https://github.com/pybricks/pybricksdev/pull/126
 
