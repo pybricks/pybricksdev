@@ -8,6 +8,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import subprocess
 import sys
 from abc import ABC, abstractmethod
 from enum import IntEnum
@@ -327,11 +328,10 @@ class Run(Tool):
                     case _:
                         return
 
-            except SyntaxError as e:
+            except subprocess.CalledProcessError as e :
                 print()
                 print("A syntax error occurred while parsing your program:")
-                print(e)
-                print()
+                print(e.stderr.decode())
 
             except HubPowerButtonPressedError:
                 # This means the user pressed the button on the hub to re-start the
@@ -416,11 +416,10 @@ class Run(Tool):
             if args.stay_connected:
                 await self.stay_connected_menu(hub, args)
 
-        except SyntaxError as e:
+        except subprocess.CalledProcessError as e:
             print()
             print("A syntax error occurred while parsing your program:")
-            print(e)
-            print()
+            print(e.stderr.decode())
             if args.stay_connected:
                 await self.stay_connected_menu(hub, args)
 
