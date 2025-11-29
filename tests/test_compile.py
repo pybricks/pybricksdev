@@ -5,11 +5,32 @@
 import contextlib
 import os
 import struct
+import sys
 from tempfile import TemporaryDirectory
 
 import pytest
 
 from pybricksdev.compile import compile_file, compile_multi_file
+
+# TODO: Remove this when we drop support for Python 3.10.
+if sys.version_info < (3, 11):
+    from contextlib import AbstractContextManager
+
+    class chdir(AbstractContextManager):
+        """Non thread-safe context manager to change the current working directory."""
+
+        def __init__(self, path):
+            self.path = path
+            self._old_cwd = []
+
+        def __enter__(self):
+            self._old_cwd.append(os.getcwd())
+            os.chdir(self.path)
+
+        def __exit__(self, *excinfo):
+            os.chdir(self._old_cwd.pop())
+
+    setattr(contextlib, "chdir", chdir)
 
 
 @pytest.mark.parametrize("abi", [5, 6])
@@ -63,12 +84,16 @@ async def test_compile_multi_file(abi: int):
 
         os.mkdir("nested")
 
+        # We didn't implement a better way for older ABI yet.
+        uses_module_finder = abi == 5
+
         # Work around bug where ModuleFinder can't handle implicit namespace
         # packages by adding an __init__.py file.
-        with open(
-            os.path.join(temp_dir, "nested", "__init__.py"), "w", encoding="utf-8"
-        ) as init:
-            init.write("")
+        if uses_module_finder:
+            with open(
+                os.path.join(temp_dir, "nested", "__init__.py"), "w", encoding="utf-8"
+            ) as init:
+                init.write("")
 
         with open(
             os.path.join(temp_dir, "nested", "test3.py"), "w", encoding="utf-8"
@@ -98,19 +123,36 @@ async def test_compile_multi_file(abi: int):
 
             return name, mpy
 
+        names = set[str]()
+
         name1, mpy1 = unpack_mpy(multi_mpy)
         name2, mpy2 = unpack_mpy(multi_mpy)
+        names.add(name2.decode())
         name3, mpy3 = unpack_mpy(multi_mpy)
-        name4, mpy4 = unpack_mpy(multi_mpy)
+        names.add(name3.decode())
+        if uses_module_finder:
+            # ModuleFinder requires __init__.py.
+            name4, mpy4 = unpack_mpy(multi_mpy)
+            names.add(name4.decode())
         name5, mpy5 = unpack_mpy(multi_mpy)
+        names.add(name5.decode())
 
         assert pos == len(multi_mpy)
 
+        # It is important that the main module is first.
         assert name1.decode() == "__main__"
-        assert name2.decode() == "test1"
-        assert name3.decode() == "test2"
-        assert name4.decode() == "nested"
-        assert name5.decode() == "nested.test3"
+
+        # The other modules can be in any order.
+        assert "test1" in names
+        assert "test2" in names
+        if uses_module_finder:
+            assert "nested" in names
+        assert "nested.test3" in names
+
+        if uses_module_finder:
+            assert len(names) == 4
+        else:
+            assert len(names) == 3
 
         def check_mpy(mpy: bytes) -> None:
             magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
@@ -123,5 +165,6 @@ async def test_compile_multi_file(abi: int):
         check_mpy(mpy1)
         check_mpy(mpy2)
         check_mpy(mpy3)
-        check_mpy(mpy4)
+        if uses_module_finder:
+            check_mpy(mpy4)  # pyright: ignore[reportPossiblyUnboundVariable]
         check_mpy(mpy5)
