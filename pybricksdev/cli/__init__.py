@@ -328,7 +328,7 @@ class Run(Tool):
                     case _:
                         return
 
-            except subprocess.CalledProcessError as e :
+            except subprocess.CalledProcessError as e:
                 print()
                 print("A syntax error occurred while parsing your program:")
                 print(e.stderr.decode())
