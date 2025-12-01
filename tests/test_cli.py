@@ -663,27 +663,44 @@ class TestRun:
     @pytest.mark.asyncio
     async def test_stay_connected_menu_interruptions(self):
         """Test the stay_connected_menu being interrupted by a power button press or hub disconnect."""
-        disconnect_call_count = 0
-        power_call_count = 0
+        mock_menu_call_count = 0
 
         # simulates the hub disconnecting on the first call,
         async def mock_race_disconnect(awaitable):
-            task = asyncio.ensure_future(awaitable)
-            nonlocal disconnect_call_count
-            disconnect_call_count += 1
-            if disconnect_call_count == 1:
+            task = asyncio.create_task(awaitable)
+            try:
+                if mock_menu_call_count == 1:
+                    await asyncio.sleep(0.01)
+                    task.cancel()
+                    raise HubDisconnectError("hub disconnected")
+                return await task
+            except BaseException:
+                await asyncio.sleep(0.01)
                 task.cancel()
-                raise HubDisconnectError("hub disconnected")
-            return await awaitable
+                raise
 
+        # simulate the power button being pressed on the second call
         async def mock_race_power_button_press(awaitable):
-            task = asyncio.ensure_future(awaitable)
-            nonlocal power_call_count
-            power_call_count += 1
-            if power_call_count == 2:
+            task = asyncio.create_task(awaitable)
+            try:
+                if mock_menu_call_count == 2:
+                    await asyncio.sleep(0.01)
+                    task.cancel()
+                    raise HubPowerButtonPressedError("power button pressed")
+                return await task
+            except BaseException:
+                await asyncio.sleep(0.01)
                 task.cancel()
-                raise HubPowerButtonPressedError("power button pressed")
-            return await awaitable
+                raise
+
+        # should be called but cancelled twice, returning "Recompile and Run" the third time
+        async def mock_menu_function():
+            nonlocal mock_menu_call_count
+            mock_menu_call_count += 1
+            if mock_menu_call_count <= 3:
+                return "Recompile and Run"
+            else:
+                return "Exit"
 
         # Create a mock hub
         mock_hub = AsyncMock()
@@ -700,12 +717,11 @@ class TestRun:
         mock_hub._wait_for_user_program_stop = AsyncMock()
         # create a mock questionary menu
         mock_menu = AsyncMock()
-        mock_menu.ask_async.side_effect = [
-            "Recompile and Run",
-            "Exit",
-        ]
-        mock_confirm = AsyncMock()
-        mock_confirm.ask_async.return_value = True
+        mock_menu.ask_async.side_effect = mock_menu_function
+
+        # create a mock confirmation menu to reconnect to the hub
+        mock_confirm_menu = AsyncMock()
+        mock_confirm_menu.ask_async.return_value = True
 
         # Set up mocks using ExitStack
         with contextlib.ExitStack() as stack:
@@ -742,17 +758,25 @@ class TestRun:
             mock_selector = stack.enter_context(
                 patch("questionary.select", return_value=mock_menu)
             )
-            stack.enter_context(patch("questionary.confirm", return_value=mock_confirm))
+            mock_confirm = stack.enter_context(
+                patch("questionary.confirm", return_value=mock_confirm_menu)
+            )
 
             # Run the command
             run_cmd = Run()
             await run_cmd.stay_connected_menu(mock_hub, args)
 
             assert mock_selector.call_count == 4
+            # a confirmation menu should be triggered and the hub should be re-instantiated upon a HubDisconnectError
+            mock_confirm.assert_called_once()
             mock_hub_class.assert_called_once()
             mock_hub.connect.assert_called_once()
+
+            # these functions should be triggered upon a HubPowerButtonPressedError
             mock_hub._wait_for_power_button_release.assert_called_once()
             mock_hub._wait_for_user_program_stop.assert_called_once()
+
+            # this should only be called once because the menu was canceled the first two times it was called
             mock_hub.run.assert_called_once_with(temp_path, wait=True)
 
 
