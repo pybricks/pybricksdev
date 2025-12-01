@@ -316,7 +316,8 @@ class Run(Tool):
                                                 "What file would you like to use?"
                                             ).ask_async()
                                         )
-                                    )
+                                    ),
+                                    encoding="utf-8",
                                 )
                                 break
                             except FileNotFoundError:
