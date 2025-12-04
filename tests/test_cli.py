@@ -663,6 +663,59 @@ class TestRun:
             mock_hub.run.assert_called_once_with(new_path, wait=True)
 
     @pytest.mark.asyncio
+    async def test_stay_connected_menu_run_stored(self):
+        """Test that the run_stored program option doesn't call an inaccessible method on an old hub."""
+
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
+        # Create a mock hub
+        old_mock_hub = AsyncMock()
+
+        # simulate an old hub that can't handle the run_stored_program option
+        old_mock_hub.fw_version = Version("3.2.0-beta.3")
+        old_mock_hub.run = AsyncMock()
+        old_mock_hub.connect = AsyncMock()
+        old_mock_hub.start_user_program = AsyncMock()
+        old_mock_hub.race_disconnect = old_mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+
+        # create a mock questionary menu
+        mock_selector = AsyncMock()
+        mock_selector.ask_async.side_effect = [
+            "Run Stored Program",
+            "Exit",
+        ]
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(
+                    tempfile.NamedTemporaryFile(
+                        suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                    )
+                ),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            stack.enter_context(patch("questionary.select", return_value=mock_selector))
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.stay_connected_menu(old_mock_hub, args)
+
+            old_mock_hub.start_user_program.assert_not_called()
+            old_mock_hub._wait_for_user_program_stop.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_stay_connected_menu_interruptions(self):
         """Test the stay_connected_menu being interrupted by a power button press or hub disconnect."""
         mock_menu_call_count = 0
@@ -780,59 +833,6 @@ class TestRun:
 
             # this should only be called once because the menu was canceled the first two times it was called
             mock_hub.run.assert_called_once_with(temp_path, wait=True)
-
-    @pytest.mark.asyncio
-    async def test_stay_connected_menu_run_stored(self):
-        """Test that the run_stored program option doesn't call an inaccessible method on an old hub."""
-
-        async def passthrough_awaitable(awaitable):
-            return await awaitable
-
-        # Create a mock hub
-        old_mock_hub = AsyncMock()
-
-        # simulate an old hub that can't handle the run_stored_program option
-        old_mock_hub.fw_version = Version("3.2.0-beta.3")
-        old_mock_hub.run = AsyncMock()
-        old_mock_hub.connect = AsyncMock()
-        old_mock_hub.start_user_program = AsyncMock()
-        old_mock_hub.race_disconnect = old_mock_hub.race_power_button_press = AsyncMock(
-            side_effect=passthrough_awaitable
-        )
-
-        # create a mock questionary menu
-        mock_selector = AsyncMock()
-        mock_selector.ask_async.side_effect = [
-            "Run Stored Program",
-            "Exit",
-        ]
-
-        # Set up mocks using ExitStack
-        with contextlib.ExitStack() as stack:
-            # Create and manage temporary file
-
-            # Create args
-            args = argparse.Namespace(
-                conntype="ble",
-                file=stack.enter_context(
-                    tempfile.NamedTemporaryFile(
-                        suffix=".py", mode="w+", delete=False, encoding="utf-8"
-                    )
-                ),
-                name="MyHub",
-                start=True,
-                wait=True,
-                stay_connected=True,
-            )
-
-            stack.enter_context(patch("questionary.select", return_value=mock_selector))
-
-            # Run the command
-            run_cmd = Run()
-            await run_cmd.stay_connected_menu(old_mock_hub, args)
-
-            old_mock_hub.start_user_program.assert_not_called()
-            old_mock_hub._wait_for_user_program_stop.assert_not_called()
 
 
 class TestCompile:
