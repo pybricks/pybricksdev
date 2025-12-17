@@ -452,9 +452,18 @@ class TestRun:
     async def test_run_syntax_error(self):
         """Test that the stay connected menu is called upon a syntax error when the appropriate flag is active."""
 
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
         # Create a mock hub
         mock_hub = AsyncMock()
         mock_hub.connect = AsyncMock()
+        mock_hub.race_disconnect = mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+
+        mock_selector = AsyncMock()
+        mock_selector.ask_async.side_effect = ["Exit"]
 
         # Set up mocks using ExitStack
         with contextlib.ExitStack() as stack:
@@ -487,8 +496,8 @@ class TestRun:
             stack.enter_context(
                 patch("pybricksdev.ble.find_device", return_value="mock_device")
             )
-            mock_menu = stack.enter_context(
-                patch("pybricksdev.cli.Run.stay_connected_menu")
+            mock_selector = stack.enter_context(
+                patch("questionary.select", return_value=mock_selector)
             )
 
             # Run the command
@@ -499,7 +508,7 @@ class TestRun:
             mock_hub_class.assert_called_once_with("mock_device")
             mock_hub.connect.assert_called_once()
             mock_hub.run.assert_called_once_with(temp_path, True)
-            mock_menu.assert_called_once_with(mock_hub, args)
+            mock_selector.assert_called_once()
             mock_hub.disconnect.assert_called_once()
 
     @pytest.mark.asyncio
