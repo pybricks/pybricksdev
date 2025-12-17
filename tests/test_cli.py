@@ -5,7 +5,6 @@ import asyncio
 import contextlib
 import io
 import os
-import subprocess
 import tempfile
 from unittest.mock import AsyncMock, Mock, mock_open, patch
 
