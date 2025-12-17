@@ -455,11 +455,6 @@ class TestRun:
 
         # Create a mock hub
         mock_hub = AsyncMock()
-        mock_hub.run = AsyncMock(
-            side_effect=subprocess.CalledProcessError(
-                returncode=1, cmd="test", stderr=b"test"
-            )
-        )
         mock_hub.connect = AsyncMock()
 
         # Set up mocks using ExitStack
@@ -470,7 +465,7 @@ class TestRun:
                     suffix=".py", mode="w+", delete=False, encoding="utf-8"
                 )
             )
-            temp.write("print('test')")
+            temp.write("syntax error")
             temp_path = temp.name
             stack.callback(os.unlink, temp_path)
 
