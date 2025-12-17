@@ -331,7 +331,7 @@ class Run(Tool):
 
             except subprocess.CalledProcessError as e:
                 print()
-                print("A syntax error occurred while parsing your program:")
+                print("mpy-cross failed to compile the program:")
                 print(e.stderr.decode())
 
             except HubPowerButtonPressedError:
@@ -414,17 +414,14 @@ class Run(Tool):
                         hub._enable_line_handler = True
                     await hub.download(script_path)
 
-            if args.stay_connected:
-                await self.stay_connected_menu(hub, args)
-
         except subprocess.CalledProcessError as e:
             print()
-            print("A syntax error occurred while parsing your program:")
+            print("mpy-cross failed to compile the program:")
             print(e.stderr.decode())
-            if args.stay_connected:
-                await self.stay_connected_menu(hub, args)
 
         finally:
+            if args.stay_connected:
+                await self.stay_connected_menu(hub, args)
             await hub.disconnect()
 
 
