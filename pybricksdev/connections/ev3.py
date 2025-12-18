@@ -126,7 +126,7 @@ class EV3Bootloader:
 
         if reply_number != message_number:
             raise RuntimeError(
-                "message sequence number mismatch: {reply_number} != {message_number}"
+                f"message sequence number mismatch: {reply_number} != {message_number}"
             )
 
         if message_type == MessageType.SYSTEM_REPLY_ERROR:
