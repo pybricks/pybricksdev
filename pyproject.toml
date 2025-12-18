@@ -49,6 +49,7 @@ reactivex = {version = ">=4.0.4", python = "<4"}
 hidapi = ">=0.14.0"
 pybricks = {version = ">=3", allow-prereleases = true, python = "<4"}
 questionary = {version = ">=2.1.1", python = "<4"}
+pyserial = "^3.5"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23,<25"
