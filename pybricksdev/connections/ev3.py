@@ -84,10 +84,17 @@ class EV3Bootloader:
 
             length += len(payload)
 
+        # report_id is not used by the EV3 but is required by HIDAPI on Windows.
+        # It does no harm on Linux, so we include it unconditionally. Note that
+        # the report ID is automatically stripped from incoming messages by
+        # HIDAPI on all platforms.
+        report_id = 0
+
         message_number = next(self._msg_count)
 
         message = struct.pack(
-            "<HHBB",
+            "<BHHBB",
+            report_id,
             length,
             message_number,
             MessageType.SYSTEM_COMMAND_REPLY,
