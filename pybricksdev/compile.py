@@ -251,9 +251,6 @@ async def _compile_multi_file_with_mpy_tool(
         parts.append(name.encode() + b"\x00")
         parts.append(mpy)
 
-    print(imported_modules)
-    print(not_found_modules)
-
     return b"".join(parts)
 
 

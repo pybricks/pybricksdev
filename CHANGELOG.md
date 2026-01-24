@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Removed debug print statements in `pybricksdev.compile.compile_multi_file()`.
+
 ## [2.3.1] - 2026-01-18
 
 ### Changed
