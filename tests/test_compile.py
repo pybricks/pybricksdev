@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2022 The Pybricks Authors
+# Copyright (c) 2022-2026 The Pybricks Authors
 
 
 import contextlib
@@ -7,6 +7,7 @@ import os
 import struct
 import sys
 from tempfile import TemporaryDirectory
+from typing import Any
 
 import pytest
 
@@ -16,18 +17,18 @@ from pybricksdev.compile import compile_file, compile_multi_file
 if sys.version_info < (3, 11):
     from contextlib import AbstractContextManager
 
-    class chdir(AbstractContextManager):
+    class chdir(AbstractContextManager[None]):
         """Non thread-safe context manager to change the current working directory."""
 
-        def __init__(self, path):
+        def __init__(self, path: str) -> None:
             self.path = path
-            self._old_cwd = []
+            self._old_cwd: list[str] = []
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             self._old_cwd.append(os.getcwd())
             os.chdir(self.path)
 
-        def __exit__(self, *excinfo):
+        def __exit__(self, *excinfo: Any) -> None:
             os.chdir(self._old_cwd.pop())
 
     setattr(contextlib, "chdir", chdir)
@@ -130,10 +131,12 @@ async def test_compile_multi_file(abi: int):
         names.add(name2.decode())
         name3, mpy3 = unpack_mpy(multi_mpy)
         names.add(name3.decode())
+
         if uses_module_finder:
             # ModuleFinder requires __init__.py.
             name4, mpy4 = unpack_mpy(multi_mpy)
             names.add(name4.decode())
+
         name5, mpy5 = unpack_mpy(multi_mpy)
         names.add(name5.decode())
 
