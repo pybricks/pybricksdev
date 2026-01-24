@@ -74,6 +74,8 @@ async def test_compile_multi_file(abi: int):
                     "import test1\n",
                     "from test2 import thing2\n",
                     "from nested.test3 import thing3\n",
+                    "from test4 import thing4\n",
+                    "from nested.test5 import thing5\n",
                 ]
             )
 
@@ -100,6 +102,24 @@ async def test_compile_multi_file(abi: int):
             os.path.join(temp_dir, "nested", "test3.py"), "w", encoding="utf-8"
         ) as f3:
             f3.write("thing3 = 'thing3'\n")
+
+        # test4 and test5 are to test package modules with non-empty __init__.py
+
+        os.mkdir("test4")
+
+        with open(
+            os.path.join(temp_dir, "test4", "__init__.py"), "w", encoding="utf-8"
+        ) as f4:
+            f4.write("thing4 = 'thing4'\n")
+
+        os.mkdir(os.path.join("nested", "test5"))
+
+        with open(
+            os.path.join(temp_dir, "nested", "test5", "__init__.py"),
+            "w",
+            encoding="utf-8",
+        ) as f5:
+            f5.write("thing5 = 'thing5'\n")
 
         multi_mpy = await compile_multi_file("test.py", abi)
         pos = 0
@@ -140,6 +160,12 @@ async def test_compile_multi_file(abi: int):
         name5, mpy5 = unpack_mpy(multi_mpy)
         names.add(name5.decode())
 
+        name6, mpy6 = unpack_mpy(multi_mpy)
+        names.add(name6.decode())
+
+        name7, mpy7 = unpack_mpy(multi_mpy)
+        names.add(name7.decode())
+
         assert pos == len(multi_mpy)
 
         # It is important that the main module is first.
@@ -153,9 +179,9 @@ async def test_compile_multi_file(abi: int):
         assert "nested.test3" in names
 
         if uses_module_finder:
-            assert len(names) == 4
+            assert len(names) == 6
         else:
-            assert len(names) == 3
+            assert len(names) == 5
 
         def check_mpy(mpy: bytes) -> None:
             magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
@@ -171,3 +197,5 @@ async def test_compile_multi_file(abi: int):
         if uses_module_finder:
             check_mpy(mpy4)  # pyright: ignore[reportPossiblyUnboundVariable]
         check_mpy(mpy5)
+        check_mpy(mpy6)
+        check_mpy(mpy7)
