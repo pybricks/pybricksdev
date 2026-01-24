@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.1] - 2026-01-18
 
 ### Changed
+- The `run` command now catches syntax errors in the input file. ([pybricksdev#126]) 
 - Changed `pybricksdev.compile.compile_multi_file()` to use `mpy-tool` to find imports
   instead of Python's `ModuleFinder`.
 
@@ -25,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed EV3 firmware upload on Windows ([pybricksdev#128]).
 
 [pybricksdev#128]: https://github.com/pybricks/pybricksdev/pull/128
+
+[pybricksdev#126]: https://github.com/pybricks/pybricksdev/pull/126
 
 ## [2.3.0] - 2025-10-31
 
