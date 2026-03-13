@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-01-23
+
+### Fixed
+- Removed debug print statements in `pybricksdev.compile.compile_multi_file()`.
+- Fixed `__init__.py` files in packages not being included when compiling multi-file projects ([pybricksdev#131]).
+
+[pybricksdev#131]: https://github.com/pybricks/pybricksdev/issues/131
+
+## [2.3.1] - 2026-01-18
+
 ### Changed
 - The `run` command now catches syntax errors in the input file. ([pybricksdev#126]) 
 - Changed `pybricksdev.compile.compile_multi_file()` to use `mpy-tool` to find imports
@@ -13,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed compiling multi-file projects with implicit namespace packages.
+- Fixed EV3 firmware upload on Windows ([pybricksdev#128]).
+
+[pybricksdev#128]: https://github.com/pybricks/pybricksdev/pull/128
 
 [pybricksdev#126]: https://github.com/pybricks/pybricksdev/pull/126
 
@@ -540,7 +553,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Typo in `pip` arguments `README.md`.
 
 
-[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/pybricks/pybricksdev/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/pybricks/pybricksdev/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/pybricks/pybricksdev/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/pybricks/pybricksdev/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/pybricks/pybricksdev/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/pybricks/pybricksdev/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/pybricks/pybricksdev/compare/v2.0.1...v2.1.0

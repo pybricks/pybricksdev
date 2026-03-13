@@ -946,8 +946,6 @@ class PybricksHubUSB(PybricksHub):
         self._response_queue = asyncio.Queue[bytes]()
 
     async def _client_connect(self) -> bool:
-        # Reset is essential to ensure endpoints are in a good state.
-        self._device.reset()
         self._device.set_configuration()
 
         # Save input and output endpoints
@@ -963,6 +961,12 @@ class PybricksHubUSB(PybricksHub):
             custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
             == ENDPOINT_OUT,
         )
+
+        # Clearing halt (even if not stalled) resets the even/odd state on the
+        # endpoints in case it was left in an invalid state by a previous
+        # connection.
+        self._ep_in.clear_halt()
+        self._ep_out.clear_halt()
 
         # There is 1 byte overhead for PybricksUsbMessageType
         self._max_write_size = self._ep_out.wMaxPacketSize - 1

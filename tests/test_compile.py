@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Copyright (c) 2022 The Pybricks Authors
+# Copyright (c) 2022-2026 The Pybricks Authors
 
 
 import contextlib
@@ -7,6 +7,7 @@ import os
 import struct
 import sys
 from tempfile import TemporaryDirectory
+from typing import Any
 
 import pytest
 
@@ -16,18 +17,18 @@ from pybricksdev.compile import compile_file, compile_multi_file
 if sys.version_info < (3, 11):
     from contextlib import AbstractContextManager
 
-    class chdir(AbstractContextManager):
+    class chdir(AbstractContextManager[None]):
         """Non thread-safe context manager to change the current working directory."""
 
-        def __init__(self, path):
+        def __init__(self, path: str) -> None:
             self.path = path
-            self._old_cwd = []
+            self._old_cwd: list[str] = []
 
-        def __enter__(self):
+        def __enter__(self) -> None:
             self._old_cwd.append(os.getcwd())
             os.chdir(self.path)
 
-        def __exit__(self, *excinfo):
+        def __exit__(self, *excinfo: Any) -> None:
             os.chdir(self._old_cwd.pop())
 
     setattr(contextlib, "chdir", chdir)
@@ -73,6 +74,8 @@ async def test_compile_multi_file(abi: int):
                     "import test1\n",
                     "from test2 import thing2\n",
                     "from nested.test3 import thing3\n",
+                    "from test4 import thing4\n",
+                    "from nested.test5 import thing5\n",
                 ]
             )
 
@@ -99,6 +102,24 @@ async def test_compile_multi_file(abi: int):
             os.path.join(temp_dir, "nested", "test3.py"), "w", encoding="utf-8"
         ) as f3:
             f3.write("thing3 = 'thing3'\n")
+
+        # test4 and test5 are to test package modules with non-empty __init__.py
+
+        os.mkdir("test4")
+
+        with open(
+            os.path.join(temp_dir, "test4", "__init__.py"), "w", encoding="utf-8"
+        ) as f4:
+            f4.write("thing4 = 'thing4'\n")
+
+        os.mkdir(os.path.join("nested", "test5"))
+
+        with open(
+            os.path.join(temp_dir, "nested", "test5", "__init__.py"),
+            "w",
+            encoding="utf-8",
+        ) as f5:
+            f5.write("thing5 = 'thing5'\n")
 
         multi_mpy = await compile_multi_file("test.py", abi)
         pos = 0
@@ -130,12 +151,20 @@ async def test_compile_multi_file(abi: int):
         names.add(name2.decode())
         name3, mpy3 = unpack_mpy(multi_mpy)
         names.add(name3.decode())
+
         if uses_module_finder:
             # ModuleFinder requires __init__.py.
             name4, mpy4 = unpack_mpy(multi_mpy)
             names.add(name4.decode())
+
         name5, mpy5 = unpack_mpy(multi_mpy)
         names.add(name5.decode())
+
+        name6, mpy6 = unpack_mpy(multi_mpy)
+        names.add(name6.decode())
+
+        name7, mpy7 = unpack_mpy(multi_mpy)
+        names.add(name7.decode())
 
         assert pos == len(multi_mpy)
 
@@ -150,9 +179,9 @@ async def test_compile_multi_file(abi: int):
         assert "nested.test3" in names
 
         if uses_module_finder:
-            assert len(names) == 4
+            assert len(names) == 6
         else:
-            assert len(names) == 3
+            assert len(names) == 5
 
         def check_mpy(mpy: bytes) -> None:
             magic, abi_ver, flags, int_bits = struct.unpack_from("<BBBB", mpy)
@@ -168,3 +197,5 @@ async def test_compile_multi_file(abi: int):
         if uses_module_finder:
             check_mpy(mpy4)  # pyright: ignore[reportPossiblyUnboundVariable]
         check_mpy(mpy5)
+        check_mpy(mpy6)
+        check_mpy(mpy7)

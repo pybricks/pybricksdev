@@ -180,10 +180,20 @@ async def _compile_module_and_get_imports(
     """
     with TemporaryDirectory() as temp_dir:
         module_path = os.path.join(*module_name.split(".")) + ".py"
+        package_path = os.path.join(*module_name.split("."), "__init__.py")
 
         # TODO: check for pre-compiled .mpy file first?
 
-        mpy = await compile_file(proj_dir, module_path, abi)
+        if os.path.exists(os.path.join(proj_dir, module_path)):
+            src_path = module_path
+        elif os.path.exists(os.path.join(proj_dir, package_path)):
+            src_path = package_path
+        else:
+            raise FileNotFoundError(
+                f"Module {module_name} not found. Searched for {module_path} and {package_path}."
+            )
+
+        mpy = await compile_file(proj_dir, src_path, abi)
 
         mpy_path = os.path.join(temp_dir, TMP_MPY_SCRIPT)
 
@@ -250,9 +260,6 @@ async def _compile_multi_file_with_mpy_tool(
         parts.append(len(mpy).to_bytes(4, "little"))
         parts.append(name.encode() + b"\x00")
         parts.append(mpy)
-
-    print(imported_modules)
-    print(not_found_modules)
 
     return b"".join(parts)
 
