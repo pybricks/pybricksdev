@@ -1,6 +1,7 @@
 """Tests for the pybricksdev CLI commands."""
 
 import argparse
+import asyncio
 import contextlib
 import io
 import os
@@ -8,8 +9,13 @@ import tempfile
 from unittest.mock import AsyncMock, Mock, mock_open, patch
 
 import pytest
+from packaging.version import Version
 
 from pybricksdev.cli import Compile, Run, Tool, Udev
+from pybricksdev.connections.pybricks import (
+    HubDisconnectError,
+    HubPowerButtonPressedError,
+)
 
 
 class TestTool:
@@ -441,6 +447,395 @@ class TestRun:
 
             # Verify disconnect was not called since connection failed
             mock_hub.disconnect.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_run_syntax_error(self):
+        """Test that the stay connected menu is called upon a syntax error when the appropriate flag is active."""
+
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub.connect = AsyncMock()
+        mock_hub.race_disconnect = mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+
+        mock_selector = AsyncMock()
+        mock_selector.ask_async.side_effect = ["Exit"]
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+            temp = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
+            )
+            temp.write("syntax error")
+            temp_path = temp.name
+            stack.callback(os.unlink, temp_path)
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            mock_hub_class = stack.enter_context(
+                patch(
+                    "pybricksdev.connections.pybricks.PybricksHubBLE",
+                    return_value=mock_hub,
+                )
+            )
+            stack.enter_context(
+                patch("pybricksdev.ble.find_device", return_value="mock_device")
+            )
+            mock_selector = stack.enter_context(
+                patch("questionary.select", return_value=mock_selector)
+            )
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.run(args)
+
+            # Verify the hub was created and used correctly
+            mock_hub_class.assert_called_once_with("mock_device")
+            mock_hub.connect.assert_called_once()
+            mock_hub.run.assert_called_once_with(temp_path, True)
+            mock_selector.assert_called_once()
+            mock_hub.disconnect.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_stay_connected_menu_integration(self):
+        """Test all of the basic options in the stay_connected menu."""
+
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub.fw_version = Version("3.2.0-beta.4")
+        mock_hub.run = AsyncMock()
+        mock_hub.connect = AsyncMock()
+        mock_hub.start_user_program = AsyncMock()
+        mock_hub._wait_for_user_program_stop = AsyncMock()
+        mock_hub.race_disconnect = mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+        mock_hub.download = AsyncMock()
+
+        # create a mock questionary menu
+        mock_selector = AsyncMock()
+        mock_selector.ask_async.side_effect = [
+            "Recompile and Run",
+            "Recompile and Download",
+            "Run Stored Program",
+            "Exit",
+        ]
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+            temp = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
+            )
+            temp.write("print('test')")
+            temp_path = temp.name
+            stack.callback(os.unlink, temp_path)
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            mock_hub_class = stack.enter_context(
+                patch(
+                    "pybricksdev.connections.pybricks.PybricksHubBLE",
+                    return_value=mock_hub,
+                )
+            )
+            stack.enter_context(
+                patch("pybricksdev.ble.find_device", return_value="mock_device")
+            )
+            mock_selector = stack.enter_context(
+                patch("questionary.select", return_value=mock_selector)
+            )
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.run(args)
+
+            # Verify the hub was created and used correctly
+            mock_hub_class.assert_called_once_with("mock_device")
+            mock_hub.connect.assert_called_once()
+
+            assert mock_hub.run.call_count == 2
+            mock_hub.run.assert_called_with(temp_path, wait=True)
+            mock_hub.download.assert_called_once_with(temp_path)
+            mock_hub.start_user_program.assert_called_once()
+            mock_hub._wait_for_user_program_stop.assert_called_once()
+
+            assert mock_selector.call_count == 4
+            mock_hub.disconnect.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_stay_connected_menu_change_target_file(self):
+        """Test the change target file option."""
+
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub.run = AsyncMock()
+        mock_hub.connect = AsyncMock()
+        mock_hub.race_disconnect = mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+        mock_hub.download = AsyncMock()
+
+        # create a mock questionary menu
+        mock_menu = AsyncMock()
+        mock_menu.ask_async.side_effect = [
+            "Change Target File",
+            "Recompile and Run",
+            "Exit",
+        ]
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+            temp = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
+            )
+            new_target_file = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
+            )
+            temp.write("print('test')")
+            temp_path = temp.name
+            stack.callback(os.unlink, temp_path)
+            new_target_file.write("print('test')")
+            new_path = new_target_file.name
+            stack.callback(os.unlink, new_path)
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            stack.enter_context(
+                patch("pybricksdev.ble.find_device", return_value="mock_device")
+            )
+            mock_selector = stack.enter_context(
+                patch("questionary.select", return_value=mock_menu)
+            )
+            mock_file_selector = stack.enter_context(patch("questionary.path"))
+            path_obj = AsyncMock()
+            path_obj.ask_async = AsyncMock(return_value=new_path)
+            mock_file_selector.return_value = path_obj
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.stay_connected_menu(mock_hub, args)
+
+            assert mock_selector.call_count == 3
+            mock_file_selector.assert_called_once()
+            mock_hub.download.assert_called_once_with(new_path)
+            mock_hub.run.assert_called_once_with(new_path, wait=True)
+
+    @pytest.mark.asyncio
+    async def test_stay_connected_menu_run_stored(self):
+        """Test that the run_stored program option doesn't call an inaccessible method on an old hub."""
+
+        async def passthrough_awaitable(awaitable):
+            return await awaitable
+
+        # Create a mock hub
+        old_mock_hub = AsyncMock()
+
+        # simulate an old hub that can't handle the run_stored_program option
+        old_mock_hub.fw_version = Version("3.2.0-beta.3")
+        old_mock_hub.run = AsyncMock()
+        old_mock_hub.connect = AsyncMock()
+        old_mock_hub.start_user_program = AsyncMock()
+        old_mock_hub.race_disconnect = old_mock_hub.race_power_button_press = AsyncMock(
+            side_effect=passthrough_awaitable
+        )
+
+        # create a mock questionary menu
+        mock_selector = AsyncMock()
+        mock_selector.ask_async.side_effect = [
+            "Run Stored Program",
+            "Exit",
+        ]
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(
+                    tempfile.NamedTemporaryFile(
+                        suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                    )
+                ),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            stack.enter_context(patch("questionary.select", return_value=mock_selector))
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.stay_connected_menu(old_mock_hub, args)
+
+            old_mock_hub.start_user_program.assert_not_called()
+            old_mock_hub._wait_for_user_program_stop.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_stay_connected_menu_interruptions(self):
+        """Test the stay_connected_menu being interrupted by a power button press or hub disconnect."""
+        mock_menu_call_count = 0
+
+        # simulates the hub disconnecting on the first call,
+        async def mock_race_disconnect(awaitable):
+            task = asyncio.create_task(awaitable)
+            try:
+                if mock_menu_call_count == 1:
+                    await asyncio.sleep(0.01)
+                    task.cancel()
+                    raise HubDisconnectError("hub disconnected")
+                return await task
+            except BaseException:
+                await asyncio.sleep(0.01)
+                task.cancel()
+                raise
+
+        # simulate the power button being pressed on the second call
+        async def mock_race_power_button_press(awaitable):
+            task = asyncio.create_task(awaitable)
+            try:
+                if mock_menu_call_count == 2:
+                    await asyncio.sleep(0.01)
+                    task.cancel()
+                    raise HubPowerButtonPressedError("power button pressed")
+                return await task
+            except BaseException:
+                await asyncio.sleep(0.01)
+                task.cancel()
+                raise
+
+        # should be called but cancelled twice, returning "Recompile and Run" the third time
+        async def mock_menu_function():
+            nonlocal mock_menu_call_count
+            mock_menu_call_count += 1
+            if mock_menu_call_count <= 3:
+                return "Recompile and Run"
+            else:
+                return "Exit"
+
+        # Create a mock hub
+        mock_hub = AsyncMock()
+        mock_hub.run = AsyncMock()
+        mock_hub.connect = AsyncMock()
+        mock_hub.disconnect = AsyncMock()
+        mock_hub.race_disconnect = AsyncMock(
+            side_effect=mock_race_disconnect,
+        )
+        mock_hub.race_power_button_press = AsyncMock(
+            side_effect=mock_race_power_button_press,
+        )
+        mock_hub._wait_for_power_button_release = AsyncMock()
+        mock_hub._wait_for_user_program_stop = AsyncMock()
+        # create a mock questionary menu
+        mock_menu = AsyncMock()
+        mock_menu.ask_async.side_effect = mock_menu_function
+
+        # create a mock confirmation menu to reconnect to the hub
+        mock_confirm_menu = AsyncMock()
+        mock_confirm_menu.ask_async.return_value = True
+
+        # Set up mocks using ExitStack
+        with contextlib.ExitStack() as stack:
+            # Create and manage temporary file
+            temp = stack.enter_context(
+                tempfile.NamedTemporaryFile(
+                    suffix=".py", mode="w+", delete=False, encoding="utf-8"
+                )
+            )
+            temp.write("print('test')")
+            temp_path = temp.name
+            stack.callback(os.unlink, temp_path)
+
+            # Create args
+            args = argparse.Namespace(
+                conntype="ble",
+                file=stack.enter_context(open(temp_path, "r", encoding="utf-8")),
+                name="MyHub",
+                start=True,
+                wait=True,
+                stay_connected=True,
+            )
+
+            mock_hub_class = stack.enter_context(
+                patch(
+                    "pybricksdev.connections.pybricks.PybricksHubBLE",
+                    return_value=mock_hub,
+                )
+            )
+
+            stack.enter_context(
+                patch("pybricksdev.ble.find_device", return_value="mock_device")
+            )
+            mock_selector = stack.enter_context(
+                patch("questionary.select", return_value=mock_menu)
+            )
+            mock_confirm = stack.enter_context(
+                patch("questionary.confirm", return_value=mock_confirm_menu)
+            )
+
+            # Run the command
+            run_cmd = Run()
+            await run_cmd.stay_connected_menu(mock_hub, args)
+
+            assert mock_selector.call_count == 4
+            # a confirmation menu should be triggered and the hub should be re-instantiated upon a HubDisconnectError
+            mock_confirm.assert_called_once()
+            mock_hub_class.assert_called_once()
+            mock_hub.connect.assert_called_once()
+
+            # these functions should be triggered upon a HubPowerButtonPressedError
+            mock_hub._wait_for_power_button_release.assert_called_once()
+            mock_hub._wait_for_user_program_stop.assert_called_once()
+
+            # this should only be called once because the menu was canceled the first two times it was called
+            mock_hub.run.assert_called_once_with(temp_path, wait=True)
 
 
 class TestCompile:
